@@ -34,6 +34,7 @@
   font-size: 0.8rem;
   font-family: monospace;
   max-width: 100%;
+  word-break: break-all;
 }
 
 .wallet-address-value {
@@ -112,6 +113,8 @@
   font-size: 1.75rem;
   font-weight: 700;
   line-height: var(--lh-display);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .summary-card .sub {
@@ -137,9 +140,15 @@
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr minmax(0, 380px);
   gap: 1.25rem;
   align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ─── Utilization Bar ───────────────────────────────────────────────────────── */
@@ -601,14 +610,6 @@
 }
 
 @media (max-width: 768px) {
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .summary-card:last-child {
-    grid-column: auto;
-  }
-
   .dashboard-header {
     flex-direction: column;
     gap: 0.75rem;
@@ -629,5 +630,15 @@
 
   .wallet-info {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card:last-child {
+    grid-column: auto;
   }
 }

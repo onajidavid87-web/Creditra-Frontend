@@ -222,8 +222,13 @@ export function Dashboard() {
                 className="wallet-address-chip"
                 valueClassName="wallet-address-value"
               />
-              <span className={`network-badge ${wallet.network === 'TESTNET' ? 'testnet' : 'mainnet'}`}>
+              <span
+                className={`network-badge ${wallet.network === 'TESTNET' ? 'testnet' : 'mainnet'}`}
+                title={wallet.network === 'TESTNET' ? 'Testnet (no real funds)' : 'Mainnet (real funds)'}
+                aria-label={wallet.network === 'TESTNET' ? 'Testnet network (test funds)' : 'Mainnet network (real funds)'}
+              >
                 <span className="dot" />
+                <span className="network-icon" aria-hidden="true">{wallet.network === 'TESTNET' ? '⚠️' : '✅'}</span>
                 {wallet.network === 'TESTNET' ? 'Testnet' : 'Mainnet'}
               </span>
             </div>
@@ -262,10 +267,15 @@ export function Dashboard() {
               className="wallet-address-chip"
               valueClassName="wallet-address-value"
             />
-            <span className={`network-badge ${wallet.network === 'TESTNET' ? 'testnet' : 'mainnet'}`}>
-              <span className="dot" />
-              {wallet.network === 'TESTNET' ? 'Testnet' : 'Mainnet'}
-            </span>
+              <span
+                className={`network-badge ${wallet.network === 'TESTNET' ? 'testnet' : 'mainnet'}`}
+                title={wallet.network === 'TESTNET' ? 'Testnet (no real funds)' : 'Mainnet (real funds)'}
+                aria-label={wallet.network === 'TESTNET' ? 'Testnet network (test funds)' : 'Mainnet network (real funds)'}
+              >
+                <span className="dot" />
+                <span className="network-icon" aria-hidden="true">{wallet.network === 'TESTNET' ? '⚠️' : '✅'}</span>
+                {wallet.network === 'TESTNET' ? 'Testnet' : 'Mainnet'}
+              </span>
           </div>
         )}
       </div>

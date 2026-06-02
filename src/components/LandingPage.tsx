@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
     TrendingUp,
     ShieldCheck,
@@ -13,9 +13,11 @@ import {
     Code2,
     Users,
 } from "lucide-react";
+import "./LandingPage.css";
 
 export default function LandingPage() {
     const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+    const reduceMotion = useReducedMotion();
 
     const faqs = [
         {
@@ -92,27 +94,32 @@ export default function LandingPage() {
             </header>
 
             {/* HERO */}
-            <section className="relative overflow-hidden">
-                <div className="max-w-300 mx-auto px-6 py-24 grid md:grid-cols-2 gap-16 items-center">
-                    <div>
-                        <h1 className="text-4xl font-semibold leading-tight mb-6">
+            <section className="landing-section landing-hero relative overflow-hidden">
+                <div className="max-w-300 mx-auto grid md:grid-cols-2 gap-16 items-center">
+                    <div className="space-y-6">
+                        <h1 className="landing-hero__title">
                             Adaptive Credit Without Overcollateralization
                         </h1>
 
-                        <p className="text-[#8b949e] text-lg mb-8">
-                            Credit limits that evolve with your on-chain
-                            behavior. No locked capital. No static risk models.
-                            Just programmable credit.
+                        <p className="landing-hero__copy">
+                            Credit limits that evolve with your on-chain behavior.
+                            No locked capital. No static risk models. Just programmable credit.
                         </p>
 
-                        <div className="flex gap-4 flex-wrap">
-                            <button className="bg-[#58a6ff] hover:bg-[#79c0ff] text-black px-6 py-3 rounded-lg font-medium transition">
+                        <div className="landing-hero__actions">
+                            <button
+                                type="button"
+                                className="landing-button landing-button--primary"
+                            >
                                 Connect Wallet
                             </button>
 
-                            <button className="border border-[#30363d] px-6 py-3 rounded-lg hover:bg-[#161b22] transition">
-                                <a href="#how">Learn More</a>
-                            </button>
+                            <a
+                                href="#how"
+                                className="landing-button landing-button--secondary"
+                            >
+                                Learn More
+                            </a>
                         </div>
                     </div>
 
@@ -120,24 +127,23 @@ export default function LandingPage() {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 1 }}
-                        className="bg-[#161b22] border border-[#21262d] rounded-xl p-8 shadow-lg"
+                        transition={{ duration: reduceMotion ? 0 : 1 }}
+                        className="landing-hero-card"
                     >
-                        <p className="text-[#8b949e] mb-4">
-                            Dynamic Credit Limit
-                        </p>
+                        <p className="text-[#8b949e] mb-4">Dynamic Credit Limit</p>
 
-                        <div className="w-full h-4 bg-[#21262d] rounded" 
-                            role="progressbar" 
-                            aria-valuenow={85} 
-                            aria-valuemin={0} 
+                        <div
+                            className="w-full h-4 bg-[#21262d] rounded"
+                            role="progressbar"
+                            aria-valuenow={85}
+                            aria-valuemin={0}
                             aria-valuemax={100}
                             aria-label="Adaptive credit limit growth preview"
                         >
                             <motion.div
-                                initial={{ width: "20%" }}
+                                initial={{ width: reduceMotion ? "85%" : "20%" }}
                                 animate={{ width: "85%" }}
-                                transition={{ duration: 3 }}
+                                transition={{ duration: reduceMotion ? 0 : 3 }}
                                 className="h-4 bg-[#58a6ff] rounded"
                             />
                         </div>
@@ -148,27 +154,21 @@ export default function LandingPage() {
             </section>
 
             {/* FEATURES */}
-            <section className="py-24">
+            <section className="landing-section">
                 <div className="max-w-300 mx-auto px-6">
-                    <h2 className="text-3xl font-semibold mb-16 text-center">
+                    <h2 className="landing-section-title text-center">
                         Credit That Adapts to You
                     </h2>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="landing-feature-grid">
                         {features.map(({ title, icon: Icon }, i) => (
-                            <div
-                                key={i}
-                                className="bg-[#161b22] border border-[#21262d] rounded-xl p-8 hover:-translate-y-1 transition hover:shadow-[0_0_20px_rgba(88,166,255,0.15)]"
-                            >
+                            <div key={i} className="landing-card">
                                 <div className="w-10 h-10 mb-6 flex items-center justify-center rounded-lg bg-[#58a6ff]/10">
-                                    <Icon
-                                        className="text-[#58a6ff]"
-                                        size={20}
-                                    />
+                                    <Icon className="text-[#58a6ff]" size={20} />
                                 </div>
 
-                                <h3 className="font-semibold mb-4">{title}</h3>
-                                <p className="text-[#8b949e] text-sm">
+                                <h3 className="landing-card-title">{title}</h3>
+                                <p className="landing-card-copy">
                                     Powered by real-time on-chain behavioral
                                     analysis and adaptive models.
                                 </p>
@@ -179,16 +179,16 @@ export default function LandingPage() {
             </section>
 
             {/* HOW IT WORKS */}
-            <section id="how" className="py-24 bg-[#0b0f14]">
+            <section id="how" className="landing-section bg-[#0b0f14]">
                 <div className="max-w-300 mx-auto px-6">
-                    <h2 className="text-3xl font-semibold mb-16 text-center">
+                    <h2 className="landing-section-title text-center">
                         How Adaptive Credit Works
                     </h2>
 
-                    <div className="grid md:grid-cols-5 gap-6 text-center">
+                    <div className="landing-steps-grid text-center">
                         {steps.map(({ label, icon: Icon }, i) => (
                             <div key={i} className="relative">
-                                <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 flex flex-col items-center gap-4">
+                                <div className="landing-card rounded-lg p-6 flex flex-col items-center gap-4">
                                     <Icon
                                         className="text-[#58a6ff]"
                                         size={22}
@@ -207,27 +207,21 @@ export default function LandingPage() {
             </section>
 
             {/* USE CASES */}
-            <section id="usecases" className="py-24">
+            <section id="usecases" className="landing-section">
                 <div className="max-w-300 mx-auto px-6">
-                    <h2 className="text-3xl font-semibold mb-16 text-center">
+                    <h2 className="landing-section-title text-center">
                         Built for Real Builders
                     </h2>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="landing-usecases-grid">
                         {useCases.map(({ label, icon: Icon }, i) => (
-                            <div
-                                key={i}
-                                className="bg-[#161b22] border border-[#21262d] rounded-xl p-8"
-                            >
+                            <div key={i} className="landing-card">
                                 <div className="w-10 h-10 mb-6 flex items-center justify-center rounded-lg bg-[#58a6ff]/10">
-                                    <Icon
-                                        className="text-[#58a6ff]"
-                                        size={20}
-                                    />
+                                    <Icon className="text-[#58a6ff]" size={20} />
                                 </div>
 
-                                <h3 className="font-semibold mb-4">{label}</h3>
-                                <p className="text-[#8b949e] text-sm">
+                                <h3 className="landing-card-title">{label}</h3>
+                                <p className="landing-card-copy">
                                     Access adaptive capital aligned with your
                                     on-chain activity.
                                 </p>
@@ -238,7 +232,7 @@ export default function LandingPage() {
             </section>
 
             {/* FAQ */}
-            <section id="faq" className="py-24 bg-[#0b0f14]">
+            <section id="faq" className="landing-section bg-[#0b0f14]">
                 <div className="max-w-200 mx-auto px-6">
                     <h2 className="text-3xl font-semibold mb-12 text-center">
                         Frequently Asked Questions
@@ -272,13 +266,16 @@ export default function LandingPage() {
             </section>
 
             {/* FINAL CTA */}
-            <section className="py-24 text-center">
+            <section className="landing-section text-center">
                 <div className="max-w-200 mx-auto px-6">
-                    <h2 className="text-3xl font-semibold mb-8">
+                    <h2 className="landing-section-title mb-8">
                         Capital Should Work as Hard as You Do
                     </h2>
 
-                    <button className="bg-[#58a6ff] hover:bg-[#79c0ff] text-black px-8 py-4 rounded-lg font-medium transition">
+                    <button
+                        type="button"
+                        className="landing-button landing-button--primary"
+                    >
                         Connect Wallet
                     </button>
                 </div>

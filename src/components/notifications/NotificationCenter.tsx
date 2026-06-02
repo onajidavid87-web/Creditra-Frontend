@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { NotificationCategory } from '../../types/notification';
 import { CATEGORY_ICON, TYPE_COLOR, TYPE_ICON } from './notificationIcons';
 import './NotificationCenter.css';
@@ -39,8 +40,42 @@ export function NotificationCenter() {
 
   const [activeFilter, setActiveFilter] = useState<NotificationCategory | 'all'>('all');
   const [showPrefs, setShowPrefs] = useState(false);
+  const panelRef = useFocusTrap(isPanelOpen);
 
   const filtered = filterByCategory(activeFilter);
+
+  useEffect(() => {
+    if (!isPanelOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closePanel();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [closePanel, isPanelOpen]);
+
+  useEffect(() => {
+    if (!isPanelOpen) return;
+
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+    const previousOverflow = document.body.style.overflow;
+
+    const syncBodyLock = () => {
+      document.body.style.overflow = mediaQuery.matches ? 'hidden' : previousOverflow;
+    };
+
+    // The mobile sheet occupies the viewport, so prevent background scroll bleed.
+    syncBodyLock();
+    mediaQuery.addEventListener('change', syncBodyLock);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncBodyLock);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isPanelOpen]);
 
   return (
     <>
@@ -50,7 +85,15 @@ export function NotificationCenter() {
       )}
 
       {/* Slide-in panel */}
-      <div className={`nc-panel ${isPanelOpen ? 'nc-panel-open' : ''}`} role="dialog" aria-label="Notification center">
+      <div
+        ref={panelRef}
+        id="notification-center"
+        className={`nc-panel ${isPanelOpen ? 'nc-panel-open' : ''}`}
+        role="dialog"
+        aria-modal={isPanelOpen}
+        aria-label="Notification center"
+        aria-hidden={!isPanelOpen}
+      >
         {/* Header */}
         <div className="nc-header">
           <div className="nc-header-left">
@@ -65,14 +108,18 @@ export function NotificationCenter() {
               onClick={() => setShowPrefs(p => !p)}
               title="Preferences"
               aria-label="Notification preferences"
+              aria-expanded={showPrefs}
             >
               ⚙
             </button>
-            {unreadCount > 0 && (
-              <button className="nc-text-btn" onClick={markAllAsRead}>
-                Mark all read
-              </button>
-            )}
+            <button
+              className="nc-text-btn"
+              onClick={markAllAsRead}
+              disabled={unreadCount === 0}
+              aria-label={`Mark all notifications as read${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+            >
+              Mark all read
+            </button>
             {notifications.length > 0 && (
               <button className="nc-text-btn nc-text-btn-danger" onClick={clearAll}>
                 Clear all

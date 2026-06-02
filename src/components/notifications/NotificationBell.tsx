@@ -1,14 +1,33 @@
+import { useEffect, useRef } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
 import './NotificationBell.css';
 
 export function NotificationBell() {
-  const { unreadCount, openPanel } = useNotifications();
+  const { unreadCount, isPanelOpen, openPanel } = useNotifications();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const hadPanelOpen = useRef(false);
+
+  useEffect(() => {
+    if (isPanelOpen) {
+      hadPanelOpen.current = true;
+      return;
+    }
+
+    if (hadPanelOpen.current) {
+      buttonRef.current?.focus();
+      hadPanelOpen.current = false;
+    }
+  }, [isPanelOpen]);
 
   return (
     <button
+      ref={buttonRef}
       className="notif-bell"
       onClick={openPanel}
       aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+      aria-haspopup="dialog"
+      aria-expanded={isPanelOpen}
+      aria-controls="notification-center"
     >
       <svg
         width="18"

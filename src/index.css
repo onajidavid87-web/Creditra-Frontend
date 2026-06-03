@@ -49,7 +49,12 @@ body {
 }
 
 /* Typography Base Styles */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   line-height: var(--lh-heading);
   margin: 0;
 }
@@ -125,6 +130,7 @@ p {
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .header-nav-link:hover {
@@ -141,10 +147,34 @@ p {
   outline-offset: 2px;
 }
 
+/* 
+  Active state styling (WCAG 2.1 AA compliant)
+  Provides visual distinction beyond color alone:
+  - Accent color (#58a6ff) for emphasis
+  - Bottom border (underline) for text-based indication
+  - Font-weight increase from 500 to 600 for weight-based indication
+  - Subtle background to reinforce the active state
+  
+  This satisfies WCAG 1.4.1 (Use of Color) by using multiple indicators,
+  and 2.4.8 (Location) via aria-current="page" attribute set in App.tsx
+*/
 .header-nav-link.active {
   color: var(--accent);
-  border-color: rgba(88, 166, 255, 0.4);
-  background: rgba(88, 166, 255, 0.12);
+  font-weight: 600;
+  border-bottom: 2px solid var(--accent);
+  background: rgba(88, 166, 255, 0.08);
+  padding-bottom: calc(0.625rem - 2px);
+}
+
+/* 
+  Ensure focus styling remains distinct from active styling:
+  - Focus visible shows outline around the element
+  - Active shows bottom border and accent text
+  - No visual conflict when both states apply
+*/
+.header-nav-link.active:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .main {
@@ -161,7 +191,9 @@ p {
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1rem;
-  transition: border-color 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
   animation: fadeInUp 0.4s ease both;
 }
 
@@ -326,10 +358,18 @@ p {
 }
 
 .form-message--danger .form-message__icon,
-.form-message--error .form-message__icon { color: var(--danger); }
-.form-message--warning .form-message__icon { color: var(--warning); }
-.form-message--info .form-message__icon { color: var(--info); }
-.form-message--success .form-message__icon { color: var(--success); }
+.form-message--error .form-message__icon {
+  color: var(--danger);
+}
+.form-message--warning .form-message__icon {
+  color: var(--warning);
+}
+.form-message--info .form-message__icon {
+  color: var(--info);
+}
+.form-message--success .form-message__icon {
+  color: var(--success);
+}
 
 .form-message__content {
   display: grid;
@@ -343,10 +383,18 @@ p {
 }
 
 .form-message--danger .form-message__title,
-.form-message--error .form-message__title { color: var(--danger); }
-.form-message--warning .form-message__title { color: var(--warning); }
-.form-message--info .form-message__title { color: var(--info); }
-.form-message--success .form-message__title { color: var(--success); }
+.form-message--error .form-message__title {
+  color: var(--danger);
+}
+.form-message--warning .form-message__title {
+  color: var(--warning);
+}
+.form-message--info .form-message__title {
+  color: var(--info);
+}
+.form-message--success .form-message__title {
+  color: var(--success);
+}
 
 .form-message__text {
   margin: 0;
@@ -378,7 +426,9 @@ p {
 }
 
 @keyframes pending-btn-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

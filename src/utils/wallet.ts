@@ -24,6 +24,14 @@ export const isWalletInstalled = (type: WalletType): boolean => {
   return false;
 };
 
+/**
+ * Opens a connection to the requested Stellar wallet and returns the
+ * public key plus the network the wallet is reporting.
+ *
+ * Each supported wallet exposes a slightly different surface area, so this
+ * function normalises them into a single `WalletInfo` shape and throws a
+ * `WalletError` with a stable `type` discriminator on failure.
+ */
 export const connectWallet = async (type: WalletType): Promise<WalletInfo> => {
   if (!isWalletInstalled(type)) {
     const walletNames: Record<WalletType, string> = {

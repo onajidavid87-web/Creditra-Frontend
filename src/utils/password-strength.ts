@@ -29,6 +29,10 @@ export function calculatePasswordStrength(password: string): PasswordStrength {
   return 'strong'
 }
 
+/**
+ * Map a password strength rating to a Tailwind background utility class
+ * used for the strength meter fill.
+ */
 export function getPasswordStrengthColor(strength: PasswordStrength): string {
   switch (strength) {
     case 'weak':
@@ -40,6 +44,10 @@ export function getPasswordStrengthColor(strength: PasswordStrength): string {
   }
 }
 
+/**
+ * Map a password strength rating to a short, user-facing label that
+ * accompanies the strength meter.
+ */
 export function getPasswordStrengthText(strength: PasswordStrength): string {
   switch (strength) {
     case 'weak':

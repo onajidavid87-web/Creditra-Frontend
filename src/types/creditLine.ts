@@ -1,6 +1,14 @@
+/**
+ * Lifecycle states of a credit line. Drives badge color, available
+ * actions in the UI, and any "view-only" guard rails on detail screens.
+ */
 export type CreditLineStatus = 'Active' | 'Suspended' | 'Defaulted' | 'Closed';
 export type SortField = 'status' | 'limit' | 'utilization' | 'updatedAt' | 'apr' | 'riskScore';
 export type SortDirection = 'asc' | 'desc';
+/**
+ * Coarse bucket of how much of a credit line is currently drawn.
+ * The numeric thresholds live in `src/utils/tokens.ts:getUtilizationLevel`.
+ */
 export type UtilizationLevel = 'low' | 'medium' | 'high';
 export type TransactionType = 'Draw' | 'Repay' | 'Fee' | 'Interest' | 'StatusChange';
 export type TransactionStatus = 'Completed' | 'Pending' | 'Failed';

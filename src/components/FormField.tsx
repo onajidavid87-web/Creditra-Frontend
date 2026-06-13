@@ -2,11 +2,25 @@ import { ReactNode, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 interface BaseFormFieldProps {
+  /** Stable id for the input. Also drives the label's `htmlFor` and the help/error `aria-describedby`. */
   id: string;
+  /** Visible label text. Required by spec — there is no label-less variant. */
   label: string;
+  /**
+   * When true, a "required" indicator is rendered and `aria-required` is
+   * set on the input. The visible marker is paired with screen-reader text
+   * so the requirement is announced.
+   */
   required?: boolean;
+  /** Optional helper text shown under the input; wired up via `aria-describedby`. */
   helpText?: string;
+  /**
+   * Optional error message. When present, `aria-invalid` is set on the
+   * input and the error text is wired up via `aria-describedby` so screen
+   * readers announce both help and error together.
+   */
   error?: string;
+  /** Pass-through class name on the field wrapper. */
   className?: string;
 }
 

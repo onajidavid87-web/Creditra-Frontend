@@ -3,16 +3,42 @@ import { WalletInfo, ConnectionStatus, WalletError, WalletType } from '../types/
 import { connectWallet, disconnectWallet, saveWalletPreference, getStoredWallet } from '../utils/wallet';
 
 interface WalletContextType {
+  /** The currently connected wallet, or `null` when disconnected. */
   wallet: WalletInfo | null;
+  /** Coarse connection-lifecycle state. UI consumers branch on this for spinners and badges. */
   status: ConnectionStatus;
+  /**
+   * Discriminated wallet-error union, populated only when `status === 'error'`.
+   * Branch on `error.type` to render specific recovery copy.
+   */
   error: WalletError | null;
+  /**
+   * Open a connection to the given wallet. Updates `status` to
+   * `connecting`, then either `connected` (on success) or `error`.
+   * Successful connections are persisted to `localStorage` so the same
+   * wallet is rehydrated on next visit.
+   */
   connect: (type: WalletType) => Promise<void>;
+  /** Forget the current wallet, clear preference, return to disconnected state. */
   disconnect: () => void;
+  /** Clear an error without changing status — used by retry affordances. */
   clearError: () => void;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
+/**
+ * App-wide wallet provider.
+ *
+ * Rehydrates the previously-used wallet from `localStorage` on mount
+ * (via `getStoredWallet()`), so a returning user is reconnected without
+ * an extra interaction. All connection side effects are delegated to
+ * `src/utils/wallet.ts`, which knows about each wallet's idiosyncratic
+ * surface area (Freighter, Albedo, xBull, Rabet) and normalises them
+ * into the canonical `WalletInfo` shape.
+ *
+ * Mount this once, near the top of the tree (see `src/App.tsx`).
+ */
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -58,6 +84,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+/**
+ * Read the wallet context inside a `WalletProvider` subtree.
+ *
+ * Throws if called outside the provider — this is intentional, since a
+ * silent `undefined` would cascade into confusing downstream errors
+ * (e.g. "cannot read property 'wallet' of undefined") far from the
+ * actual misuse.
+ */
 export const useWallet = () => {
   const context = useContext(WalletContext);
   if (!context) throw new Error('useWallet must be used within WalletProvider');

@@ -3,14 +3,34 @@ import { Link } from "react-router-dom";
 import "../pages/ErrorPage.css";
 
 interface Props {
+  /** Application subtree to guard. */
   children: ReactNode;
 }
 
 interface State {
+  /** True after an error was thrown by a descendant render. */
   hasError: boolean;
+  /** The error that was thrown, if any — used to render diagnostic info. */
   error?: Error;
 }
 
+/**
+ * Top-level render-error boundary, mounted as the outermost wrapper in
+ * `src/App.tsx`.
+ *
+ * Catches any error thrown during render in the subtree and renders the
+ * fallback `ErrorPage` instead of letting React unmount the root. The
+ * original error is captured into local state for display and logged to
+ * the console in `componentDidCatch`.
+ *
+ * Why a class component: React still requires error boundaries to be
+ * class components. There is no hook equivalent today.
+ *
+ * Does NOT catch:
+ * - errors thrown in event handlers (use try/catch locally)
+ * - errors thrown asynchronously after render (e.g. `setTimeout`)
+ * - errors thrown inside the boundary's own render
+ */
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,

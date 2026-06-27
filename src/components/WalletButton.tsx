@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { WalletConnectionModal } from './WalletConnectionModal';
 import { OnboardingFlow } from './OnboardingFlow';
+import { NetworkMismatchBanner } from './NetworkMismatchBanner';
 import './WalletButton.css';
 
 export const WalletButton = () => {
-  const { wallet, status, connect, disconnect } = useWallet();
+  const { wallet, status, connect, disconnect, hasNetworkMismatch, switchNetwork } = useWallet();
   const [showModal, setShowModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -38,6 +39,12 @@ export const WalletButton = () => {
   if (wallet && status === 'connected') {
     return (
       <div className="wallet-connected">
+        <NetworkMismatchBanner
+          currentNetwork={wallet.network}
+          expectedNetwork="PUBLIC"
+          walletType={wallet.type}
+          onSwitchNetwork={switchNetwork}
+        />
         <button 
           className="wallet-address-btn" 
           onClick={() => setShowDropdown(!showDropdown)}
@@ -70,6 +77,14 @@ export const WalletButton = () => {
 
   return (
     <>
+      {hasNetworkMismatch && (
+        <NetworkMismatchBanner
+          currentNetwork={wallet?.network ?? null}
+          expectedNetwork="PUBLIC"
+          walletType={wallet?.type ?? 'freighter'}
+          onSwitchNetwork={switchNetwork}
+        />
+      )}
       <button className="connect-wallet-btn" onClick={handleConnect}>
         Connect Wallet
       </button>

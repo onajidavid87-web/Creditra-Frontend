@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { WalletInfo, ConnectionStatus, WalletError, WalletType } from '../types/wallet';
 import { connectWallet, disconnectWallet, saveWalletPreference, getStoredWallet } from '../utils/wallet';
 
+const EXPECTED_NETWORK = 'PUBLIC';
+
 interface WalletContextType {
   /** The currently connected wallet, or `null` when disconnected. */
   wallet: WalletInfo | null;
@@ -23,6 +25,10 @@ interface WalletContextType {
   disconnect: () => void;
   /** Clear an error without changing status — used by retry affordances. */
   clearError: () => void;
+  /** Whether the connected wallet is currently on the expected network. */
+  hasNetworkMismatch: boolean;
+  /** Request the wallet to switch to the expected network. */
+  switchNetwork: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -43,6 +49,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<WalletError | null>(null);
+  const [hasNetworkMismatch, setHasNetworkMismatch] = useState(false);
 
   useEffect(() => {
     const stored = getStoredWallet();
@@ -77,8 +84,39 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const clearError = () => setError(null);
 
+  const switchNetwork = async () => {
+    if (!wallet) return;
+
+    try {
+      if (wallet.type === 'freighter' && typeof window.freighter?.setNetwork === 'function') {
+        await window.freighter.setNetwork('PUBLIC');
+      } else if (wallet.type === 'albedo' && typeof window.albedo?.switchNetwork === 'function') {
+        await window.albedo.switchNetwork({ network: 'PUBLIC' });
+      } else if (wallet.type === 'xbull' && typeof window.xBullSDK?.switchNetwork === 'function') {
+        await window.xBullSDK.switchNetwork('PUBLIC');
+      } else if (wallet.type === 'rabet' && typeof window.rabet?.switchNetwork === 'function') {
+        await window.rabet.switchNetwork('PUBLIC');
+      }
+
+      setWallet((currentWallet) => currentWallet ? { ...currentWallet, network: EXPECTED_NETWORK } : currentWallet);
+      setHasNetworkMismatch(false);
+    } catch {
+      setError({ type: 'wrong_network', message: `Unable to switch ${wallet.type} to ${EXPECTED_NETWORK}.` } as WalletError);
+      setHasNetworkMismatch(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!wallet) {
+      setHasNetworkMismatch(false);
+      return;
+    }
+
+    setHasNetworkMismatch(wallet.network !== EXPECTED_NETWORK);
+  }, [wallet]);
+
   return (
-    <WalletContext.Provider value={{ wallet, status, error, connect, disconnect, clearError }}>
+    <WalletContext.Provider value={{ wallet, status, error, connect, disconnect, clearError, hasNetworkMismatch, switchNetwork }}>
       {children}
     </WalletContext.Provider>
   );

@@ -2,17 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Route, Routes, Link, NavLink } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { WalletProvider } from "./context/WalletContext";
-import { ThemeProvider } from "./context/ThemeContext";
 import { WalletButton } from "./components/WalletButton";
 import DrawCreditPage from "./pages/DrawCreditPage";
 import CreditLines from "./pages/CreditLines";
 import { TransactionHistory } from "./pages/TransactionHistory";
 import { RequestEvaluation } from "./pages/RequestEvaluation";
-import { Settings } from "./pages/Settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NotFound } from "./pages/NotFound";
 import HelpCenter from "./pages/HelpCenter";
 import { ShortcutHelpOverlay } from "./components/ShortcutHelpOverlay";
+import { SupportWidget } from "./components/SupportWidget";
 import { DutchAuctions } from "./pages/DutchAuctions";
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -57,7 +56,12 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+      if (
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey
+      ) {
         return;
       }
 
@@ -83,11 +87,11 @@ function App() {
                 Creditra
               </Link>
               <nav className="header-nav">
-                {/* 
+                {/*
                   NavLink with render function allows us to:
                   1. Apply active class for styling (accent + underline + weight)
                   2. Set aria-current="page" on active links for accessibility
-                  
+
                   This satisfies WCAG 2.1 AA requirements:
                   - 1.4.1: Use of Color - active state uses color + other visual indicators
                   - 2.4.7: Focus Visible - outline differs from active underline
@@ -167,8 +171,11 @@ function App() {
             <ShortcutHelpOverlay
               isOpen={isShortcutHelpOpen}
               onClose={() => setIsShortcutHelpOpen(false)}
-              triggerRef={openedFromSettingsLink ? settingsTriggerRef : undefined}
+              triggerRef={
+                openedFromSettingsLink ? settingsTriggerRef : undefined
+              }
             />
+            <SupportWidget />
           </div>
         </BrowserRouter>
       </WalletProvider>

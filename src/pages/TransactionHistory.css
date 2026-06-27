@@ -180,6 +180,17 @@
     flex: 1.5;
 }
 
+.th-subgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+}
+
+.th-subgroup:last-child {
+    margin-bottom: 0;
+}
+
 .th-filter-group label,
 .th-filter-label,
 .th-search-group label {
@@ -258,6 +269,30 @@
     gap: 0.35rem;
     min-width: 200px;
     flex: 2;
+}
+
+.date-range-custom-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.date-range-custom-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 150px;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.date-range-custom-field input {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
 }
 
 .th-search-group input::placeholder {

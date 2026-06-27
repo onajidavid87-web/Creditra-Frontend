@@ -1,0 +1,215 @@
+.support-widget {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.support-widget__panel {
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(32rem, calc(100vh - 8rem));
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  padding: 1rem;
+}
+
+.support-widget__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.support-widget__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.support-widget__subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.support-widget__close,
+.support-widget__trigger,
+.support-widget__faq-button,
+.support-widget__email-link,
+.support-widget__help-link {
+  min-height: 44px;
+}
+
+.support-widget__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.support-widget__close:hover {
+  color: var(--text);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.support-widget__search-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.support-widget__search {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.support-widget__search::placeholder {
+  color: var(--muted);
+}
+
+.support-widget__meta {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.support-widget__faq-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.support-widget__faq-item {
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.support-widget__faq-button {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 0;
+  border-radius: 0.875rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.support-widget__faq-button:hover {
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.support-widget__faq-question {
+  display: block;
+  font-weight: 600;
+}
+
+.support-widget__faq-answer {
+  padding: 0 1rem 1rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.support-widget__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.support-widget__email-link,
+.support-widget__help-link,
+.support-widget__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.support-widget__email-link,
+.support-widget__help-link {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: transparent;
+}
+
+.support-widget__email-link:hover,
+.support-widget__help-link:hover,
+.support-widget__trigger:hover {
+  transform: translateY(-1px);
+}
+
+.support-widget__email-link:hover,
+.support-widget__help-link:hover {
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.support-widget__trigger {
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #0d1117;
+  padding: 0.9rem 1.15rem;
+  box-shadow: 0 12px 28px rgba(88, 166, 255, 0.28);
+  cursor: pointer;
+}
+
+.support-widget__trigger[aria-expanded="true"] {
+  background: #7cc0ff;
+}
+
+.support-widget__empty {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 0.875rem;
+  background: rgba(248, 81, 73, 0.08);
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .support-widget {
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    align-items: stretch;
+  }
+
+  .support-widget__panel {
+    width: 100%;
+  }
+
+  .support-widget__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .support-widget__trigger {
+    align-self: flex-end;
+  }
+}

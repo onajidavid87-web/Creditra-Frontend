@@ -1,3 +1,4 @@
+import { AccessibleTooltip } from "@/components/AccessibleTooltip";
 import { CreditLine } from "@/types/draw-credit.types";
 import { AlertCircle, ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
@@ -122,24 +123,17 @@ export function ConfirmationStep({
               </p>
             </div>
           </div>
-          <div className="mt-4 space-y-3 border-t border-border pt-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-muted font-medium">
-                  Current utilization
-                </span>
-                <span className="font-semibold text-foreground">
-                  {creditLine.utilization}%
-                </span>
-              </div>
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-muted font-medium">After draw</span>
-                <span
-                  className={`font-semibold ${newUtilization > 80 ? "text-yellow-500" : "text-foreground"}`}
-                >
-                  {newUtilization}%
-                </span>
-              </div>
+          <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="text-muted font-medium">
+                {/* MICROCOPY.md: Utilization */}
+                <AccessibleTooltip label="Utilization is the percentage of your available credit that is currently being used.">
+                  <span>Current utilization</span>
+                </AccessibleTooltip>
+              </span>
+              <span className="font-semibold text-foreground">
+                {creditLine.utilization}%
+              </span>
             </div>
 
             <div className="rounded-lg border border-border bg-background/40">
@@ -236,8 +230,15 @@ export function ConfirmationStep({
           className="mt-1 w-5 h-5 rounded accent-accent"
         />
         <span className="text-sm text-foreground">
-          I agree to the terms and conditions and authorize this draw. The funds
-          will be deposited within 1-2 business days.
+          I agree to the
+          {' '}
+          {/* MICROCOPY.md: Term */}
+          <AccessibleTooltip label="A term is a defined period or condition of your credit agreement.">
+            <span>terms</span>
+          </AccessibleTooltip>
+          {' '}
+          and conditions and authorize this draw. The funds will be deposited
+          within 1-2 business days.
         </span>
       </label>
 

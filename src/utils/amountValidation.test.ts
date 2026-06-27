@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   getDrawAmountValidation,
   getRepayAmountValidation,
@@ -45,8 +45,38 @@ describe('getRepayAmountValidation', () => {
 });
 
 describe('REPAY_CONFIRM_THRESHOLD', () => {
-  it('defaults to 5000', () => {
+  it('defaults to 5000 when VITE_REPAY_CONFIRM_THRESHOLD is not set', () => {
     expect(REPAY_CONFIRM_THRESHOLD).toBe(5000);
+  });
+
+  it('reads a custom value from VITE_REPAY_CONFIRM_THRESHOLD', async () => {
+    vi.stubEnv('VITE_REPAY_CONFIRM_THRESHOLD', '1000');
+    vi.resetModules();
+    const { REPAY_CONFIRM_THRESHOLD: threshold } = await import('./amountValidation');
+    expect(threshold).toBe(1000);
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('falls back to 5000 when VITE_REPAY_CONFIRM_THRESHOLD is not a valid number', async () => {
+    vi.stubEnv('VITE_REPAY_CONFIRM_THRESHOLD', 'not-a-number');
+    vi.resetModules();
+    const { REPAY_CONFIRM_THRESHOLD: threshold } = await import('./amountValidation');
+    expect(threshold).toBe(5000);
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('accepts 0 to disable the guard', async () => {
+    vi.stubEnv('VITE_REPAY_CONFIRM_THRESHOLD', '0');
+    vi.resetModules();
+    const { REPAY_CONFIRM_THRESHOLD: threshold, requiresRepayConfirmation: requires } =
+      await import('./amountValidation');
+    expect(threshold).toBe(0);
+    // When threshold is 0 the guard is disabled; no amount triggers confirmation.
+    expect(requires(10000)).toBe(false);
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 });
 

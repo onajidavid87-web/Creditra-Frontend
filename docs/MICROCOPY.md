@@ -1,23 +1,27 @@
-# Microcopy
+# Microcopy Guide
 
-## Draw credit confirmation
+Short, scannable text that helps users understand what they're looking at
+and what to do next. Every sentence should earn its place.
 
-### Why this APR drawer
+## Tone
 
-**Trigger label**
+- **Direct** — say what the number means, don't bury it.
+- **Neutral** — inform without alarming. A low score is a signal, not a
+  judgment.
+- **Actionable** — if there's something the user can do, tell them.
+- **No jargon without context** — "utilization" is fine in a label;
+  "delinquency ratio" is not.
 
-- `Why this APR?`
+## Risk-explainer sentences
 
-**Drawer intro**
+One sentence per band, derived from `RISK_COLOR(score)`:
 
-- `Your current estimated APR reflects the pricing inputs on this line today.`
+| Band        | Threshold | Message |
+|-------------|-----------|---------|
+| success     | >= 700    | Strong credit position — you're above the recommended threshold for new draws. |
+| warning     | >= 600    | Fair credit position — within acceptable range, though keep an eye on your utilization. |
+| danger      | < 600     | Below the recommended threshold — consider improving your score before new draws. |
 
-**Driver labels and templates**
+## Dismiss label
 
-- `Risk band` → `Current value: {riskBand}. This pricing band sets the base rate for your line before utilization and term adjustments.`
-- `Utilization` → `Current value: {utilization}%. Higher utilization can increase APR because it leaves less undrawn capacity on the line.`
-- `Term` → `Current value: {termMonths} months. Longer terms usually carry a higher APR because the balance is expected to stay outstanding for longer.`
-
-**Mock pricing note**
-
-- `This draw flow still uses mocked pricing inputs until the backend returns a signed quote. Replace this copy and the inline values together when live pricing lands.`
+`Dismiss risk score explainer`

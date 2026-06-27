@@ -1,11 +1,14 @@
+import type { ReactNode } from 'react';
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 import type { NotificationCategory, NotificationType } from '../../types/notification';
 
-export const TYPE_ICON: Record<NotificationType, string> = {
-  success: '✓',
-  error: '✕',
-  danger: '✕',
-  warning: '⚠',
-  info: 'ℹ',
+/** Lucide SVG icon for each notification severity. Set aria-hidden on the wrapping element. */
+export const TYPE_ICON: Record<NotificationType, ReactNode> = {
+  success: <CheckCircle2 size={14} strokeWidth={2.5} aria-hidden="true" />,
+  info:    <Info         size={14} strokeWidth={2.5} aria-hidden="true" />,
+  warning: <AlertTriangle size={14} strokeWidth={2.5} aria-hidden="true" />,
+  error:   <XCircle     size={14} strokeWidth={2.5} aria-hidden="true" />,
+  danger:  <XCircle     size={14} strokeWidth={2.5} aria-hidden="true" />,
 };
 
 export const CATEGORY_ICON: Record<NotificationCategory, string> = {

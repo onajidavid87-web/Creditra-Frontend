@@ -1,0 +1,148 @@
+/*
+  RiskGauge styles
+  ────────────────────────────────────────────────────────────────────────────
+  All colours use semantic tokens (var(--*)) — no hardcoded hex.
+  The animated fill arc uses a CSS @keyframes that drives stroke-dashoffset
+  from the full circumference (empty gauge) to the computed target offset.
+
+  Animation is suppressed entirely for users who prefer reduced motion:
+  - The @keyframes rule is wrapped in a `not prefers-reduced-motion` query.
+  - The JS component also reads matchMedia to initialise dashoffset at the
+    final value, preventing any flash-of-empty-arc.
+*/
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.risk-gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0 1rem;
+}
+
+.risk-gauge-svg {
+  width: 160px;
+  height: 100px;
+  margin-bottom: 0.75rem;
+  /* Allow keyboard focus so the role=img title is reachable */
+  overflow: visible;
+}
+
+/* ── Track (background arc) ──────────────────────────────────────────────── */
+
+.risk-gauge-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+/* ── Fill arc ────────────────────────────────────────────────────────────── */
+
+.risk-gauge-fill {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+
+  /*
+    --gauge-circumference and --gauge-target-offset are set inline by the
+    React component so the keyframe can reference them as custom properties.
+    Fall back to 0 so the gauge renders correctly in environments that don't
+    run the animation (e.g. jsdom).
+  */
+  --gauge-circumference: 172.79;
+  --gauge-target-offset: 0;
+}
+
+/* ── Arc sweep animation ─────────────────────────────────────────────────── */
+/*
+  Only applied when the user has NOT requested reduced motion.
+  The keyframe sweeps dashoffset from circumference (empty) → target offset.
+  Duration: 900ms — long enough to be legible, short enough not to feel slow.
+  Easing: cubic-bezier(0.25, 0.46, 0.45, 0.94) — ease-out feel (fast start,
+  gentle deceleration), matching the util-bar-fill transition in Dashboard.css.
+*/
+
+@media (prefers-reduced-motion: no-preference) {
+  .risk-gauge-fill {
+    animation: gauge-sweep 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  }
+}
+
+@keyframes gauge-sweep {
+  from {
+    stroke-dashoffset: var(--gauge-circumference);
+  }
+  to {
+    stroke-dashoffset: var(--gauge-target-offset);
+  }
+}
+
+/* ── Reduced-motion explicit reset ──────────────────────────────────────── */
+/*
+  Belt-and-suspenders: even if the animation somehow fires, kill it instantly
+  and jump to the final state.
+*/
+
+@media (prefers-reduced-motion: reduce) {
+  .risk-gauge-fill {
+    animation: none;
+    transition: none;
+    /* stroke-dashoffset is set to the final value by the JS component */
+  }
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+
+.risk-gauge-score {
+  font-size: 2rem;
+  font-weight: 700;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.risk-gauge-label {
+  font-size: 0.65rem;
+  fill: var(--muted);
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Meta row (Trend / Last Updated) ────────────────────────────────────── */
+
+.risk-meta {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.risk-meta-item {
+  text-align: center;
+}
+
+.risk-meta-item .rm-label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs, 0.25rem);
+  line-height: var(--lh-small, 1.5);
+}
+
+.risk-meta-item .rm-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: var(--lh-body, 1.6);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .risk-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

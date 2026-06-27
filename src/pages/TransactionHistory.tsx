@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
 import { useNotifications } from "../context/NotificationContext";
@@ -9,7 +9,7 @@ import type {
   TransactionStatus,
   TransactionType,
 } from "../types/creditLine";
-import { downloadCsv, toCsv } from "../utils/csv";
+import { startOfDay, startOfMonth, startOfWeek } from "../utils/dates";
 import { COLOR, fmt, fmtDate, fmtDateTime } from "../utils/tokens";
 import "./TransactionHistory.css";
 import { NoActivity, NoLines } from "../components/illustrations";
@@ -102,6 +102,22 @@ const TYPE_FILTER_OPTIONS: Array<{
 ];
 
 type TypeFilter = (typeof TYPE_FILTER_OPTIONS)[number]["value"];
+type RangePreset = "this-week" | "this-month" | "all-time" | "custom";
+
+const RANGE_PRESET_OPTIONS: Array<{ value: Exclude<RangePreset, "custom">; label: string }> = [
+  { value: "this-week", label: "This Week" },
+  { value: "this-month", label: "This Month" },
+  { value: "all-time", label: "All Time" },
+];
+
+const AMOUNT_RANGE_PRESET_BOUNDS: Record<
+  Exclude<AmountRangePreset, "all">,
+  { min?: number; max?: number }
+> = {
+  "under-5k": { max: 5000 },
+  "5k-25k": { min: 5000, max: 25000 },
+  "25k-plus": { min: 25000 },
+};
 
 const CSV_EXPORT_EMPTY_REASON_ID = "transaction-export-help";
 
@@ -218,7 +234,7 @@ function TransactionRow({
           </span>
         </td>
         <td
-          className="tx-amount"
+          className="tx-amount num-tabular"
           style={{
             color: isNegative
               ? COLOR.success
@@ -293,7 +309,7 @@ function TransactionRow({
                   <div className="tx-detail-item">
                     <span className="label">Amount</span>
                     <span
-                      className="value"
+                      className="value num-tabular"
                       style={{
                         color: isNegative ? COLOR.success : COLOR.accent,
                       }}
@@ -353,19 +369,56 @@ function TransactionRow({
 }
 
 export function TransactionHistory() {
-  const { addToast } = useNotifications();
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  // ─── Filter and UI State ───
   const [selectedLine, setSelectedLine] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<TypeFilter>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DatePreset>("custom");
+  const [presetRange, setPresetRange] = useState<RangePreset>("custom");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const [selectedAmountRange, setSelectedAmountRange] =
+    useState<AmountRangePreset>("all");
+  const [customAmountMin, setCustomAmountMin] = useState("");
+  const [customAmountMax, setCustomAmountMax] = useState("");
+  const [isCustomAmountRangeActive, setIsCustomAmountRangeActive] =
+    useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const rangeParam = params.get("range");
+
+    if (rangeParam === "this-week" || rangeParam === "this-month" || rangeParam === "all-time") {
+      setPresetRange(rangeParam);
+      setDateRange("custom");
+      return;
+    }
+
+    setPresetRange("custom");
+    const customStart = params.get("start");
+    const customEnd = params.get("end");
+    if (customStart) {
+      setCustomStartDate(customStart);
+      setDateRange("custom");
+    } else {
+      setCustomStartDate("");
+    }
+    if (customEnd) {
+      setCustomEndDate(customEnd);
+      setDateRange("custom");
+    } else {
+      setCustomEndDate("");
+    }
+  }, [location.search]);
+
+  // Get all transactions from all credit lines
   const allTransactions = useMemo(() => {
     const txs: TransactionWithLine[] = [];
     MOCK_CREDIT_LINES.forEach((cl) => {
@@ -401,6 +454,25 @@ export function TransactionHistory() {
         if (!matchesNote && !matchesLine && !matchesId && !matchesHash)
           return false;
       }
+
+      const transactionAmount = Math.abs(tx.amount);
+      if (isCustomAmountRangeActive) {
+        const minAmount =
+          customAmountMin.trim().length > 0 ? Number(customAmountMin) : null;
+        const maxAmount =
+          customAmountMax.trim().length > 0 ? Number(customAmountMax) : null;
+
+        if (minAmount !== null && transactionAmount < minAmount) return false;
+        if (maxAmount !== null && transactionAmount > maxAmount) return false;
+      } else if (selectedAmountRange !== "all") {
+        const bounds = AMOUNT_RANGE_PRESET_BOUNDS[selectedAmountRange];
+
+        if (bounds.min !== undefined && transactionAmount < bounds.min)
+          return false;
+        if (bounds.max !== undefined && transactionAmount > bounds.max)
+          return false;
+      }
+
       const now = new Date();
       const startOfToday = new Date(
         now.getFullYear(),
@@ -425,7 +497,15 @@ export function TransactionHistory() {
         return false;
       }
 
-      if (dateRange === "custom") {
+      if (presetRange === "this-week") {
+        const weekStart = startOfWeek(now).getTime();
+        if (txTime < weekStart) return false;
+      } else if (presetRange === "this-month") {
+        const monthStart = startOfMonth(now).getTime();
+        if (txTime < monthStart) return false;
+      } else if (presetRange === "all-time") {
+        // No lower bound; keep all historical transactions.
+      } else if (presetRange === "custom" && dateRange === "custom") {
         if (customStartDate) {
           const start = new Date(`${customStartDate}T00:00:00`).getTime();
           if (txTime < start) return false;
@@ -445,7 +525,12 @@ export function TransactionHistory() {
     selectedType,
     selectedStatus,
     searchQuery,
+    selectedAmountRange,
+    isCustomAmountRangeActive,
+    customAmountMin,
+    customAmountMax,
     dateRange,
+    presetRange,
     customStartDate,
     customEndDate,
   ]);
@@ -517,6 +602,7 @@ export function TransactionHistory() {
     selectedLine !== "all" ||
     selectedType !== "all" ||
     selectedStatus !== "all" ||
+    presetRange !== "custom" ||
     dateRange !== "custom" ||
     customStartDate.length > 0 ||
     customEndDate.length > 0 ||
@@ -524,16 +610,109 @@ export function TransactionHistory() {
 
   const resultCountText = `${filteredTransactions.length} ${filteredTransactions.length === 1 ? "transaction" : "transactions"} shown`;
 
+  /**
+   * Accessible table caption (A11Y-004).
+   *
+   * Describes the table's current scope to screen-reader users.  The text is
+   * visually hidden via `.sr-only` but fully announced when the user navigates
+   * to the table.  It updates whenever the active filters change so the caption
+   * always reflects what is actually shown.
+   *
+   * Composition:
+   *   "Transaction history[, filtered by <type>][, <dateLabel>][, matching "<query>"]
+   *    — <n> result(s)"
+   */
+  const tableCaption = useMemo(() => {
+    const parts: string[] = [];
+
+    if (selectedType !== "all") {
+      parts.push(`filtered by ${TX_TYPE_LABELS[selectedType as TransactionType]}`);
+    }
+
+    const dateLabels: Record<string, string> = {
+      today: "today",
+      "7d": "last 7 days",
+      "30d": "last 30 days",
+      "90d": "last 90 days",
+    };
+    if (dateRange !== "custom" && dateLabels[dateRange]) {
+      parts.push(dateLabels[dateRange]);
+    } else if (dateRange === "custom" && (customStartDate || customEndDate)) {
+      const from = customStartDate || "any";
+      const to = customEndDate || "any";
+      parts.push(`from ${from} to ${to}`);
+    }
+
+    if (selectedStatus !== "all") {
+      parts.push(`status: ${selectedStatus}`);
+    }
+
+    if (searchQuery.trim()) {
+      parts.push(`matching "${searchQuery.trim()}"`);
+    }
+
+    const count = filteredTransactions.length;
+    const suffix = `— ${count} ${count === 1 ? "result" : "results"}`;
+
+    const scope = parts.length > 0 ? `, ${parts.join(", ")}` : "";
+    return `Transaction history${scope} ${suffix}`;
+  }, [
+    selectedType,
+    dateRange,
+    customStartDate,
+    customEndDate,
+    selectedStatus,
+    searchQuery,
+    filteredTransactions.length,
+  ]);
+
+  /**
+   * Clear all active filters and return to initial state.
+   * Called when user clicks "Clear filters" in the no-results empty state.
+   * Also clears expanded transaction details and resets to page 1.
+   */
+  const syncUrl = (nextPreset: RangePreset, start = "", end = "") => {
+    const params = new URLSearchParams(location.search);
+    if (nextPreset === "custom") {
+      if (start) {
+        params.set("start", start);
+      } else {
+        params.delete("start");
+      }
+      if (end) {
+        params.set("end", end);
+      } else {
+        params.delete("end");
+      }
+      if (params.get("range")) {
+        params.delete("range");
+      }
+    } else {
+      params.set("range", nextPreset);
+      params.delete("start");
+      params.delete("end");
+    }
+
+    const nextSearch = params.toString();
+    navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : "" }, { replace: true });
+  };
+
   const clearFilters = () => {
     setSelectedLine("all");
     setSelectedType("all");
     setSelectedStatus("all");
     setDateRange("custom");
+    setPresetRange("custom");
     setCustomStartDate("");
     setCustomEndDate("");
+    setSelectedAmountRange("all");
+    setCustomAmountMin("");
+    setCustomAmountMax("");
+    setIsCustomAmountRangeActive(false);
     setSearchQuery("");
     setCurrentPage(1);
     setExpandedTx(null);
+    syncUrl("custom");
   };
 
   if (!hasLines) {
@@ -633,7 +812,7 @@ export function TransactionHistory() {
           </span>
           <div className="th-stat-content">
             <span className="th-stat-label">Total Drawn</span>
-            <span className="th-stat-value" style={{ color: COLOR.accent }}>
+            <span className="th-stat-value num-tabular" style={{ color: COLOR.accent }}>
               {fmt(stats.totalDrawn)}
             </span>
           </div>
@@ -647,7 +826,7 @@ export function TransactionHistory() {
           </span>
           <div className="th-stat-content">
             <span className="th-stat-label">Total Repaid</span>
-            <span className="th-stat-value" style={{ color: COLOR.success }}>
+            <span className="th-stat-value num-tabular" style={{ color: COLOR.success }}>
               {fmt(stats.totalRepaid)}
             </span>
           </div>
@@ -664,7 +843,7 @@ export function TransactionHistory() {
           </span>
           <div className="th-stat-content">
             <span className="th-stat-label">Total Interest</span>
-            <span className="th-stat-value" style={{ color: COLOR.warning }}>
+            <span className="th-stat-value num-tabular" style={{ color: COLOR.warning }}>
               {fmt(stats.totalInterest)}
             </span>
           </div>
@@ -679,7 +858,7 @@ export function TransactionHistory() {
           <div className="th-stat-content">
             <span className="th-stat-label">Current Debt</span>
             <span
-              className="th-stat-value"
+              className="th-stat-value num-tabular"
               style={{
                 color: stats.currentDebt > 0 ? COLOR.danger : COLOR.success,
               }}
@@ -751,22 +930,127 @@ export function TransactionHistory() {
         </div>
 
         <div className="th-filter-group th-filter-group-wide">
-          <DateRangeChips
-            selectedPreset={dateRange}
-            customStartDate={customStartDate}
-            customEndDate={customEndDate}
+          <div className="th-subgroup">
+            <span className="th-filter-label" id="transaction-range-filter-label">
+              Presets
+            </span>
+            <div className="th-chip-group" role="group" aria-labelledby="transaction-range-filter-label">
+              {RANGE_PRESET_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className="th-filter-chip"
+                  aria-pressed={presetRange === option.value}
+                  onClick={() => {
+                    const nextPreset = option.value;
+                    setPresetRange(nextPreset);
+                    setDateRange("custom");
+                    setCustomStartDate("");
+                    setCustomEndDate("");
+                    setCurrentPage(1);
+                    syncUrl(nextPreset);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="th-subgroup">
+            <span className="th-filter-label" id="transaction-date-filter-label">
+              Date Range
+            </span>
+            <div className="th-chip-group" role="group" aria-labelledby="transaction-date-filter-label">
+              {[
+                { value: "today" as DatePreset, label: "Today" },
+                { value: "7d" as DatePreset, label: "7d" },
+                { value: "30d" as DatePreset, label: "30d" },
+                { value: "90d" as DatePreset, label: "90d" },
+                { value: "custom" as DatePreset, label: "Custom" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className="th-filter-chip"
+                  aria-pressed={presetRange === "custom" && dateRange === option.value}
+                  onClick={() => {
+                    setPresetRange("custom");
+                    setDateRange(option.value);
+                    setCurrentPage(1);
+                    if (option.value === "custom") {
+                      syncUrl("custom", customStartDate, customEndDate);
+                    } else {
+                      setCustomStartDate("");
+                      setCustomEndDate("");
+                      syncUrl("custom");
+                    }
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {dateRange === "custom" && (
+            <div className="date-range-custom-fields">
+              <label className="date-range-custom-field">
+                <span>Start date</span>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(event) => {
+                    setDateRange("custom");
+                    setPresetRange("custom");
+                    setCustomStartDate(event.target.value);
+                    setCurrentPage(1);
+                    syncUrl("custom", event.target.value, customEndDate);
+                  }}
+                  max={customEndDate || undefined}
+                />
+              </label>
+              <label className="date-range-custom-field">
+                <span>End date</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(event) => {
+                    setDateRange("custom");
+                    setPresetRange("custom");
+                    setCustomEndDate(event.target.value);
+                    setCurrentPage(1);
+                    syncUrl("custom", customStartDate, event.target.value);
+                  }}
+                  min={customStartDate || undefined}
+                />
+              </label>
+            </div>
+          )}
+        </div>
+        <div className="th-filter-group th-filter-group-wide">
+          <AmountRangeChips
+            selectedPreset={selectedAmountRange}
+            customMin={customAmountMin}
+            customMax={customAmountMax}
+            isCustomActive={isCustomAmountRangeActive}
             onPresetChange={(preset) => {
-              setDateRange(preset);
+              setSelectedAmountRange(preset);
+              setCustomAmountMin("");
+              setCustomAmountMax("");
+              setIsCustomAmountRangeActive(false);
               setCurrentPage(1);
             }}
-            onCustomStartDateChange={(value) => {
-              setDateRange("custom");
-              setCustomStartDate(value);
+            onCustomRangeApply={({ min, max }) => {
+              setSelectedAmountRange("all");
+              setCustomAmountMin(min === null ? "" : String(min));
+              setCustomAmountMax(max === null ? "" : String(max));
+              setIsCustomAmountRangeActive(true);
               setCurrentPage(1);
             }}
-            onCustomEndDateChange={(value) => {
-              setDateRange("custom");
-              setCustomEndDate(value);
+            onCustomRangeClear={() => {
+              setSelectedAmountRange("all");
+              setCustomAmountMin("");
+              setCustomAmountMax("");
+              setIsCustomAmountRangeActive(false);
               setCurrentPage(1);
             }}
           />
@@ -813,6 +1097,7 @@ export function TransactionHistory() {
         ) : (
           <>
             <table className="th-table">
+              <caption className="sr-only">{tableCaption}</caption>
               <thead>
                 <tr>
                   <th>Date</th>

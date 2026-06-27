@@ -246,6 +246,7 @@ export function RepayModal({
                   placeholder="0.00"
                   aria-invalid={validation.feedback.severity === 'danger'}
                   aria-describedby={describedBy}
+                  className="repay-modal-input"
                   style={{
                     width: '100%',
                     background: COLOR.bg,
@@ -255,7 +256,6 @@ export function RepayModal({
                     color: COLOR.text,
                     fontSize: '1.25rem',
                     fontWeight: 500,
-                    outline: 'none',
                     boxShadow: amount > 0 && validation.feedback.severity !== 'danger' ? '0 0 0 2px rgba(88,166,255,0.1)' : 'none',
                     transition: 'all 0.2s',
                   }}
@@ -468,7 +468,9 @@ export function RepayModal({
                     onChange={(e) => setConfirmAmountStr(e.target.value)}
                     placeholder={fmt(amount)}
                     aria-describedby="confirm-repay-description"
+                    aria-label="Type the repayment amount to confirm"
                     autoComplete="off"
+                    className="repay-modal-input"
                     style={{
                       width: '100%',
                       background: COLOR.bg,
@@ -478,7 +480,6 @@ export function RepayModal({
                       color: COLOR.text,
                       fontSize: '1.25rem',
                       fontWeight: 500,
-                      outline: 'none',
                       transition: 'all 0.2s',
                     }}
                   />
@@ -630,6 +631,9 @@ export function RepayModal({
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes scaleIn { 0% { transform: scale(0); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        /* Suppress default outline for pointer users; show a visible ring for keyboard users (WCAG 2.4.7). */
+        .repay-modal-input { outline: none; }
+        .repay-modal-input:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
       `}</style>
       <InlineHelpOverlay
         isOpen={isHelpOpen}

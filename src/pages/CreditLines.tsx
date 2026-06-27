@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { AprBreakdown } from '../components/AprBreakdown';
 import { StatusBadge } from '../components/StatusBadge';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
 import type { CreditLineStatus, SortField, SortDirection } from '../types/creditLine';
@@ -54,7 +55,9 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
         <div className="cl-details">
           <div className="cl-detail">
             <span className="label">APR</span>
-            <span className="value">{line.apr}%</span>
+            <span className="value">
+              <AprBreakdown apr={line.apr} />
+            </span>
           </div>
           <div className="cl-detail">
             <span className="label">Risk Score</span>

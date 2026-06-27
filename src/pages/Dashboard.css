@@ -212,77 +212,6 @@
   line-height: var(--lh-heading);
 }
 
-/* ─── Risk Score Gauge ──────────────────────────────────────────────────────── */
-
-.risk-gauge-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.5rem 0 1rem;
-}
-
-.risk-gauge-svg {
-  width: 160px;
-  height: 100px;
-  margin-bottom: 0.75rem;
-}
-
-.risk-gauge-bg {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 10;
-  stroke-linecap: round;
-}
-
-.risk-gauge-fill {
-  fill: none;
-  stroke-width: 10;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.risk-gauge-score {
-  font-size: 2rem;
-  font-weight: 700;
-  fill: var(--text);
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-
-.risk-gauge-label {
-  font-size: 0.65rem;
-  fill: var(--muted);
-  text-anchor: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.risk-meta {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-}
-
-.risk-meta-item {
-  text-align: center;
-}
-
-.risk-meta-item .rm-label {
-  display: block;
-  font-size: 0.65rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-xs);
-  line-height: var(--lh-small);
-}
-
-.risk-meta-item .rm-value {
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: var(--lh-body);
-}
-
 /* ─── Quick Actions ─────────────────────────────────────────────────────────── */
 
 .quick-actions-grid {
@@ -614,11 +543,6 @@
 
   .summary-card .value {
     font-size: 1.35rem;
-  }
-
-  .risk-meta {
-    flex-direction: column;
-    gap: 0.5rem;
   }
 
   .wallet-info {

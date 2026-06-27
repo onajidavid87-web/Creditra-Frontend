@@ -131,7 +131,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `NotificationCenter` | Focus trap inside the panel; Arrow/Home/End navigate category tabs | `role="dialog"`, category filters use `role="tab"` + `aria-selected` in a labelled `role="tablist"` | AA | reduced-motion gated | OK |
 | `ToastContainer` | Tab/Esc to dismiss | `role="status"` / `role="alert"` per severity | AA | reduced-motion gated | OK |
 | `BannerAlert` | Tab/Enter on action & dismiss | `role="alert"` for warning/error | AA | n/a | OK |
-| `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<text>` + sibling text | AA | n/a | OK |
+| `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<title>` + polite `sr-only` sibling; arc animates on value change with reduced-motion fallback | AA | reduced-motion gated (CSS + JS `matchMedia`) | OK |
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
 | `RepayModal` | Focus trap | `role="dialog"`; uses focus-trap hook | AA | n/a | OK |
 | `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state; `<caption>` describes scope and updates with filters | AA | n/a | OK |

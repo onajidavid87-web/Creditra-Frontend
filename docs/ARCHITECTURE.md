@@ -27,7 +27,7 @@ flowchart TB
     Main --> R4["/open-credit<br/>pages/RequestEvaluation.tsx"]
     Main --> R5["* NotFound<br/>pages/NotFound.tsx"]
 
-    R1 --> C1["StatusBadge<br/>Skeleton<br/>CopyToClipboard<br/>RiskGauge (inline SVG)"]
+    R1 --> C1["StatusBadge<br/>Skeleton<br/>CopyToClipboard<br/>RiskGauge<br/>(src/components/RiskGauge.tsx)"]
     R3 --> C2["CreditLineSelector ▸<br/>AmountInput ▸<br/>PreviewSection ▸<br/>ConfirmationStep ▸<br/>TransactionStatus"]
     Header --> C3["WalletButton ▸<br/>WalletConnectionModal ▸<br/>OnboardingFlow"]
 
@@ -256,7 +256,7 @@ src/
 │   ├── notifications/   ToastContainer, BannerAlert, NotificationBell, NotificationCenter
 │   ├── (modals)         WalletConnectionModal, RepayModal, OnboardingFlow
 │   ├── (inputs)         FormField, FormMessage, AmountInput, PendingButton
-│   ├── (status)         StatusBadge, Skeleton, SuccessState, TransactionStatus
+│   ├── (status)         StatusBadge, Skeleton, SuccessState, TransactionStatus, RiskGauge
 │   ├── (a11y)           AccessibleTooltip, CopyToClipboard
 │   └── ErrorBoundary    Top-level render-error catcher
 ├── context/

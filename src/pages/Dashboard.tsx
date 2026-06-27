@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CopyToClipboard } from '../components/CopyToClipboard';
 import { StatusBadge } from '../components/StatusBadge';
+import { RiskGauge } from '../components/RiskGauge';
 import { useWallet } from '../context/WalletContext';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
 import type { Transaction } from '../types/creditLine';
@@ -39,62 +40,6 @@ const TX_COLOR: Record<string, string> = {
   Fee: COLOR.muted,
   Interest: COLOR.warning,
 };
-
-// ─── Risk Score Gauge ─────────────────────────────────────────────────────────
-
-function RiskGauge({ score, trend, lastUpdated }: {
-  score: number;
-  trend: 'improving' | 'declining' | 'stable';
-  lastUpdated: string;
-}) {
-  // SVG arc from 180° to 0° (semicircle)
-  const radius = 55;
-  const cx = 80;
-  const cy = 75;
-  const circumference = Math.PI * radius; // half circle
-  const normalizedScore = Math.min(100, Math.max(0, score));
-  const offset = circumference - (normalizedScore / 100) * circumference;
-
-  const gaugeColor = score >= 70 ? COLOR.success : score >= 50 ? COLOR.warning : COLOR.danger;
-  const trendArrow = trend === 'improving' ? '▲' : trend === 'declining' ? '▼' : '─';
-  const trendColor = trend === 'improving' ? COLOR.success : trend === 'declining' ? COLOR.danger : COLOR.muted;
-
-  return (
-    <div className="risk-gauge-container">
-      <svg className="risk-gauge-svg" viewBox="0 0 160 100">
-        {/* Background arc */}
-        <path
-          className="risk-gauge-bg"
-          d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-        />
-        {/* Filled arc */}
-        <path
-          className="risk-gauge-fill"
-          d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-          stroke={gaugeColor}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-        />
-        {/* Score text */}
-        <text x={cx} y={cy - 12} className="risk-gauge-score">{normalizedScore}</text>
-        <text x={cx} y={cy - 38} className="risk-gauge-label">Risk Score</text>
-      </svg>
-
-      <div className="risk-meta">
-        <div className="risk-meta-item">
-          <span className="rm-label">Trend</span>
-          <span className="rm-value" style={{ color: trendColor }}>
-            {trendArrow} {trend.charAt(0).toUpperCase() + trend.slice(1)}
-          </span>
-        </div>
-        <div className="risk-meta-item">
-          <span className="rm-label">Last Updated</span>
-          <span className="rm-value" style={{ color: COLOR.muted }}>{fmtDate(lastUpdated)}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Dashboard Component ──────────────────────────────────────────────────────
 

@@ -14,6 +14,7 @@ import { NotFound } from "./pages/NotFound";
 import HelpCenter from "./pages/HelpCenter";
 import { ShortcutHelpOverlay } from "./components/ShortcutHelpOverlay";
 import { DutchAuctions } from "./pages/DutchAuctions";
+import AutopayPage from "./pages/AutopayPage";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -134,6 +135,14 @@ function App() {
                 >
                   Dutch Auctions
                 </NavLink>
+                <NavLink
+                  to="/autopay"
+                  className={({ isActive }) =>
+                    isActive ? "header-nav-link active" : "header-nav-link"
+                  }
+                >
+                  Autopay
+                </NavLink>
               </nav>
               <button
                 ref={settingsTriggerRef}
@@ -161,6 +170,7 @@ function App() {
                 />
                 <Route path="/open-credit" element={<RequestEvaluation />} />
                 <Route path="/dutch-auctions" element={<DutchAuctions />} />
+                <Route path="/autopay" element={<AutopayPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

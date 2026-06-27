@@ -43,17 +43,33 @@ function ToastItem({
     return () => clearInterval(interval);
   }, [toast.persistent, duration]);
 
+  /*
+   * Role semantics:
+   *   role="alert"  (aria-live="assertive") — interrupts the user immediately;
+   *                 reserved for errors and danger states.
+   *   role="status" (aria-live="polite")    — waits for idle; used for success,
+   *                 info, and warning toasts that do not require urgent attention.
+   * WCAG 4.1.3: Status Messages.
+   */
+  const isUrgent = toast.type === "error" || toast.type === "danger";
+
   return (
     <div
       className={`toast-item ${visible ? "toast-enter" : ""} ${leaving ? "toast-leave" : ""}`}
-      style={{ borderColor: colors.border }}
-      role={isAssertive ? "alert" : "status"}
-      aria-live={isAssertive ? "assertive" : "polite"}
+      style={{
+        borderColor: colors.border,
+        /* Left accent bar communicates severity via color in addition to the icon. */
+        borderLeft: `4px solid ${colors.icon}`,
+      }}
+      role={isUrgent ? "alert" : "status"}
+      aria-live={isUrgent ? "assertive" : "polite"}
     >
       <div className="toast-header">
+        {/* Icon is decorative alongside the title; suppress it for AT. */}
         <span
           className="toast-type-icon"
           style={{ background: colors.bg, color: colors.icon }}
+          aria-hidden="true"
         >
           {TYPE_ICON[toast.type]}
         </span>
@@ -95,13 +111,9 @@ export function ToastContainer() {
   const { toasts, dismissToast } = useNotifications();
 
   return (
-    <div
-      className="toast-container"
-      aria-label="Notifications"
-      role="status"
-      aria-live="polite"
-      aria-atomic="false"
-    >
+    /* role="log" marks this region as an ordered sequence of status messages
+       so AT users can revisit the list without losing their reading position. */
+    <div className="toast-container" role="log" aria-label="Notifications" aria-live="polite">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
       ))}

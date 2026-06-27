@@ -117,6 +117,57 @@ function RiskGauge({
   );
 }
 
+// ─── Risk Explainer ───────────────────────────────────────────────────────────
+
+/**
+ * Inline explainer beneath the RiskGauge that translates the score band
+ * into a plain‑language sentence.
+ *
+ * - Text is derived from `RISK_COLOR(score)` so it stays in sync with the
+ *   design‑system colour band.
+ * - Dismissal is persisted per wallet address via `storage.ts`.
+ * - Fade‑in animation is disabled when `prefers-reduced-motion` is set.
+ *
+ * @see docs/MICROCOPY.md — tone and sentence inventory
+ */
+function RiskExplainer({ score, address }: { score: number; address?: string }) {
+  const [dismissed, setDismissed] = useState(() => {
+    if (!address) return true;
+    return readJson(`risk-explainer-dismissed-${address}`, false);
+  });
+
+  if (dismissed || !address) return null;
+
+  const band = RISK_COLOR(score);
+
+  const message = band === COLOR.success
+    ? 'Strong credit position \u2014 you\u2019re above the recommended threshold for new draws.'
+    : band === COLOR.warning
+    ? 'Fair credit position \u2014 within acceptable range, though keep an eye on your utilization.'
+    : 'Below the recommended threshold \u2014 consider improving your score before new draws.';
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    writeJson(`risk-explainer-dismissed-${address}`, true);
+  };
+
+  return (
+    <div className="risk-explainer" role="status" style={{ borderLeftColor: band }}>
+      <p className="risk-explainer-text">{message}</p>
+      <button
+        className="risk-explainer-dismiss"
+        onClick={handleDismiss}
+        aria-label="Dismiss risk score explainer"
+        type="button"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // ─── Dashboard Component ──────────────────────────────────────────────────────
 
 /**

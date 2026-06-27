@@ -23,13 +23,25 @@ import { NoLines } from "../components/illustrations";
 function CreditLineCard({ line }: { line: (typeof MOCK_CREDIT_LINES)[0] }) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
+  const swapTriggerRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="cl-card">
       <div className="cl-card-header">
-        <div>
-          <h3 className="cl-name">{line.name}</h3>
-          <p className="cl-id">{line.id}</p>
+        <div className="cl-card-title-row">
+          <label className="cl-row-select">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={onToggle}
+              aria-label={`Select ${line.name} for comparison`}
+            />
+            <span>Compare</span>
+          </label>
+          <div>
+            <h3 className="cl-name">{line.name}</h3>
+            <p className="cl-id">{line.id}</p>
+          </div>
         </div>
         <StatusBadge status={line.status} />
       </div>
@@ -62,7 +74,7 @@ function CreditLineCard({ line }: { line: (typeof MOCK_CREDIT_LINES)[0] }) {
         <div className="cl-util-bar">
           <div className="cl-util-header">
             <span>Utilization</span>
-            <span style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
+            <span className="num-tabular" style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
           </div>
           <div className="cl-util-track">
             <div
@@ -75,11 +87,11 @@ function CreditLineCard({ line }: { line: (typeof MOCK_CREDIT_LINES)[0] }) {
         <div className="cl-details">
           <div className="cl-detail">
             <span className="label">APR</span>
-            <span className="value">{line.apr}%</span>
+            <span className="value num-tabular">{line.apr}%</span>
           </div>
           <div className="cl-detail">
             <span className="label">Risk Score</span>
-            <span className="value">{line.riskScore}</span>
+            <span className="value num-tabular">{line.riskScore}</span>
           </div>
           <div className="cl-detail">
             <span className="label">Opened</span>
@@ -99,6 +111,18 @@ function CreditLineCard({ line }: { line: (typeof MOCK_CREDIT_LINES)[0] }) {
         )}
         {line.utilized > 0 && (
           <button className="cl-action-btn repay">↙ Repay</button>
+        )}
+        {line.status === 'Active' && onSwapCollateral && (
+          <button
+            ref={swapTriggerRef}
+            type="button"
+            className="cl-action-btn"
+            style={{ color: COLOR.accent, borderColor: 'rgba(88,166,255,0.3)', background: 'rgba(88,166,255,0.08)' }}
+            onClick={() => onSwapCollateral(line, swapTriggerRef)}
+            aria-label={`Swap collateral for ${line.name}`}
+          >
+            ⇄ Swap Collateral
+          </button>
         )}
       </div>
     </div>
@@ -174,6 +198,42 @@ export default function CreditLines() {
     }
   };
 
+  const handleOpenCompare = () => {
+    if (selectedLines.length === 2) {
+      setShowCompare(true);
+    }
+  };
+
+  const handleCloseCompare = () => {
+    setShowCompare(false);
+    setSelectedLines([]);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedLines((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((lineId) => lineId !== id);
+      } else if (prev.length < 2) {
+        return [...prev, id];
+      }
+      return prev;
+    });
+  };
+
+  const comparePanelRef = useFocusTrap({
+    isActive: showCompare,
+    triggerRef,
+    onEscape: handleCloseCompare,
+  });
+
+  useInertBackdrop({ isInert: showCompare, modalId: "compare-lines-drawer" });
+  useBodyScrollLock({ isLocked: showCompare });
+
+  const selectedCreditLines = useMemo(
+    () => creditLines.filter((line) => selectedLines.includes(line.id)),
+    [creditLines, selectedLines],
+  );
+
   return (
     <div className="credit-lines-page">
       <div className="cl-page-header">
@@ -181,9 +241,20 @@ export default function CreditLines() {
           <h1>Credit Lines</h1>
           <p className="subtitle">Manage your credit facilities</p>
         </div>
-        <Link to="/open-credit" className="cl-primary-btn">
-          + Open New Line
-        </Link>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button
+            ref={triggerRef}
+            className="cl-primary-btn"
+            onClick={handleOpenCompare}
+            disabled={selectedLines.length !== 2}
+            style={{ opacity: selectedLines.length === 2 ? 1 : 0.6 }}
+          >
+            Compare Selected ({selectedLines.length}/2)
+          </button>
+          <Link to="/open-credit" className="cl-primary-btn">
+            + Open New Line
+          </Link>
+        </div>
       </div>
 
       <div className="cl-filters">
@@ -224,6 +295,39 @@ export default function CreditLines() {
         </button>
       </div>
 
+      {showCompare && selectedCreditLines.length === 2 && (
+        <div
+          id="compare-lines-drawer"
+          ref={comparePanelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compare-lines-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1200,
+            display: "flex",
+            justifyContent: "flex-end",
+            background: "rgba(15, 23, 42, 0.45)",
+            pointerEvents: "auto",
+          }}
+        >
+          <div
+            style={{
+              width: "min(480px, 100%)",
+              height: "100%",
+              position: "relative",
+              zIndex: 1201,
+            }}
+          >
+            <CompareLinesPanel
+              lines={selectedCreditLines}
+              onClose={handleCloseCompare}
+            />
+          </div>
+        </div>
+      )}
+
       {filteredAndSorted.length === 0 ? (
         <div className="cl-empty">
           <NoLines className="empty-state-illustration--muted" />
@@ -239,6 +343,19 @@ export default function CreditLines() {
             <CreditLineCard key={line.id} line={line} />
           ))}
         </div>
+      )}
+
+      {/* Collateral substitution modal — mounted at page level so it overlays everything */}
+      {modalTarget && (
+        <CollateralSubstitutionModal
+          isOpen
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
+          creditLineName={modalTarget.line.name}
+          loanBalance={modalTarget.line.utilized}
+          currentAsset={modalTarget.currentAsset}
+          triggerRef={modalTarget.triggerRef}
+        />
       )}
     </div>
   );

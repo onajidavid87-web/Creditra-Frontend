@@ -55,3 +55,42 @@ export function isSameDay(iso: string | Date, reference: Date = new Date()): boo
     date.getDate() === reference.getDate()
   );
 }
+
+export function startOfDay(reference: Date = new Date()): Date {
+  const date = new Date(reference);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function endOfDay(reference: Date = new Date()): Date {
+  const date = new Date(reference);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+export function startOfWeek(reference: Date = new Date()): Date {
+  const date = startOfDay(reference);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date;
+}
+
+export function endOfWeek(reference: Date = new Date()): Date {
+  const date = startOfWeek(reference);
+  date.setDate(date.getDate() + 6);
+  return endOfDay(date);
+}
+
+export function startOfMonth(reference: Date = new Date()): Date {
+  const date = startOfDay(reference);
+  date.setDate(1);
+  return date;
+}
+
+export function endOfMonth(reference: Date = new Date()): Date {
+  const date = startOfMonth(reference);
+  date.setMonth(date.getMonth() + 1);
+  date.setDate(0);
+  return endOfDay(date);
+}

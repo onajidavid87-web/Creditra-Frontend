@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import "@testing-library/jest-dom";
 import App from "./App";
@@ -186,9 +186,7 @@ describe("App Styling and Accessibility", () => {
   it("opens shortcut help when ? is pressed outside inputs", () => {
     render(<App />);
 
-    act(() => {
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "?", bubbles: true }));
-    });
+    fireEvent.keyDown(document, { key: "?" });
 
     expect(
       screen.getByRole("dialog", { name: /move around faster/i }),
@@ -201,9 +199,7 @@ describe("App Styling and Accessibility", () => {
 
     const searchInput = screen.getByPlaceholderText("Search for help...");
     searchInput.focus();
-    act(() => {
-      searchInput.dispatchEvent(new KeyboardEvent("keydown", { key: "?", bubbles: true }));
-    });
+    fireEvent.keyDown(searchInput, { key: "?" });
 
     expect(
       screen.queryByRole("dialog", { name: /move around faster/i }),

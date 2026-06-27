@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
+import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
 import {
-  DateRangeChips,
-  type DatePreset,
-} from "../components/DateRangeChips";
+  AmountRangeChips,
+  type AmountRangePreset,
+} from "../components/AmountRangeChips";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   TransactionType,
@@ -105,6 +106,15 @@ const TYPE_FILTER_OPTIONS: Array<{
 ];
 
 type TypeFilter = (typeof TYPE_FILTER_OPTIONS)[number]["value"];
+
+const AMOUNT_RANGE_PRESET_BOUNDS: Record<
+  Exclude<AmountRangePreset, "all">,
+  { min?: number; max?: number }
+> = {
+  "under-5k": { max: 5000 },
+  "5k-25k": { min: 5000, max: 25000 },
+  "25k-plus": { min: 25000 },
+};
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -331,6 +341,12 @@ export function TransactionHistory() {
   const [dateRange, setDateRange] = useState<DatePreset>("custom");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const [selectedAmountRange, setSelectedAmountRange] =
+    useState<AmountRangePreset>("all");
+  const [customAmountMin, setCustomAmountMin] = useState("");
+  const [customAmountMax, setCustomAmountMax] = useState("");
+  const [isCustomAmountRangeActive, setIsCustomAmountRangeActive] =
+    useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -386,8 +402,31 @@ export function TransactionHistory() {
         if (!matchesNote && !matchesLine && !matchesId && !matchesHash)
           return false;
       }
+
+      const transactionAmount = Math.abs(tx.amount);
+      if (isCustomAmountRangeActive) {
+        const minAmount =
+          customAmountMin.trim().length > 0 ? Number(customAmountMin) : null;
+        const maxAmount =
+          customAmountMax.trim().length > 0 ? Number(customAmountMax) : null;
+
+        if (minAmount !== null && transactionAmount < minAmount) return false;
+        if (maxAmount !== null && transactionAmount > maxAmount) return false;
+      } else if (selectedAmountRange !== "all") {
+        const bounds = AMOUNT_RANGE_PRESET_BOUNDS[selectedAmountRange];
+
+        if (bounds.min !== undefined && transactionAmount < bounds.min)
+          return false;
+        if (bounds.max !== undefined && transactionAmount > bounds.max)
+          return false;
+      }
+
       const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      ).getTime();
 
       if (dateRange === "today" && txTime < startOfToday) return false;
       if (dateRange === "7d" && txTime < Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -417,6 +456,10 @@ export function TransactionHistory() {
     selectedType,
     selectedStatus,
     searchQuery,
+    selectedAmountRange,
+    isCustomAmountRangeActive,
+    customAmountMin,
+    customAmountMax,
     dateRange,
     customStartDate,
     customEndDate,
@@ -513,6 +556,8 @@ export function TransactionHistory() {
     selectedLine !== "all" ||
     selectedType !== "all" ||
     selectedStatus !== "all" ||
+    selectedAmountRange !== "all" ||
+    isCustomAmountRangeActive ||
     dateRange !== "custom" ||
     customStartDate.length > 0 ||
     customEndDate.length > 0 ||
@@ -537,6 +582,10 @@ export function TransactionHistory() {
     setDateRange("custom");
     setCustomStartDate("");
     setCustomEndDate("");
+    setSelectedAmountRange("all");
+    setCustomAmountMin("");
+    setCustomAmountMax("");
+    setIsCustomAmountRangeActive(false);
     setSearchQuery("");
     setCurrentPage(1);
     setExpandedTx(null);
@@ -806,6 +855,35 @@ export function TransactionHistory() {
             onCustomEndDateChange={(value) => {
               setDateRange("custom");
               setCustomEndDate(value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+        <div className="th-filter-group th-filter-group-wide">
+          <AmountRangeChips
+            selectedPreset={selectedAmountRange}
+            customMin={customAmountMin}
+            customMax={customAmountMax}
+            isCustomActive={isCustomAmountRangeActive}
+            onPresetChange={(preset) => {
+              setSelectedAmountRange(preset);
+              setCustomAmountMin("");
+              setCustomAmountMax("");
+              setIsCustomAmountRangeActive(false);
+              setCurrentPage(1);
+            }}
+            onCustomRangeApply={({ min, max }) => {
+              setSelectedAmountRange("all");
+              setCustomAmountMin(min === null ? "" : String(min));
+              setCustomAmountMax(max === null ? "" : String(max));
+              setIsCustomAmountRangeActive(true);
+              setCurrentPage(1);
+            }}
+            onCustomRangeClear={() => {
+              setSelectedAmountRange("all");
+              setCustomAmountMin("");
+              setCustomAmountMax("");
+              setIsCustomAmountRangeActive(false);
               setCurrentPage(1);
             }}
           />

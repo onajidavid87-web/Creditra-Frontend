@@ -1,9 +1,11 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import './AccessibleTooltip.css';
 
 interface AccessibleTooltipProps {
   /** Plain-text label surfaced visually and to assistive tech via `aria-describedby`. */
   label: string;
+  /** Optional inline content to render as the interactive glossary trigger. */
+  children?: ReactNode;
 }
 
 /**
@@ -20,18 +22,23 @@ interface AccessibleTooltipProps {
  * behaviour is controlled by `:hover` / `:focus-within` in
  * `AccessibleTooltip.css` — there's no JS state.
  */
-export function AccessibleTooltip({ label }: AccessibleTooltipProps) {
+export function AccessibleTooltip({ label, children }: AccessibleTooltipProps) {
   const tooltipId = useId();
+  const hasInlineContent = Boolean(children);
 
   return (
-    <span className="accessible-tooltip">
+    <span className={`accessible-tooltip${hasInlineContent ? ' accessible-tooltip--inline' : ''}`}>
       <span
         tabIndex={0}
-        className="accessible-tooltip__trigger"
+        className={`accessible-tooltip__trigger${hasInlineContent ? ' accessible-tooltip__trigger--text' : ''}`}
         aria-label="More information"
         aria-describedby={tooltipId}
       >
-        <span aria-hidden="true">i</span>
+        {hasInlineContent ? (
+          <span className="accessible-tooltip__label">{children}</span>
+        ) : (
+          <span aria-hidden="true">i</span>
+        )}
       </span>
       <span id={tooltipId} role="tooltip" className="accessible-tooltip__content">
         {label}

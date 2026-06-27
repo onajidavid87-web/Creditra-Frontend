@@ -1,10 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
-import {
-  DateRangeChips,
-  type DatePreset,
-} from "../components/DateRangeChips";
+import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   TransactionType,
@@ -13,6 +10,7 @@ import type {
 } from "../types/creditLine";
 import { COLOR, fmt, fmtDate, fmtDateTime } from "../utils/tokens";
 import "./TransactionHistory.css";
+import { NoActivity, NoLines } from "../components/illustrations";
 
 /**
  * TransactionHistory Page Component
@@ -387,7 +385,11 @@ export function TransactionHistory() {
           return false;
       }
       const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      ).getTime();
 
       if (dateRange === "today" && txTime < startOfToday) return false;
       if (dateRange === "7d" && txTime < Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -564,14 +566,14 @@ export function TransactionHistory() {
           </div>
         </div>
         <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
+          <NoLines className="empty-state-illustration--muted" />
           <h2>No credit lines yet</h2>
           <p>
             You need an active credit line to view transaction history. Start by
             requesting a credit evaluation.
           </p>
           <Link to="/open-credit" className="empty-state-btn">
-            🚀 Request Credit Evaluation
+            Request Credit Evaluation
           </Link>
         </div>
       </div>
@@ -589,12 +591,15 @@ export function TransactionHistory() {
           </div>
         </div>
         <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
+          <NoActivity className="empty-state-illustration--muted" />
           <h2>No transactions yet</h2>
           <p>
             Your draws, repayments, fees, and interest activity will appear here
             once your credit lines have activity.
           </p>
+          <Link to="/credit-lines" className="empty-state-btn">
+            View Credit Lines
+          </Link>
         </div>
       </div>
     );

@@ -129,7 +129,9 @@
 
 .cl-empty p {
     margin: 0 0 1.5rem;
+    max-width: 26rem;
     font-size: 0.9rem;
+    line-height: 1.5;
     color: var(--muted);
 }
 
@@ -148,7 +150,9 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
 }
 
 .cl-card:hover {

@@ -51,7 +51,9 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
 }
 
 .export-btn:hover {
@@ -234,7 +236,11 @@
     line-height: 1;
     cursor: pointer;
     min-height: 44px;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s,
+        box-shadow 0.15s;
 }
 
 .th-filter-chip:hover {
@@ -548,7 +554,9 @@
     font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.15s, transform 0.15s;
+    transition:
+        opacity 0.15s,
+        transform 0.15s;
 }
 
 .th-clear-filters-btn:hover {
@@ -580,7 +588,9 @@
     color: var(--text);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
 }
 
 .th-page-btn:hover:not(:disabled) {
@@ -629,6 +639,9 @@
 }
 
 .empty-state-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.75rem 1.5rem;
     background: var(--accent);
     border: none;
@@ -753,7 +766,6 @@
 /* ─── Print Styles ─────────────────────────────────────────────────────────── */
 
 @media print {
-
     .th-header-actions,
     .th-filters,
     .th-pagination,

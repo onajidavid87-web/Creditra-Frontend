@@ -13,6 +13,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NotFound } from "./pages/NotFound";
 import HelpCenter from "./pages/HelpCenter";
 import { ShortcutHelpOverlay } from "./components/ShortcutHelpOverlay";
+import { ToastContainer } from "./components/notifications/ToastContainer";
+import { NotificationProvider } from "./context/NotificationContext";
 import { DutchAuctions } from "./pages/DutchAuctions";
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -57,7 +59,12 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+      if (
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey
+      ) {
         return;
       }
 
@@ -76,101 +83,109 @@ function App() {
   return (
     <ErrorBoundary>
       <WalletProvider>
-        <BrowserRouter>
-          <div className="app">
-            <header className="header">
-              <Link to="/" className="logo">
-                Creditra
-              </Link>
-              <nav className="header-nav">
-                {/* 
+        <NotificationProvider>
+          <BrowserRouter>
+            <div className="app">
+              <header className="header">
+                <Link to="/" className="logo">
+                  Creditra
+                </Link>
+                <nav className="header-nav">
+                  {/*
                   NavLink with render function allows us to:
                   1. Apply active class for styling (accent + underline + weight)
                   2. Set aria-current="page" on active links for accessibility
-                  
+
                   This satisfies WCAG 2.1 AA requirements:
                   - 1.4.1: Use of Color - active state uses color + other visual indicators
                   - 2.4.7: Focus Visible - outline differs from active underline
                   - 2.4.8: Location - aria-current="page" indicates current page
                 */}
-                <NavLink
-                  to="/"
-                  end
-                  className={({ isActive }) =>
-                    isActive ? "header-nav-link active" : "header-nav-link"
-                  }
+                  <NavLink
+                    to="/"
+                    end
+                    className={({ isActive }) =>
+                      isActive ? "header-nav-link active" : "header-nav-link"
+                    }
+                  >
+                    Dashboard
+                  </NavLink>
+                  <NavLink
+                    to="/transactions"
+                    className={({ isActive }) =>
+                      isActive ? "header-nav-link active" : "header-nav-link"
+                    }
+                  >
+                    Transactions
+                  </NavLink>
+                  <NavLink
+                    to="/credit-lines"
+                    className={({ isActive }) =>
+                      isActive ? "header-nav-link active" : "header-nav-link"
+                    }
+                  >
+                    Credit Lines
+                  </NavLink>
+                  <NavLink
+                    to="/open-credit"
+                    className={({ isActive }) =>
+                      isActive ? "header-nav-link active" : "header-nav-link"
+                    }
+                  >
+                    Open Credit Line
+                  </NavLink>
+                  <NavLink
+                    to="/dutch-auctions"
+                    className={({ isActive }) =>
+                      isActive ? "header-nav-link active" : "header-nav-link"
+                    }
+                  >
+                    Dutch Auctions
+                  </NavLink>
+                </nav>
+                <button
+                  ref={settingsTriggerRef}
+                  type="button"
+                  className="header-nav-link"
+                  onClick={() => {
+                    setOpenedFromSettingsLink(true);
+                    setIsShortcutHelpOpen(true);
+                  }}
                 >
-                  Dashboard
-                </NavLink>
-                <NavLink
-                  to="/transactions"
-                  className={({ isActive }) =>
-                    isActive ? "header-nav-link active" : "header-nav-link"
-                  }
-                >
-                  Transactions
-                </NavLink>
-                <NavLink
-                  to="/credit-lines"
-                  className={({ isActive }) =>
-                    isActive ? "header-nav-link active" : "header-nav-link"
-                  }
-                >
-                  Credit Lines
-                </NavLink>
-                <NavLink
-                  to="/open-credit"
-                  className={({ isActive }) =>
-                    isActive ? "header-nav-link active" : "header-nav-link"
-                  }
-                >
-                  Open Credit Line
-                </NavLink>
-                <NavLink
-                  to="/dutch-auctions"
-                  className={({ isActive }) =>
-                    isActive ? "header-nav-link active" : "header-nav-link"
-                  }
-                >
-                  Dutch Auctions
-                </NavLink>
-              </nav>
-              <button
-                ref={settingsTriggerRef}
-                type="button"
-                className="header-nav-link"
-                onClick={() => {
-                  setOpenedFromSettingsLink(true);
-                  setIsShortcutHelpOpen(true);
-                }}
-              >
-                Settings
-              </button>
-              <WalletButton />
-            </header>
-            <main className="main">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/transactions" element={<TransactionHistory />} />
-                <Route path="/credit-lines" element={<CreditLines />} />
-                <Route path="/help" element={<HelpCenter />} />
-                <Route path="/draw-credit" element={<DrawCreditPage />} />
-                <Route
-                  path="/draw-credit/success"
-                  element={<DrawCreditPage />}
-                />
-                <Route path="/open-credit" element={<RequestEvaluation />} />
-                <Route path="/dutch-auctions" element={<DutchAuctions />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <ShortcutHelpOverlay
-              isOpen={isShortcutHelpOpen}
-              onClose={() => setIsShortcutHelpOpen(false)}
-              triggerRef={openedFromSettingsLink ? settingsTriggerRef : undefined}
-            />
-          </div>
-        </BrowserRouter>
+                  Settings
+                </button>
+                <WalletButton />
+              </header>
+              <main className="main">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route
+                    path="/transactions"
+                    element={<TransactionHistory />}
+                  />
+                  <Route path="/credit-lines" element={<CreditLines />} />
+                  <Route path="/help" element={<HelpCenter />} />
+                  <Route path="/draw-credit" element={<DrawCreditPage />} />
+                  <Route
+                    path="/draw-credit/success"
+                    element={<DrawCreditPage />}
+                  />
+                  <Route path="/open-credit" element={<RequestEvaluation />} />
+                  <Route path="/dutch-auctions" element={<DutchAuctions />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+              <ShortcutHelpOverlay
+                isOpen={isShortcutHelpOpen}
+                onClose={() => setIsShortcutHelpOpen(false)}
+                triggerRef={
+                  openedFromSettingsLink ? settingsTriggerRef : undefined
+                }
+              />
+              <ToastContainer />
+            </div>
+          </BrowserRouter>
+        </NotificationProvider>
       </WalletProvider>
     </ErrorBoundary>
   );

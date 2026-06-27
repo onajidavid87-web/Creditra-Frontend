@@ -1,24 +1,36 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BrowserRouter } from "react-router-dom";
+import { ToastContainer } from "../components/notifications/ToastContainer";
+import { NotificationProvider } from "../context/NotificationContext";
 import { TransactionHistory } from "./TransactionHistory";
 
 const renderTransactionHistory = () => {
   render(
-    <BrowserRouter>
-      <TransactionHistory />
-    </BrowserRouter>,
+    <NotificationProvider>
+      <BrowserRouter>
+        <TransactionHistory />
+        <ToastContainer />
+      </BrowserRouter>
+    </NotificationProvider>,
   );
 };
 
 describe("TransactionHistory", () => {
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-02-20T12:00:00Z"));
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it("renders type and date filter chips as labeled pressed toggle groups", () => {
@@ -63,18 +75,15 @@ describe("TransactionHistory", () => {
   it("updates the polite result count when filters change", () => {
     renderTransactionHistory();
 
-    // Check initial result count
     const resultCountBefore = screen.getByText("28 transactions shown");
     expect(resultCountBefore).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
 
-    // Verify the 7d filter is active
     expect(
       screen.getByRole("button", { name: "7d" }).getAttribute("aria-pressed"),
     ).toBe("true");
 
-    // Check updated result count after filtering
     const resultCountAfter = screen.getByText("3 transactions shown");
     expect(resultCountAfter).toBeTruthy();
   });
@@ -85,29 +94,24 @@ describe("TransactionHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fee" }));
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
 
-    // Check no-results state appears
     const noResultsHeading = screen.getByRole("heading", {
       name: /no transactions match these filters/i,
     });
     expect(noResultsHeading).toBeTruthy();
 
-    // Check "no transactions yet" message is NOT present
     const noTransactionsMsg = screen.queryByText(/no transactions yet/i);
     expect(noTransactionsMsg).toBeFalsy();
 
     fireEvent.click(screen.getByRole("button", { name: /clear filters/i }));
 
-    // No-results state should disappear
     const noResultsAfterClear = screen.queryByRole("heading", {
       name: /no transactions match these filters/i,
     });
     expect(noResultsAfterClear).toBeFalsy();
 
-    // Result count should be restored
     const resultCount = screen.getByText("28 transactions shown");
     expect(resultCount).toBeTruthy();
 
-    // First "All" button (type filter) should be active
     const allButtons = screen.getAllByRole("button", { name: "All" });
     expect(allButtons[0].getAttribute("aria-pressed")).toBe("true");
   });
@@ -119,5 +123,49 @@ describe("TransactionHistory", () => {
 
     expect(screen.getByLabelText("Start date")).toBeInTheDocument();
     expect(screen.getByLabelText("End date")).toBeInTheDocument();
+  });
+
+  it("disables CSV export when the filtered result set is empty and explains why", () => {
+    renderTransactionHistory();
+
+    fireEvent.click(screen.getByRole("button", { name: "Fee" }));
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+
+    const exportButton = screen.getByRole("button", { name: /export csv/i });
+    expect(exportButton).toBeDisabled();
+    expect(exportButton).toHaveAttribute(
+      "aria-describedby",
+      "transaction-export-help",
+    );
+    expect(
+      screen.getByText(/current filters do not match any transactions/i),
+    ).toBeTruthy();
+  });
+
+  it("downloads the filtered CSV and shows a polite confirmation toast", () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+
+    renderTransactionHistory();
+
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    fireEvent.click(screen.getByRole("button", { name: /export csv/i }));
+    act(() => {
+      vi.advanceTimersByTime(20);
+    });
+
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(anchorClick).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/csv export ready/i)).toBeTruthy();
+    expect(screen.getByText(/creditra-transactions-.*\.csv/i)).toBeTruthy();
+
+    const toast = screen
+      .getByText(/csv export ready/i)
+      .closest('[role="status"]');
+    expect(toast).toHaveAttribute("aria-live", "polite");
+
+    anchorClick.mockRestore();
   });
 });

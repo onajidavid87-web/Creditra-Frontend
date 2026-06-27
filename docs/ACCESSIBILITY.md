@@ -92,7 +92,7 @@ heading.
 | Form field errors | `role="alert"` (assertive) | `FormMessage` |
 | Copy-to-clipboard success | `aria-live="polite"` | `CopyToClipboard` |
 | Post-action confirmation | `role="status" aria-live="polite"` | `SuccessState` |
-| Toast notifications | `role="status" aria-live="polite"` for info/success, `role="alert"` for error | `ToastContainer` |
+| Toast notifications | Polite `ToastContainer` live region for confirmations; individual error toasts escalate to `role="alert"` | `ToastContainer` |
 
 ### Focus management
 
@@ -124,7 +124,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `AccessibleTooltip` | Trigger is keyboard-focusable | `role="tooltip"`, `aria-describedby` | AA | n/a | OK |
 | `NotificationBell` | Tab/Enter; counter is decorative | `aria-label="Notifications, N unread"` | AA | n/a | OK |
 | `NotificationCenter` | Focus trap inside the panel | `role="dialog"`, category filters use `aria-pressed` | AA | reduced-motion gated | OK |
-| `ToastContainer` | Tab/Esc to dismiss | `role="status"` / `role="alert"` per severity | AA | reduced-motion gated | OK |
+| `ToastContainer` | Tab to dismiss buttons | Container uses a polite live region; error toasts use `role="alert"` | AA | reduced-motion gated | OK |
 | `BannerAlert` | Tab/Enter on action & dismiss | `role="alert"` for warning/error | AA | n/a | OK |
 | `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<text>` + sibling text | AA | n/a | OK |
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
@@ -189,6 +189,7 @@ pattern:
 | `BannerAlert` | `.banner-close` | ~20×20 | 44×44 | yes |
 | `BannerAlert` | `.banner-action` | ~20 h | 44 h | yes |
 | `ToastContainer` | `.toast-close` | ~20×20 | 44×44 | yes |
+| `TransactionHistory` | `.export-btn` | ~32 h | 44 h | yes |
 | `Dashboard` | `.wallet-address-chip` | ~32 h | 44 h | yes |
 | `WalletButton` | `.connect-wallet-btn` | 44 h | 44 h | yes (already) |
 | `WalletButton` | `.wallet-address-btn` | 44 h | 44 h | yes (already) |

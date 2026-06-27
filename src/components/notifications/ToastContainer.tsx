@@ -11,6 +11,7 @@ function ToastItem({
   toast: Toast;
   onDismiss: (id: string) => void;
 }) {
+  const isAssertive = toast.type === "error" || toast.type === "danger";
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const colors = TYPE_COLOR[toast.type];
@@ -46,12 +47,8 @@ function ToastItem({
     <div
       className={`toast-item ${visible ? "toast-enter" : ""} ${leaving ? "toast-leave" : ""}`}
       style={{ borderColor: colors.border }}
-      role="alert"
-      aria-live={
-        toast.type === "error" || toast.type === "danger"
-          ? "assertive"
-          : "polite"
-      }
+      role={isAssertive ? "alert" : "status"}
+      aria-live={isAssertive ? "assertive" : "polite"}
     >
       <div className="toast-header">
         <span
@@ -98,7 +95,13 @@ export function ToastContainer() {
   const { toasts, dismissToast } = useNotifications();
 
   return (
-    <div className="toast-container" aria-label="Notifications">
+    <div
+      className="toast-container"
+      aria-label="Notifications"
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
       ))}

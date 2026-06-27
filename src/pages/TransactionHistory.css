@@ -51,7 +51,9 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
 }
 
 .export-btn:hover {
@@ -186,6 +188,17 @@
     flex: 1.5;
 }
 
+.th-subgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+}
+
+.th-subgroup:last-child {
+    margin-bottom: 0;
+}
+
 .th-filter-group label,
 .th-filter-label,
 .th-search-group label {
@@ -234,7 +247,11 @@
     line-height: 1;
     cursor: pointer;
     min-height: 44px;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s,
+        box-shadow 0.15s;
 }
 
 .th-filter-chip:hover {
@@ -260,6 +277,30 @@
     gap: 0.35rem;
     min-width: 200px;
     flex: 2;
+}
+
+.date-range-custom-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.date-range-custom-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 150px;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.date-range-custom-field input {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
 }
 
 .th-search-group input::placeholder {
@@ -548,7 +589,9 @@
     font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.15s, transform 0.15s;
+    transition:
+        opacity 0.15s,
+        transform 0.15s;
 }
 
 .th-clear-filters-btn:hover {
@@ -580,7 +623,9 @@
     color: var(--text);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
 }
 
 .th-page-btn:hover:not(:disabled) {
@@ -629,6 +674,9 @@
 }
 
 .empty-state-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.75rem 1.5rem;
     background: var(--accent);
     border: none;
@@ -753,7 +801,6 @@
 /* ─── Print Styles ─────────────────────────────────────────────────────────── */
 
 @media print {
-
     .th-header-actions,
     .th-filters,
     .th-pagination,

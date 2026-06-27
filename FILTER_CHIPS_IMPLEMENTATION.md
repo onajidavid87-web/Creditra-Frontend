@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the implementation of accessible, discoverable filter chips for the Transaction History page (#132), including date-range and type filtering with distinct empty/no-results UX states.
+This document describes the implementation of accessible, discoverable filter chips for the Transaction History page (#132), including type, date-range, and amount-range filtering with distinct empty/no-results UX states.
 
 ## Features Implemented
 
@@ -20,10 +20,21 @@ This document describes the implementation of accessible, discoverable filter ch
 
 #### Date Range Filter Chips
 
-- **Presets:** 7 days, 30 days, 90 days, All
+- **Presets:** Today, 7d, 30d, 90d, Custom
 - **Implementation:** Same toggle button group pattern as type filters
 - **Efficiency:** Presets provide quick access to common time ranges
 - **Accessibility:** Identical to type filters (role, aria-pressed, keyboard support)
+
+#### Amount Range Filter Chips
+
+- **Quick chips:** All amounts, Under $5k, $5k-$25k, $25k+
+- **Custom flow:** Separate mobile-friendly modal for fine-grained min/max filtering
+- **Implementation:** Reuses the transaction filter chip styling and project modal accessibility hooks
+- **Accessibility:**
+  - Quick chips expose `aria-pressed` state like the other filter groups
+  - Custom trigger exposes `aria-haspopup="dialog"` and `aria-pressed`
+  - Dialog traps focus, locks background scrolling, and makes background content inert
+  - All controls meet the 44px touch-target requirement and keep a visible focus ring
 
 ### 2. **Live Result Count Announcements**
 
@@ -91,8 +102,9 @@ Filters are applied in cascading order:
 1. **Credit Line Filter** - Select by lineId
 2. **Transaction Type Filter** - Filter by type (Draw, Repay, Fee, Interest, StatusChange)
 3. **Status Filter** - Filter by transaction status (Completed, Pending, Failed)
-4. **Date Range Filter** - Calculate cutoff time from preset days (7, 30, 90) or show all
-5. **Search Query** - Full-text search across note, lineName, lineId, txHash
+4. **Amount Range Filter** - Filter by quick amount chips or custom min/max bounds
+5. **Date Range Filter** - Calculate cutoff time from preset days (Today, 7d, 30d, 90d) or custom dates
+6. **Search Query** - Full-text search across note, lineName, lineId, txHash
 
 Each filter change:
 
@@ -187,9 +199,10 @@ Each memoization has explicit dependencies to ensure re-calculation only when ne
 All functionality is covered by vitest tests:
 
 ```bash
-✓ renders type and date filter chips as labeled pressed toggle groups
-✓ updates the polite result count when filters change
+✓ renders type, date, and amount filter chips as labeled pressed toggle groups
+✓ updates the polite result count when quick amount chips change
 ✓ shows a no-results state with a clear filters action
+✓ applies a custom amount range from the modal
 ```
 
 Run tests:
@@ -208,6 +221,8 @@ Key classes for styling filter chips:
 | `.th-filter-chip[aria-pressed="true"]` | Active chip appearance           |
 | `.th-filter-chip:focus-visible`        | Keyboard focus indicator         |
 | `.th-chip-group`                       | Container for chip groups        |
+| `.amount-range-custom-trigger`         | Custom range trigger button      |
+| `.amount-range-modal`                  | Custom amount dialog shell       |
 | `.th-empty-no-results`                 | No-results state styling         |
 | `.th-clear-filters-btn`                | Clear filters action button      |
 | `.th-filter-results`                   | Result count announcement region |
@@ -229,7 +244,7 @@ All modern browsers with support for:
 ## Future Enhancements
 
 1. **Saved Filter Presets** - Save common filter combinations
-2. **Advanced Filters** - Amount range, status duration, custom date pickers
+2. **Advanced Filters** - Status duration, saved combinations, and additional numeric facets
 3. **Filter Pills** - Show active filters as removable pills
 4. **Export Filtered Results** - Export only filtered transactions
 5. **Mobile Touch Optimization** - Larger touch targets, swipe gestures

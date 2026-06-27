@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CreditLineSelector } from "@/components/CreditLineSelector";
 import { AmountInput } from "@/components/AmountInput";
 import { PreviewSection } from "@/components/PreviewSection";
 import { ConfirmationStep } from "@/components/ConfirmationStep";
 import { TransactionStatus } from "@/components/TransactionStatus";
+import { InlineHelpOverlay } from "@/components/InlineHelpOverlay";
 import { CreditLine, DrawStep, Transaction } from "@/types/draw-credit.types";
 import { mockCreditLines } from "@/lib/draw-credit-mock-data";
 
@@ -30,6 +31,8 @@ export default function DrawCreditPage() {
     useState<CreditLine | null>(null);
   const [amount, setAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const helpTriggerRef = useRef<HTMLButtonElement>(null);
   const [transaction, setTransaction] = useState<Transaction | null>(
     routeTransaction ?? null,
   );
@@ -216,7 +219,14 @@ export default function DrawCreditPage() {
 
         {step !== "status" && (
           <div className="flex flex-col gap-2 text-center text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:text-left">
-            <p>Need help? Contact support at 1-800-CREDIT-1</p>
+            <button
+              ref={helpTriggerRef}
+              type="button"
+              onClick={() => setIsHelpOpen(true)}
+              className="inline-flex min-h-11 items-center justify-center rounded-md px-3 font-semibold text-blue-300 underline-offset-4 transition-colors hover:text-blue-200 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:justify-start"
+            >
+              I need help
+            </button>
             <button
               type="button"
               onClick={handleCancel}
@@ -227,6 +237,11 @@ export default function DrawCreditPage() {
           </div>
         )}
       </div>
+      <InlineHelpOverlay
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        triggerRef={helpTriggerRef}
+      />
     </main>
   );
 }

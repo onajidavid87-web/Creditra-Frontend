@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { formatMoney, getRepayAmountValidation } from '../utils/amountValidation';
+import { InlineHelpOverlay } from './InlineHelpOverlay';
 import { PendingButton } from './PendingButton';
 
 interface RepaymentCreditLine {
@@ -86,7 +87,12 @@ export function RepayModal({
   onSuccess,
 }: RepayModalProps) {
   const [step, setStep] = useState<ModalStep>('input');
-  const modalRef = useFocusTrap({ isActive: true, onEscape: onClose });
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const helpTriggerRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useFocusTrap({
+    isActive: !isHelpOpen,
+    onEscape: step !== 'pending' ? onClose : undefined,
+  });
   const [amountStr, setAmountStr] = useState('');
 
   const totalDue = creditLine.utilized;
@@ -329,18 +335,35 @@ export function RepayModal({
               </div>
             </div>
 
-            <button
-              onClick={handleReview}
-              disabled={isInvalid}
-              style={{
-                ...btn.primary,
-                width: '100%',
-                opacity: isInvalid ? 0.5 : 1,
-                cursor: isInvalid ? 'not-allowed' : 'pointer',
-              }}
-            >
-              Review Repayment
-            </button>
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <button
+                onClick={handleReview}
+                disabled={isInvalid}
+                style={{
+                  ...btn.primary,
+                  width: '100%',
+                  opacity: isInvalid ? 0.5 : 1,
+                  cursor: isInvalid ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Review Repayment
+              </button>
+              <button
+                ref={helpTriggerRef}
+                type="button"
+                onClick={() => setIsHelpOpen(true)}
+                style={{
+                  ...btn.ghost,
+                  minHeight: 44,
+                  width: '100%',
+                  color: COLOR.accent,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 4,
+                }}
+              >
+                I need help
+              </button>
+            </div>
           </div>
         )}
 
@@ -432,6 +455,22 @@ export function RepayModal({
                 Confirm Repayment
               </PendingButton>
             </div>
+            <button
+              ref={helpTriggerRef}
+              type="button"
+              onClick={() => setIsHelpOpen(true)}
+              style={{
+                ...btn.ghost,
+                minHeight: 44,
+                width: '100%',
+                marginTop: '0.75rem',
+                color: COLOR.accent,
+                textDecoration: 'underline',
+                textUnderlineOffset: 4,
+              }}
+            >
+              I need help
+            </button>
           </div>
         )}
 
@@ -526,6 +565,11 @@ export function RepayModal({
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes scaleIn { 0% { transform: scale(0); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
       `}</style>
+      <InlineHelpOverlay
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        triggerRef={helpTriggerRef}
+      />
     </div>
   );
 }

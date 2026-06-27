@@ -278,3 +278,15 @@ token swap when we add it.
 
 **Trade-off.** A subset of users prefer light. The manual toggle is coming; the
 infrastructure is already in place.
+## Inline Help Escape Hatch
+
+Draw and repayment flows include a discreet `I need help` footer action that opens
+the Help Center in an in-app overlay. The overlay imports the Help Center content
+directly instead of using an iframe, so it inherits application routing, styling,
+and security boundaries.
+
+The trigger is a real button with a minimum 44 px target, focus returns to the
+trigger on close, and the parent flow state stays mounted while the overlay is
+open. The dialog reuses the app modal hooks for focus trapping, body scroll lock,
+and inert background behavior, with reduced-motion users receiving the global
+motion-reduced animation behavior.

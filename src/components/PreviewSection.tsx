@@ -1,6 +1,7 @@
 import { CreditLine } from "@/types/draw-credit.types";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { formatMoney } from "@/utils/amountValidation";
+import { getDrawPricingQuote } from "@/lib/draw-credit-pricing";
 
 interface PreviewSectionProps {
   /** The credit line the draw is from. */
@@ -28,15 +29,12 @@ interface PreviewSectionProps {
 export function PreviewSection({ creditLine, amount }: PreviewSectionProps) {
   const utilizedBalance = creditLine.limit - creditLine.available;
   const safeAmount = Math.max(amount, 0);
-  // Mock pricing keeps the UX explicit until backend quote fields are available.
-  const fee = safeAmount > 0 ? Math.round(safeAmount * 0.01 * 100) / 100 : 0;
-  const apr = 12.5;
-  const estimatedMonthlyInterest =
-    safeAmount > 0 ? Math.round(((safeAmount * apr) / 100 / 12) * 100) / 100 : 0;
-  const newBalance = utilizedBalance + safeAmount + fee;
-  const newUtilization = Math.round(
-    (newBalance / creditLine.limit) * 100,
+  const { fee, estimatedMonthlyInterest } = getDrawPricingQuote(
+    creditLine,
+    safeAmount,
   );
+  const newBalance = utilizedBalance + safeAmount + fee;
+  const newUtilization = Math.round((newBalance / creditLine.limit) * 100);
   const remainingAvailable = Math.max(creditLine.limit - newBalance, 0);
 
   return (

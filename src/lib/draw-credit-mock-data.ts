@@ -22,6 +22,8 @@ export const mockCreditLines: CreditLine[] = [
     limit: 50000,
     available: 35000,
     utilization: 30,
+    riskBand: "Standard",
+    termMonths: 24,
   },
   {
     id: "cl-002",
@@ -29,6 +31,8 @@ export const mockCreditLines: CreditLine[] = [
     limit: 100000,
     available: 45000,
     utilization: 55,
+    riskBand: "Prime",
+    termMonths: 18,
   },
   {
     id: "cl-003",
@@ -36,5 +40,7 @@ export const mockCreditLines: CreditLine[] = [
     limit: 75000,
     available: 12000,
     utilization: 84,
+    riskBand: "Watch",
+    termMonths: 12,
   },
 ];

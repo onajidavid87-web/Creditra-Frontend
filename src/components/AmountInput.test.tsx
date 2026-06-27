@@ -9,6 +9,8 @@ describe("AmountInput", () => {
     limit: 50000,
     available: 35000,
     utilization: 30,
+    riskBand: "Standard" as const,
+    termMonths: 24,
   };
 
   it("connects inline validation messaging to the input with aria-describedby including helper text", () => {

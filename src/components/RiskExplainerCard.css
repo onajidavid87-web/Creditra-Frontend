@@ -1,0 +1,24 @@
+﻿.risk-explainer-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1.5rem;
+}
+.risk-explainer-content { display: flex; gap: 1rem; align-items: flex-start; flex: 1; min-width: 0; }
+.risk-explainer-icon { flex-shrink: 0; color: var(--accent); }
+.risk-explainer-text h3 { margin: 0 0 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text); }
+.risk-explainer-text p { margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--muted); line-height: 1.5; }
+.risk-explainer-link { color: var(--accent); font-size: 0.875rem; font-weight: 500; text-decoration: underline; }
+.risk-explainer-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.risk-explainer-dismiss { flex-shrink: 0; padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--muted); font-size: 0.8125rem; cursor: pointer; }
+.risk-explainer-dismiss:hover { background: var(--bg); color: var(--text); }
+.risk-explainer-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .risk-explainer-card { flex-direction: column; }
+  .risk-explainer-content { flex-direction: column; align-items: center; text-align: center; }
+}

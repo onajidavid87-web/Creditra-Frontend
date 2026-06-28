@@ -15,10 +15,6 @@ export interface WalletInfo {
 /**
  * Lifecycle states of the wallet connection, used by the WalletContext
  * reducer and surfaced to UI for spinners, retry buttons, and badges.
- */
-/**
- * Lifecycle states of the wallet connection, used by the WalletContext
- * reducer and surfaced to UI for spinners, retry buttons, and badges.
  *
  * `reconnecting` — auto-reconnect on page load is in progress (no user
  *   interaction required; a non-blocking banner is shown if it takes

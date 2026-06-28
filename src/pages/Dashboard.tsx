@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { StatusBadge } from "../components/StatusBadge";
@@ -16,7 +16,10 @@ import {
 import "./Dashboard.css";
 import { Skeleton } from "../components/Skeleton";
 import { NoDataGraph } from "../components/illustrations";
-import { WhatsChangedPanel } from "../components/WhatsChangedPanel";
+import CompareLinesPanel from "../components/CompareLinesPanel";
+import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useInertBackdrop } from "../hooks/useInertBackdrop";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -200,6 +203,45 @@ export function Dashboard() {
   const creditLines = MOCK_CREDIT_LINES;
 
   const [loading, setLoading] = useState(true);
+  const [selectedCompareLines, setSelectedCompareLines] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const compareTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleCloseCompare = () => {
+    setShowCompare(false);
+    setSelectedCompareLines([]);
+  };
+
+  const handleOpenCompare = () => {
+    if (selectedCompareLines.length === 2) {
+      setShowCompare(true);
+    }
+  };
+
+  const toggleCompareSelection = (id: string) => {
+    setSelectedCompareLines((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((lineId) => lineId !== id);
+      } else if (prev.length < 2) {
+        return [...prev, id];
+      }
+      return prev;
+    });
+  };
+
+  const comparePanelRef = useFocusTrap({
+    isActive: showCompare,
+    triggerRef: compareTriggerRef,
+    onEscape: handleCloseCompare,
+  });
+
+  useInertBackdrop({ isInert: showCompare, modalId: "compare-lines-drawer-dashboard" });
+  useBodyScrollLock({ isLocked: showCompare });
+
+  const selectedCreditLines = useMemo(
+    () => creditLines.filter((line) => selectedCompareLines.includes(line.id)),
+    [creditLines, selectedCompareLines],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -708,16 +750,39 @@ export function Dashboard() {
             <h2>
               <span className="icon">💳</span> Active Credit Lines
               {!loading && (
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: "0.75rem",
-                    fontWeight: 400,
-                    color: COLOR.muted,
-                  }}
-                >
-                  {activeLines.length} line{activeLines.length !== 1 ? "s" : ""}
-                </span>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  {activeLines.length >= 2 && (
+                    <button
+                      ref={compareTriggerRef}
+                      type="button"
+                      onClick={handleOpenCompare}
+                      disabled={selectedCompareLines.length !== 2}
+                      style={{
+                        padding: "0.35rem 0.75rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        borderRadius: "4px",
+                        background: selectedCompareLines.length === 2 ? "var(--accent)" : "rgba(139,148,158,0.12)",
+                        color: selectedCompareLines.length === 2 ? "#0d1117" : "var(--muted)",
+                        border: "none",
+                        cursor: selectedCompareLines.length === 2 ? "pointer" : "not-allowed",
+                        opacity: selectedCompareLines.length === 2 ? 1 : 0.6,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      Compare Selected ({selectedCompareLines.length}/2)
+                    </button>
+                  )}
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      fontWeight: 400,
+                      color: COLOR.muted,
+                    }}
+                  >
+                    {activeLines.length} line{activeLines.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
               )}
             </h2>
 
@@ -903,8 +968,38 @@ export function Dashboard() {
                 {activeLines.slice(0, 3).map((cl) => {
                   const pct = utilizationPct(cl.utilized, cl.limit);
                   const level = getUtilizationLevel(cl.utilized, cl.limit);
+                  const isSelected = selectedCompareLines.includes(cl.id);
                   return (
                     <div key={cl.id} className="cl-preview-item">
+                      {activeLines.length >= 2 && (
+                        <div style={{ paddingRight: "0.75rem", display: "flex", alignItems: "center" }}>
+                          <label
+                            className="cl-row-select"
+                            style={{
+                              margin: 0,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              minWidth: "44px",
+                              minHeight: "44px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleCompareSelection(cl.id)}
+                              aria-label={`Select ${cl.name} for comparison`}
+                              style={{
+                                cursor: "pointer",
+                                width: "16px",
+                                height: "16px",
+                                accentColor: "var(--accent)",
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
@@ -1265,8 +1360,38 @@ export function Dashboard() {
               ))}
             </div>
           )}
+      {showCompare && selectedCreditLines.length === 2 && (
+        <div
+          id="compare-lines-drawer-dashboard"
+          ref={comparePanelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compare-lines-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1200,
+            display: "flex",
+            justifyContent: "flex-end",
+            background: "rgba(15, 23, 42, 0.45)",
+            pointerEvents: "auto",
+          }}
+        >
+          <div
+            style={{
+              width: "min(480px, 100%)",
+              height: "100%",
+              position: "relative",
+              zIndex: 1201,
+            }}
+          >
+            <CompareLinesPanel
+              lines={selectedCreditLines}
+              onClose={handleCloseCompare}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

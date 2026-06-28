@@ -1,25 +1,31 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
-import CompareLinesPanel from "../components/CompareLinesPanel";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
-import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
-import { useFocusTrap } from "../hooks/useFocusTrap";
-import { useInertBackdrop } from "../hooks/useInertBackdrop";
 import type {
   CreditLineStatus,
   SortField,
   SortDirection,
 } from "../types/creditLine";
+import type { CollateralAsset } from "../types/collateral";
 import {
   COLOR,
   UTIL_COLOR,
   fmt,
   fmtDate,
+  fmtDateTime,
+  relativeTime,
   getUtilizationLevel,
   utilizationPct,
 } from "../utils/tokens";
 import "./CreditLines.css";
+import { AccessibleTooltip } from "../components/AccessibleTooltip";
+import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useInertBackdrop } from "../hooks/useInertBackdrop";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import CompareLinesPanel from "../components/CompareLinesPanel";
+import { CollateralSubstitutionModal } from "../components/CollateralSubstitutionModal";
+import { NoLines } from "../components/illustrations";
 
 // ─── Credit Line Card ────────────────────────────────────────────────────────
 
@@ -27,16 +33,27 @@ function CreditLineCard({
   line,
   isSelected,
   onToggle,
+  onSwapCollateral,
 }: {
   line: (typeof MOCK_CREDIT_LINES)[0];
   isSelected: boolean;
   onToggle: () => void;
+  onSwapCollateral?: (
+    line: (typeof MOCK_CREDIT_LINES)[0],
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => void;
 }) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
+  const swapTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const isDefaulted = line.status === 'Defaulted';
 
   return (
-    <div className="cl-card">
+    <div
+      className={`cl-card${isDefaulted ? ' cl-row--defaulted' : ''}`}
+      aria-label={isDefaulted ? `Credit line ${line.id} is defaulted` : undefined}
+    >
       <div className="cl-card-header">
         <div className="cl-card-title-row">
           <label className="cl-row-select">
@@ -84,7 +101,7 @@ function CreditLineCard({
         <div className="cl-util-bar">
           <div className="cl-util-header">
             <span>Utilization</span>
-            <span style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
+            <span className="num-tabular" style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
           </div>
           <div className="cl-util-track">
             <div
@@ -97,16 +114,27 @@ function CreditLineCard({
         <div className="cl-details">
           <div className="cl-detail">
             <span className="label">APR</span>
-            <span className="value">{line.apr}%</span>
+            <span className="value num-tabular">{line.apr}%</span>
           </div>
           <div className="cl-detail">
             <span className="label">Risk Score</span>
-            <span className="value">{line.riskScore}</span>
+            <span className="value num-tabular">{line.riskScore}</span>
           </div>
           <div className="cl-detail">
             <span className="label">Opened</span>
             <span className="value">{fmtDate(line.openedAt)}</span>
           </div>
+        </div>
+
+        <div className="cl-last-activity">
+          <span className="cl-last-activity__label">Last Activity</span>
+          <span className="cl-last-activity__time">
+            <AccessibleTooltip
+              label={`Last updated: ${fmtDateTime(line.updatedAt)}`}
+            >
+              {relativeTime(line.updatedAt)}
+            </AccessibleTooltip>
+          </span>
         </div>
       </div>
 
@@ -122,6 +150,18 @@ function CreditLineCard({
         {line.utilized > 0 && (
           <button className="cl-action-btn repay">↙ Repay</button>
         )}
+        {line.status === 'Active' && onSwapCollateral && (
+          <button
+            ref={swapTriggerRef}
+            type="button"
+            className="cl-action-btn"
+            style={{ color: COLOR.accent, borderColor: 'rgba(88,166,255,0.3)', background: 'rgba(88,166,255,0.08)' }}
+            onClick={() => onSwapCollateral(line, swapTriggerRef)}
+            aria-label={`Swap collateral for ${line.name}`}
+          >
+            ⇄ Swap Collateral
+          </button>
+        )}
       </div>
     </div>
   );
@@ -135,11 +175,32 @@ export default function CreditLines() {
   const [statusFilter, setStatusFilter] = useState<CreditLineStatus | "all">(
     "all",
   );
-  const [selectedLines, setSelectedLines] = useState<string[]>([]);
-  const [showCompare, setShowCompare] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const creditLines = MOCK_CREDIT_LINES;
+
+  const [showCompare, setShowCompare] = useState(false);
+  const [selectedLines, setSelectedLines] = useState<string[]>([]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [modalTarget, setModalTarget] = useState<{
+    line: (typeof MOCK_CREDIT_LINES)[0];
+    currentAsset: string;
+    triggerRef: React.RefObject<HTMLButtonElement | null>;
+  } | null>(null);
+
+  const handleModalClose = () => setModalTarget(null);
+  const handleModalSuccess = (_incomingAsset: CollateralAsset) => {
+    setModalTarget(null);
+  };
+  const handleSwapCollateral = (
+    line: (typeof MOCK_CREDIT_LINES)[0],
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    setModalTarget({
+      line,
+      currentAsset: "ETH",
+      triggerRef,
+    });
+  };
 
   const filteredAndSorted = useMemo(() => {
     let filtered =
@@ -331,7 +392,7 @@ export default function CreditLines() {
 
       {filteredAndSorted.length === 0 ? (
         <div className="cl-empty">
-          <div className="cl-empty-icon">💳</div>
+          <NoLines className="empty-state-illustration--muted" />
           <h3>No credit lines found</h3>
           <p>Apply for a credit line to get started</p>
           <Link to="/open-credit" className="cl-primary-btn">
@@ -346,9 +407,23 @@ export default function CreditLines() {
               line={line}
               isSelected={selectedLines.includes(line.id)}
               onToggle={() => toggleSelection(line.id)}
+              onSwapCollateral={handleSwapCollateral}
             />
           ))}
         </div>
+      )}
+
+      {/* Collateral substitution modal — mounted at page level so it overlays everything */}
+      {modalTarget && (
+        <CollateralSubstitutionModal
+          isOpen
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
+          creditLineName={modalTarget.line.name}
+          loanBalance={modalTarget.line.utilized}
+          currentAsset={modalTarget.currentAsset}
+          triggerRef={modalTarget.triggerRef}
+        />
       )}
     </div>
   );

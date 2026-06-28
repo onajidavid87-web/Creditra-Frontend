@@ -129,7 +129,9 @@
 
 .cl-empty p {
     margin: 0 0 1.5rem;
+    max-width: 26rem;
     font-size: 0.9rem;
+    line-height: 1.5;
     color: var(--muted);
 }
 
@@ -148,7 +150,9 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
 }
 
 .cl-card:hover {
@@ -297,6 +301,25 @@
     line-height: var(--lh-body);
 }
 
+.cl-last-activity {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--border);
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+}
+
+.cl-last-activity__label {
+    color: var(--muted);
+}
+
+.cl-last-activity__time {
+    color: var(--text);
+    font-weight: 500;
+}
+
 .cl-card-footer {
     display: flex;
     gap: 0.75rem;
@@ -336,6 +359,27 @@
 
 .cl-action-btn.repay:hover {
     background: rgba(63, 185, 80, 0.2);
+}
+
+/* ─── Defaulted Row — visual treatment ──────────────────────────────────────── */
+
+/* 3px left-edge error stripe (non-color emphasis) */
+.cl-row--defaulted {
+  border-left: 3px solid rgba(248, 81, 73, 0.8);
+  padding-left: calc(var(--space-md, 1rem) - 3px); /* compensate for border width */
+}
+
+/* Bold the line name in defaulted rows */
+.cl-row--defaulted .cl-name,
+.cl-row--defaulted .cl-col-name {
+  font-weight: 600;
+}
+
+/* Forced-colors mode: use system ButtonText so stripe stays visible */
+@media (forced-colors: active) {
+  .cl-row--defaulted {
+    border-left-color: ButtonText;
+  }
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */

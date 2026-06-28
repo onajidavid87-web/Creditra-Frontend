@@ -113,3 +113,18 @@ export const getStoredWallet = (): WalletInfo | null => {
   const stored = localStorage.getItem('wallet_info');
   return stored ? JSON.parse(stored) : null;
 };
+
+export const EXPECTED_NETWORK = 'TESTNET';
+
+export const isSwitchSupported = (type: WalletType): boolean => {
+  if (type === 'freighter' && window.freighter?.switchNetwork) return true;
+  return false;
+};
+
+export const switchNetwork = async (type: WalletType, network: string): Promise<void> => {
+  if (type === 'freighter' && window.freighter?.switchNetwork) {
+    await window.freighter.switchNetwork(network);
+    return;
+  }
+  throw new Error(`Please open your ${type} wallet and switch to ${network}.`);
+};

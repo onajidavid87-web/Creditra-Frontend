@@ -1,0 +1,213 @@
+/* CommandPalette — Cmd/Ctrl+K overlay
+   WCAG 2.1 AA: colours meet 4.5:1 on dark surface, focus rings are visible */
+
+.cp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: clamp(4rem, 12vh, 8rem);
+  padding-inline: 1rem;
+}
+
+.cp-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 10, 14, 0.75);
+  backdrop-filter: blur(3px);
+}
+
+.cp-dialog {
+  position: relative;
+  width: min(600px, 100%);
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(22, 28, 40, 0.99), rgba(13, 17, 23, 0.99));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: cpEnter 150ms ease-out;
+}
+
+/* ── Search row ─────────────────────────────────────────────────────────── */
+.cp-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.cp-search-icon {
+  font-size: 1rem;
+  color: var(--muted, #8b949e);
+  flex-shrink: 0;
+}
+
+.cp-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text, #e6edf3);
+  font-size: 1rem;
+  line-height: 1.5;
+  caret-color: var(--accent, #58a6ff);
+}
+
+.cp-input::placeholder {
+  color: var(--muted, #8b949e);
+}
+
+.cp-close {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  cursor: pointer;
+  color: var(--muted, #8b949e);
+}
+
+.cp-close:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.cp-close kbd {
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* ── Results list ───────────────────────────────────────────────────────── */
+.cp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.375rem 0;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cp-list li[aria-selected="true"] > .cp-item {
+  /* reinforced by .cp-item--active; aria-selected is for AT */
+}
+
+.cp-empty {
+  padding: 1.25rem 1rem;
+  text-align: center;
+  color: var(--muted, #8b949e);
+  font-size: 0.9rem;
+}
+
+.cp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text, #e6edf3);
+  text-align: left;
+  border-radius: 0;
+  transition: background 80ms;
+}
+
+.cp-item:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: -2px;
+}
+
+.cp-item--active,
+.cp-item:hover {
+  background: rgba(88, 166, 255, 0.12);
+}
+
+.cp-item-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+  /* neutral — purely decorative */
+}
+
+.cp-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cp-item-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  /* #e6edf3 on dark bg: contrast ~13:1 ✓ AA */
+}
+
+.cp-item-desc {
+  font-size: 0.8125rem;
+  color: var(--muted, #8b949e);
+  /* #8b949e on dark bg: contrast ~4.8:1 ✓ AA */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cp-item-hint {
+  flex-shrink: 0;
+}
+
+.cp-item-hint kbd {
+  font-size: 0.75rem;
+  font-family: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted, #8b949e);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+.cp-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--muted, #8b949e);
+  font-size: 0.75rem;
+}
+
+.cp-footer kbd {
+  font-family: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.3rem;
+  padding: 0.05rem 0.3rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted, #8b949e);
+  font-size: 0.7rem;
+}
+
+/* ── Animation ──────────────────────────────────────────────────────────── */
+@keyframes cpEnter {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-dialog { animation: none; }
+}
+
+@media (max-width: 480px) {
+  .cp-overlay { padding-top: 2rem; padding-inline: 0.5rem; }
+  .cp-footer  { display: none; }
+}
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .cp-dialog { animation: none; }
+

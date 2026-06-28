@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, AlertTriangle, CheckCircle, Info, ArrowLeft } from 'lucide-react';
 import { PayoffProjection } from '@/components/PayoffProjection';
+import { RepaymentVisualizer } from '@/components/RepaymentVisualizer';
 import { InlineHelpOverlay } from '@/components/InlineHelpOverlay';
 import { formatMoney, getRepayAmountValidation } from '@/utils/amountValidation';
 import type { CreditLine } from '@/types/creditLine';
@@ -378,6 +379,18 @@ export default function RepayPage() {
                 />
               </aside>
             </div>
+
+            <RepaymentVisualizer
+              principal={selectedLine.utilized}
+              apr={selectedLine.apr}
+              monthlyPayment={
+                selectedLine.nextPaymentAmount ??
+                Math.max(
+                  selectedLine.utilized * 0.025,
+                  selectedLine.utilized * (selectedLine.apr / 100 / 12),
+                )
+              }
+            />
 
             <div className="flex items-center justify-between">
               <button

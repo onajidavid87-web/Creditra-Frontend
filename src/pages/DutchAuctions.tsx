@@ -46,7 +46,7 @@ export const DutchAuctions: React.FC = () => {
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
-        )))}
+        ))}
       </div>
 
       <div>

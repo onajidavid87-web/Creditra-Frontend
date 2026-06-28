@@ -12,6 +12,7 @@ import {
 } from '../utils/tokens';
 import './Dashboard.css';
 import { Skeleton } from '../components/Skeleton';
+import { DashboardTour } from '../components/DashboardTour';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -324,7 +325,7 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="summary-cards" aria-busy={loading}>
+      <div className="summary-cards" data-tour-target="summaryCards" aria-busy={loading}>
         {loading ? (
           <>
             <div className="summary-card skeleton-card">
@@ -405,7 +406,7 @@ export function Dashboard() {
           </div>
 
           {/* Risk Score */}
-          <div className="card" style={{ animationDelay: '0.15s' }} aria-busy={loading}>
+          <div className="card" data-tour-target="riskGauge" style={{ animationDelay: '0.15s' }} aria-busy={loading}>
             <h2><span className="icon">🛡️</span> Risk Score</h2>
             {loading ? (
               <div className="risk-gauge-container">
@@ -528,6 +529,7 @@ export function Dashboard() {
               {!hasLines && (
                 <button
                   className="qa-btn"
+                  data-tour-target="requestEvaluation"
                   style={{ borderColor: 'rgba(88,166,255,0.3)' }}
                 >
                   <div className="qa-icon" style={{ background: 'rgba(88,166,255,0.12)', color: COLOR.accent }}>🆕</div>
@@ -541,6 +543,7 @@ export function Dashboard() {
               {hasLines && activeLinesOnly.length > 0 && (
                 <button
                   className="qa-btn"
+                  data-tour-target="requestEvaluation"
                   style={{ borderColor: 'rgba(88,166,255,0.3)' }}
                 >
                   <div className="qa-icon" style={{ background: 'rgba(88,166,255,0.12)', color: COLOR.accent }}>↗</div>
@@ -664,6 +667,7 @@ export function Dashboard() {
           )}
         </div>
       </div>
+      <DashboardTour />
     </div>
   );
 }

@@ -105,6 +105,24 @@ heading.
   around `.header-nav-link.active` in `src/index.css`).
 - Modal close returns focus to the trigger via `useFocusTrap`'s `triggerRef`.
 
+### Anchor/sidebar nav (HelpCenter)
+
+`HelpCenter.tsx` uses an anchor-link sidebar with `aria-current="true"` on the link whose
+target section intersects the viewport.
+
+- The active section is detected via `IntersectionObserver` (`src/hooks/useActiveSection.ts`).
+  The observer uses a `-80px 0px -60% 0px` root margin so the active link updates slightly
+  before the section reaches the top of the viewport, and a multi-threshold `[0, 0.25, 0.5, 0.75, 1]`
+  so the most-visible section wins when multiple overlap.
+- Only one nav link carries `aria-current="true"` at any time. The attribute is absent on all
+  other links.
+- Clicking an anchor calls `target.scrollIntoView({ behavior: 'smooth', block: 'start' })`.
+  Reduced-motion state is read from `useReducedMotion()` — when active, behavior switches to
+  `"instant"`.
+- The `<nav>` has `aria-label="Help topics"`. Links are real `<a href="#id">` elements —
+  keyboard navigable via Tab, activatable via Enter/Space, and receive the global
+  `:focus-visible` ring from `src/index.css`.
+
 ---
 
 ## 3. Component audit
@@ -135,7 +153,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
 | `RepayModal` | Focus trap (canonical `{ isActive }` form) + return focus to trigger | `role="dialog"`, `aria-modal`, `aria-labelledby` | AA | n/a | OK |
 | `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state | AA | n/a | OK |
-| `HelpCenter` | Accordion buttons and transcript links are keyboard reachable | Video thumbnails are real buttons; iframe created only after opt-in | AA | n/a | OK |
+| `HelpCenter` | Tab/Enter on sidebar anchor links; accordion buttons and transcript links keyboard reachable | Sidebar nav has `aria-label="Help topics"`; `aria-current="true"` on active section via IntersectionObserver | AA | `useReducedMotion()` gates smooth scroll | OK |
 | `SupportWidget` | Floating trigger, search field, FAQ toggles, and email handoff are keyboard reachable | `aria-expanded`, `aria-controls`, visible focus ring, non-modal `role="dialog"` shell | AA | n/a | OK |
 | `LandingPage` | Tab through CTAs and FAQ accordion | Framer Motion guarded by `useReducedMotion` | AA | reduced-motion gated | OK |
 | `ErrorBoundary` / `ErrorPage` | Tab through "Go back" and "Reload" | Semantic landmarks | AA | n/a | OK |

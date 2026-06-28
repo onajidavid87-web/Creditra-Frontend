@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import './OnboardingFlow.css';
 
 interface Props {
@@ -41,6 +42,7 @@ const steps = [
 
 export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   if (!isOpen) return null;
 
@@ -84,10 +86,10 @@ export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
             <motion.div
               key={currentStep}
               className="onboarding-step"
-              initial={{ opacity: 0, x: 20 }}
+              initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.3 }}
             >
               <div className="step-icon">{step.icon}</div>
               <h2>{step.title}</h2>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
     TrendingUp,
     ShieldCheck,
@@ -13,11 +13,12 @@ import {
     Code2,
     Users,
 } from "lucide-react";
+import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import "./LandingPage.css";
 
 export default function LandingPage() {
     const [openFAQ, setOpenFAQ] = useState<number | null>(null);
-    const reduceMotion = useReducedMotion();
+    const reduceMotion = usePrefersReducedMotion();
 
     const faqs = [
         {

@@ -96,7 +96,7 @@ heading.
 | Copy-to-clipboard success | `aria-live="polite"` | `CopyToClipboard` |
 | Route changes | `role="status" aria-live="polite"` | `RouteAnnouncer` |
 | Post-action confirmation | `role="status" aria-live="polite"` | `SuccessState` |
-| Toast notifications | `role="status" aria-live="polite"` for info/success, `role="alert"` for error | `ToastContainer` |
+| Toast notifications | Polite `ToastContainer` live region for confirmations; individual error toasts escalate to `role="alert"` | `ToastContainer` |
 
 ### Focus management
 
@@ -196,6 +196,7 @@ pattern:
 | `BannerAlert` | `.banner-close` | ~20×20 | 44×44 | yes |
 | `BannerAlert` | `.banner-action` | ~20 h | 44 h | yes |
 | `ToastContainer` | `.toast-close` | ~20×20 | 44×44 | yes |
+| `TransactionHistory` | `.export-btn` | ~32 h | 44 h | yes |
 | `Dashboard` | `.wallet-address-chip` | ~32 h | 44 h | yes |
 | `WalletButton` | `.connect-wallet-btn` | 44 h | 44 h | yes (already) |
 | `WalletButton` | `.wallet-address-btn` | 44 h | 44 h | yes (already) |

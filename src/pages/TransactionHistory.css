@@ -33,66 +33,58 @@
     gap: 0.75rem;
 }
 
-/* ─── Export Button & Dropdown ─────────────────────────────────────────────── */
+/* ─── Export Buttons ───────────────────────────────────────────────────────── */
 
-.export-dropdown {
-    position: relative;
+.export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .export-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    min-height: 44px;
+    padding: 0.625rem 1rem;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition:
         border-color 0.15s,
-        background 0.15s;
+        background 0.15s,
+        opacity 0.15s;
 }
 
-.export-btn:hover {
+.export-btn:hover:not(:disabled) {
     border-color: var(--accent);
     background: var(--bg);
 }
 
-.export-menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.25rem;
-    min-width: 160px;
-    z-index: 100;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    animation: fadeIn 0.15s ease;
+.export-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
-.export-menu button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.625rem 0.75rem;
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    color: var(--text);
+.export-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.export-btn-secondary {
+    background: var(--bg);
+}
+
+.th-export-help {
+    margin: -0.75rem 0 1rem;
     font-size: 0.8rem;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.export-menu button:hover {
-    background: var(--border);
+    color: var(--muted);
+    line-height: 1.4;
 }
 
 /* ─── Summary Statistics ─────────────────────────────────────────────────────── */

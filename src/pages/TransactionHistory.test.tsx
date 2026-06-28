@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { TransactionHistory } from "./TransactionHistory";
@@ -12,13 +12,20 @@ const renderTransactionHistory = (initialEntries: string[] = ["/transactions"]) 
 };
 
 describe("TransactionHistory", () => {
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-02-20T12:00:00Z"));
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it("renders type, date, and amount filter chips as labeled pressed toggle groups", () => {
@@ -98,29 +105,24 @@ describe("TransactionHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fee" }));
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
 
-    // Check no-results state appears
     const noResultsHeading = screen.getByRole("heading", {
       name: /no transactions match these filters/i,
     });
     expect(noResultsHeading).toBeTruthy();
 
-    // Check "no transactions yet" message is NOT present
     const noTransactionsMsg = screen.queryByText(/no transactions yet/i);
     expect(noTransactionsMsg).toBeFalsy();
 
     fireEvent.click(screen.getByRole("button", { name: /clear filters/i }));
 
-    // No-results state should disappear
     const noResultsAfterClear = screen.queryByRole("heading", {
       name: /no transactions match these filters/i,
     });
     expect(noResultsAfterClear).toBeFalsy();
 
-    // Result count should be restored
     const resultCount = screen.getByText("28 transactions shown");
     expect(resultCount).toBeTruthy();
 
-    // First "All" button (type filter) should be active
     const allButtons = screen.getAllByRole("button", { name: "All" });
     expect(allButtons[0].getAttribute("aria-pressed")).toBe("true");
   });

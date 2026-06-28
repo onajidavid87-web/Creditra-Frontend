@@ -11,6 +11,7 @@ function ToastItem({
   toast: Toast;
   onDismiss: (id: string) => void;
 }) {
+  const isAssertive = toast.type === "error" || toast.type === "danger";
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const colors = TYPE_COLOR[toast.type];

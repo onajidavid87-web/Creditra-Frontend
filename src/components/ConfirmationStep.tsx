@@ -1,9 +1,11 @@
+import { AccessibleTooltip } from "@/components/AccessibleTooltip";
 import { CreditLine } from "@/types/draw-credit.types";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { useState } from "react";
 import { CreditLineSummaryBlock } from "@/components/CreditLineSummaryBlock";
 import { PendingButton } from "@/components/PendingButton";
 import { formatMoney } from "@/utils/amountValidation";
+import { useWallet } from "@/context/WalletContext";
 
 interface ConfirmationStepProps {
   /** The credit line the user is drawing from. */
@@ -52,18 +54,14 @@ export function ConfirmationStep({
   isLoading = false,
 }: ConfirmationStepProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const { status } = useWallet();
   const utilizedBalance = creditLine.limit - creditLine.available;
   const safeAmount = Math.max(amount, 0);
-  // Keep these estimates visible until a signed quote is returned by the API.
-  const fee = safeAmount > 0 ? Math.round(safeAmount * 0.01 * 100) / 100 : 0;
-  const apr = 12.5;
-  const estimatedMonthlyInterest =
-    safeAmount > 0 ? Math.round(((safeAmount * apr) / 100 / 12) * 100) / 100 : 0;
+  const { fee, apr, estimatedMonthlyInterest, riskBand, termMonths } =
+    getDrawPricingQuote(creditLine, safeAmount);
   const newBalance = utilizedBalance + safeAmount + fee;
   const remainingAvailable = Math.max(creditLine.limit - newBalance, 0);
-  const newUtilization = Math.round(
-    (newBalance / creditLine.limit) * 100,
-  );
+  const newUtilization = Math.round((newBalance / creditLine.limit) * 100);
   const isDrawDisabled = !agreedToTerms || isLoading;
   const disabledHelperText = !agreedToTerms
     ? "Accept the authorization terms to enable the Draw button."
@@ -91,13 +89,13 @@ export function ConfirmationStep({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <p className="text-sm text-muted font-medium">Draw amount</p>
-              <p className="mt-1 text-3xl font-bold text-foreground">
+              <p className="mt-1 text-3xl font-bold text-foreground tabular-nums">
                 {formatMoney(safeAmount)}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-background/60 p-3">
               <p className="text-sm text-muted font-medium">Estimated fee</p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(fee)}
               </p>
             </div>
@@ -105,13 +103,13 @@ export function ConfirmationStep({
               <p className="text-sm text-muted font-medium">
                 Estimated monthly interest
               </p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(estimatedMonthlyInterest)}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-background/60 p-3">
               <p className="text-sm text-muted font-medium">New balance</p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(newBalance)}
               </p>
             </div>
@@ -119,7 +117,7 @@ export function ConfirmationStep({
               <p className="text-sm text-muted font-medium">
                 Available after draw
               </p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(remainingAvailable)}
               </p>
             </div>
@@ -127,16 +125,19 @@ export function ConfirmationStep({
           <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
             <div className="flex justify-between gap-4 text-sm">
               <span className="text-muted font-medium">
-                Current utilization
+                {/* MICROCOPY.md: Utilization */}
+                <AccessibleTooltip label="Utilization is the percentage of your available credit that is currently being used.">
+                  <span>Current utilization</span>
+                </AccessibleTooltip>
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-foreground tabular-nums">
                 {creditLine.utilization}%
               </span>
             </div>
             <div className="flex justify-between gap-4 text-sm">
               <span className="text-muted font-medium">After draw</span>
               <span
-                className={`font-semibold ${newUtilization > 80 ? "text-yellow-500" : "text-foreground"}`}
+                className={`font-semibold tabular-nums ${newUtilization > 80 ? "text-yellow-500" : "text-foreground"}`}
               >
                 {newUtilization}%
               </span>
@@ -167,10 +168,33 @@ export function ConfirmationStep({
           className="mt-1 w-5 h-5 rounded accent-accent"
         />
         <span className="text-sm text-foreground">
-          I agree to the terms and conditions and authorize this draw. The funds
-          will be deposited within 1-2 business days.
+          I agree to the
+          {' '}
+          {/* MICROCOPY.md: Term */}
+          <AccessibleTooltip label="A term is a defined period or condition of your credit agreement.">
+            <span>terms</span>
+          </AccessibleTooltip>
+          {' '}
+          and conditions and authorize this draw. The funds will be deposited
+          within 1-2 business days.
         </span>
       </label>
+
+      {status === 'connected' && !isLoading && (
+        <div 
+          className="flex items-start gap-3 rounded-lg border p-4"
+          style={{
+            backgroundColor: 'rgba(88,166,255,0.08)',
+            borderColor: 'rgba(88,166,255,0.3)',
+          }}
+          role="status"
+        >
+          <Info className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#58a6ff' }} aria-hidden="true" />
+          <span className="text-sm font-medium" style={{ color: '#e6edf3' }}>
+            Your wallet will ask you to sign next
+          </span>
+        </div>
+      )}
 
       <div className="sticky bottom-0 z-10 -mx-6 border-t border-border bg-surface/95 px-6 py-4 backdrop-blur sm:-mx-8 sm:px-8">
         <div className="flex flex-col-reverse gap-3 sm:flex-row">
@@ -198,7 +222,9 @@ export function ConfirmationStep({
               pendingLabel="Processing draw..."
               disabled={isDrawDisabled}
               className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-describedby={isDrawDisabled ? "draw-disabled-helper" : undefined}
+              aria-describedby={
+                isDrawDisabled ? "draw-disabled-helper" : undefined
+              }
             >
               Draw
             </PendingButton>

@@ -1,17 +1,29 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { CopyToClipboard } from '../components/CopyToClipboard';
-import { StatusBadge } from '../components/StatusBadge';
-import { useWallet } from '../context/WalletContext';
-import { MOCK_CREDIT_LINES } from '../data/mockData';
-import type { Transaction } from '../types/creditLine';
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { CopyToClipboard } from "../components/CopyToClipboard";
+import { StatusBadge } from "../components/StatusBadge";
+import { useWallet } from "../context/WalletContext";
+import { RiskBandsPanel } from "../components/RiskBandsPanel";
+import { MOCK_CREDIT_LINES } from "../data/mockData";
+import type { Transaction } from "../types/creditLine";
 import {
-  COLOR, UTIL_COLOR,
-  fmt, fmtDate,
-  getUtilizationLevel, utilizationPct,
-} from '../utils/tokens';
-import './Dashboard.css';
-import { Skeleton } from '../components/Skeleton';
+  COLOR,
+  UTIL_COLOR,
+  fmt,
+  fmtDate,
+  getUtilizationLvl,
+  utilizationPct,
+  RISK_COLOR,
+} from "../utils/tokens";
+import { readJson, writeJson } from "../utils/storage";
+import "./Dashboard.css";
+import {T Skeleton} from "../components/Skeleton";
+import { NoDataGraph } from "../components/illustrations";
+import CompareLinesPanel from "../components/CompareLinesPanel";
+import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useInertBackdrop } from "../hooks/useInertBackdrop";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { getUtilizationLevel } from "../utils/tokens";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,10 +39,10 @@ const relativeTime = (iso: string): string => {
 };
 
 const TX_ICON: Record<string, string> = {
-  Draw: '↗',
-  Repay: '↙',
-  Fee: '📋',
-  Interest: '📈',
+  Draw: "↗",
+  Repay: "↙",
+  Fee: "📋",
+  Interest: "📈",
 };
 
 const TX_COLOR: Record<string, string> = {
@@ -42,32 +54,40 @@ const TX_COLOR: Record<string, string> = {
 
 // ─── Risk Score Gauge ─────────────────────────────────────────────────────────
 
-function RiskGauge({ score, trend, lastUpdated }: {
+function RiskGauge({
+  score,
+  trend,
+  lastUpdated,
+}: {
   score: number;
-  trend: 'improving' | 'declining' | 'stable';
+  trend: "improving" | "declining" | "stable";
   lastUpdated: string;
 }) {
-  // SVG arc from 180° to 0° (semicircle)
   const radius = 55;
   const cx = 80;
   const cy = 75;
-  const circumference = Math.PI * radius; // half circle
+  const circumference = Math.PI * radius;
   const normalizedScore = Math.min(100, Math.max(0, score));
   const offset = circumference - (normalizedScore / 100) * circumference;
 
-  const gaugeColor = score >= 70 ? COLOR.success : score >= 50 ? COLOR.warning : COLOR.danger;
-  const trendArrow = trend === 'improving' ? '▲' : trend === 'declining' ? '▼' : '─';
-  const trendColor = trend === 'improving' ? COLOR.success : trend === 'declining' ? COLOR.danger : COLOR.muted;
+  const gaugeColor =
+    score >= 70 ? COLOR.success : score >= 50 ? COLOR.warning : COLOR.danger;
+  const trendArrow =
+    trend === "improving" ? "▲" : trend === "declining" ? "▼" : "─";
+  const trendColor =
+    trend === "improving"
+      ? COLOR.success
+      : trend === "declining"
+        ? COLOR.danger
+        : COLOR.muted;
 
   return (
     <div className="risk-gauge-container">
       <svg className="risk-gauge-svg" viewBox="0 0 160 100">
-        {/* Background arc */}
         <path
           className="risk-gauge-bg"
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
         />
-        {/* Filled arc */}
         <path
           className="risk-gauge-fill"
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
@@ -75,9 +95,12 @@ function RiskGauge({ score, trend, lastUpdated }: {
           strokeDasharray={circumference}
           strokeDashoffset={offset}
         />
-        {/* Score text */}
-        <text x={cx} y={cy - 12} className="risk-gauge-score">{normalizedScore}</text>
-        <text x={cx} y={cy - 38} className="risk-gauge-label">Risk Score</text>
+        <text x={cx} y={cy - 12} className="risk-gauge-score">
+          {normalizedScore}
+        </text>
+        <text x={cx} y={cy - 38} className="risk-gauge-label">
+          Risk Score
+        </text>
       </svg>
 
       <div className="risk-meta">
@@ -89,44 +112,103 @@ function RiskGauge({ score, trend, lastUpdated }: {
         </div>
         <div className="risk-meta-item">
           <span className="rm-label">Last Updated</span>
-          <span className="rm-value" style={{ color: COLOR.muted }}>{fmtDate(lastUpdated)}</span>
+          <span className="rm-value" style={{ color: COLOR.muted }}>
+            {fmtDate(lastUpdated)}
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Risk Explainer ───────────────────────────────────────────────────────────
+
+function RiskExplainer({ score, address }: { score: number; address?: string }) {
+  const [dismissed, setDismissed] = useState(() => {
+    if (!address) return true;
+    return readJson(`risk-explainer-dismissed-${address}`, false);
+  });
+
+  if (dismissed || !address) return null;
+
+  const band = RISK_COLOR(score);
+
+  const message = band === COLOR.success
+    ? 'Strong credit position \u2014 you\u2019re above the recommended threshold for new draws.'
+    : band === COLOR.warning
+    ? 'Fair credit position \u2014 within acceptable range, though keep an eye on your utilization.'
+    : 'Below the recommended threshold \u2014 consider improving your score before new draws.';
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    writeJson(`risk-explainer-dismissed-${address}`, true);
+  };
+
+  return (
+    <div className="risk-explainer" role="status" style={{ borderLeftColor: band }}>
+      <p className="risk-explainer-text">{message}</p>
+      <button
+        className="risk-explainer-dismiss"
+        onClick={handleDismiss}
+        aria-label="Dismiss risk score explainer"
+        type="button"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // ─── Dashboard Component ──────────────────────────────────────────────────────
 
-/**
- * Default landing screen for a connected user.
- *
- * Renders four blocks in order of importance to the user:
- *
- *   1. Risk gauge — the score that determines every other number on the
- *      page. Highest visual priority. See UX_RATIONALE.md "Risk gauge
- *      prominently on the dashboard".
- *   2. Credit summary tiles — total limit, drawn, available, next
- *      payment.
- *   3. Active credit lines — quick navigation into the credit-line
- *      detail view.
- *   4. Recent transactions — a five-row preview of the ledger with a
- *      link into the full history.
- *
- * Loading state is simulated by a `setTimeout` to demonstrate the
- * shimmer-skeleton pattern; when the backend lands, replace it with a
- * real fetch (and keep the four-state loading -> empty / ready /
- * error policy documented in `ARCHITECTURE.md` section 5).
- *
- * The page is intentionally stateless from a navigation perspective —
- * it pulls wallet info from `useWallet()` and credit data from the mock
- * data layer; everything else is rendered output.
- */
 export function Dashboard() {
   const { wallet, status } = useWallet();
   const creditLines = MOCK_CREDIT_LINES;
 
   const [loading, setLoading] = useState(true);
+  const [isExplainOpen, setIsExplainOpen] = useState(false);
+  const explainTriggerRef = useRef<HTMLButtonElement>(null);
+  const [selectedCompareLines, setSelectedCompareLines] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const compareTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleCloseCompare = () => {
+    setShowCompare(false);
+    setSelectedCompareLines([]);
+  };
+
+  const handleOpenCompare = () => {
+    if (selectedCompareLines.length === 2) {
+      setShowCompare(true);
+    }
+  };
+
+  const toggleCompareSelection = (id: string) => {
+    setSelectedCompareLines((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((lineId) => lineId !== id);
+      } else if (prev.length < 2) {
+        return [...prev, id];
+      }
+      return prev;
+    });
+  };
+
+  const comparePanelRef = useFocusTrap({
+    isActive: showCompare,
+    triggerRef: compareTriggerRef,
+    onEscape: handleCloseCompare,
+  });
+
+  useInertBackdrop({ isInert: showCompare, modalId: "compare-lines-drawer-dashboard" });
+  useBodyScrollLock({ isLocked: showCompare });
+
+  const selectedCreditLines = useMemo(
+    () => creditLines.filter((line) => selectedCompareLines.includes(line.id)),
+    [creditLines, selectedCompareLines],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,34 +217,38 @@ export function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // ─── Derived data ────────────────────────────────────────────────────────
-
   const activeLines = useMemo(
-    () => creditLines.filter(cl => cl.status === 'Active' || cl.status === 'Suspended'),
-    [creditLines]
+    () =>
+      creditLines.filter(
+        (cl) => cl.status === "Active" || cl.status === "Suspended",
+      ),
+    [creditLines],
   );
 
   const activeLinesOnly = useMemo(
-    () => creditLines.filter(cl => cl.status === 'Active'),
-    [creditLines]
+    () => creditLines.filter((cl) => cl.status === "Active"),
+    [creditLines],
   );
 
   const totalLimit = activeLinesOnly.reduce((s, cl) => s + cl.limit, 0);
   const totalUtilized = activeLinesOnly.reduce((s, cl) => s + cl.utilized, 0);
   const totalAvailable = totalLimit - totalUtilized;
   const overallPct = utilizationPct(totalUtilized, totalLimit || 1);
-  const overallLevel = totalLimit > 0 ? getUtilizationLevel(totalUtilized, totalLimit) : 'low';
+  const overallLevel =
+    totalLimit > 0 ? getUtilizationLevel(totalUtilized, totalLimit) : "low";
 
-  // Weighted average risk score across active lines
-  const avgRiskScore = activeLinesOnly.length > 0
-    ? Math.round(activeLinesOnly.reduce((s, cl) => s + cl.riskScore, 0) / activeLinesOnly.length)
-    : 0;
+  const avgRiskScore =
+    activeLinesOnly.length > 0
+      ? Math.round(
+          activeLinesOnly.reduce((s, cl) => s + cl.riskScore, 0) /
+            activeLinesOnly.length,
+        )
+      : 0;
 
-  // All transactions across all lines, sorted by date descending
   const recentActivity = useMemo(() => {
     const all: (Transaction & { lineName: string; lineId: string })[] = [];
-    creditLines.forEach(cl => {
-      cl.transactions.forEach(tx => {
+    creditLines.forEach((cl) => {
+      cl.transactions.forEach((tx) => {
         all.push({ ...tx, lineName: cl.name, lineId: cl.id });
       });
     });
@@ -170,82 +256,89 @@ export function Dashboard() {
     return all.slice(0, 5);
   }, [creditLines]);
 
-  // Notifications
   const notifications = useMemo(() => {
-    const notes: { icon: string; content: React.ReactNode; type: 'info' | 'warning' | 'danger'; time?: string }[] = [];
+    const notes: {
+      icon: string;
+      content: React.ReactNode;
+      type: "info" | "warning" | "danger";
+      time?: string;
+    }[] = [];
 
-    creditLines.forEach(cl => {
-      if (cl.status === 'Suspended') {
+    creditLines.forEach((cl) => {
+      if (cl.status === "Suspended") {
         notes.push({
-          icon: '⚠️',
+          icon: "⚠️",
           content: (
             <>
-              <strong>{cl.name}</strong> has been suspended. Make a repayment to restore access.
+              <strong>{cl.name}</strong> has been suspended. Make a repayment to
+              restore access.
             </>
           ),
-          type: 'warning',
+          type: "warning",
           time: cl.updatedAt,
         });
       }
-      if (cl.status === 'Defaulted') {
+      if (cl.status === "Defaulted") {
         notes.push({
-          icon: '🚨',
+          icon: "🚨",
           content: (
             <>
-              <strong>{cl.name}</strong> is in default (90+ days overdue). Contact support immediately.
+              <strong>{cl.name}</strong> is in default (90+ days overdue).
+              Contact support immediately.
             </>
           ),
-          type: 'danger',
+          type: "danger",
           time: cl.updatedAt,
         });
       }
-      if (cl.status === 'Active') {
+      if (cl.status === "Active") {
         const util = cl.utilized / cl.limit;
         if (util >= 0.75) {
           notes.push({
-            icon: '📊',
+            icon: "📊",
             content: (
               <>
-                <strong>{cl.name}</strong> utilization is at {Math.round(util * 100)}%. Consider a repayment.
+                <strong>{cl.name}</strong> utilization is at{" "}
+                {Math.round(util * 100)}%. Consider a repayment.
               </>
             ),
-            type: 'warning',
+            type: "warning",
           });
         }
         if (cl.nextPaymentDate) {
-          const daysUntil = Math.ceil((new Date(cl.nextPaymentDate).getTime() - Date.now()) / 86400000);
+          const daysUntil = Math.ceil(
+            (new Date(cl.nextPaymentDate).getTime() - Date.now()) / 86400000,
+          );
           if (daysUntil > 0 && daysUntil <= 7) {
             notes.push({
-              icon: '🗓️',
+              icon: "🗓️",
               content: (
                 <>
-                  Payment of <strong>{fmt(cl.nextPaymentAmount ?? 0)}</strong> due in {daysUntil} day{daysUntil !== 1 ? 's' : ''} for {cl.name}.
+                  Payment of <strong>{fmt(cl.nextPaymentAmount ?? 0)}</strong>{" "}
+                  due in {daysUntil} day{daysUntil !== 1 ? "s" : ""} for{" "}
+                  {cl.name}.
                 </>
               ),
-              type: 'info',
+              type: "info",
             });
           }
         }
       }
     });
-
     return notes;
   }, [creditLines]);
 
   const hasLines = creditLines.length > 0;
   const hasUtilized = totalUtilized > 0;
-  const isConnected = status === 'connected' && wallet;
+  const isConnected = status === "connected" && wallet;
 
   const truncAddr = wallet?.publicKey
     ? `${wallet.publicKey.slice(0, 6)}...${wallet.publicKey.slice(-4)}`
-    : '';
-
-  // ─── Empty State ─────────────────────────────────────────────────────────
+    : "";
 
   if (!loading && !hasLines) {
     return (
       <>
-        {/* Header */}
         <div className="dashboard-header">
           <div>
             <h1>Dashboard</h1>
@@ -261,40 +354,55 @@ export function Dashboard() {
                 className="wallet-address-chip"
                 valueClassName="wallet-address-value"
               />
-              <span
-                className={`network-badge ${wallet.network === 'TESTNET' ? 'testnet' : 'mainnet'}`}
-                title={wallet.network === 'TESTNET' ? 'Testnet (no real funds)' : 'Mainnet (real funds)'}
-                aria-label={wallet.network === 'TESTNET' ? 'Testnet network (test funds)' : 'Mainnet network (real funds)'}
-              >
-                <span className="dot" />
-                <span className="network-icon" aria-hidden="true">{wallet.network === 'TESTNET' ? '⚠️' : '✅'}</span>
-                {wallet.network === 'TESTNET' ? 'Testnet' : 'Mainnet'}
-              </span>
+               <span
+                 className={`network-badge ${wallet.network === "TESTNET" ? "testnet" : "mainnet"}`}
+                 title={
+                   wallet.network === "TESTNET"
+                     ? "Testnet (no real funds)"
+                     : "Mainnet (real funds)"
+                 }
+                 aria-label={
+                   wallet.network === "TESTNET"
+                     ? "Testnet network (test funds)"
+                     : "Mainnet network (real funds)"
+                 }
+               >
+                 <span className="dot" />
+                 <span className="network-icon" aria-hidden="true">
+                   {wallet.network === "TESTNET" ? "⚠️" : "✅"}
+                 </span>
+                 {wallet.network === "TESTNET" ? "Testnet" : "Mainnet"}
+               </span>
             </div>
           )}
         </div>
-
         <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
+          <NoDataGraph className="empty-state-illustration--muted" />
           <h2>No credit lines yet</h2>
-          <p>Start your credit journey by requesting a credit evaluation. We'll analyze your on-chain activity to determine your credit limit and terms.</p>
-          <button className="empty-state-btn">
-            🚀 Request Credit Evaluation
-          </button>
+          <p>
+            Start your credit journey by requesting a credit evaluation. We'll
+            analyze your on-chain activity to determine your credit limit and
+            terms.
+          </p>
+          <Link to="/open-credit" className="empty-state-btn">
+            Request Credit Evaluation
+          </Link>
         </div>
       </>
     );
   }
 
-  // ─── Main Dashboard ──────────────────────────────────────────────────────
-
   return (
-    <div role="status" aria-live="polite" aria-busy={loading} className="dashboard-root">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy={loading}
+      className="dashboard-root"
+    >
       <span className="sr-only">
-        {loading ? 'Loading dashboard' : 'Dashboard loaded'}
+        {loading ? "Loading dashboard" : "Dashboard loaded"}
       </span>
 
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
@@ -310,37 +418,96 @@ export function Dashboard() {
               className="wallet-address-chip"
               valueClassName="wallet-address-value"
             />
-              <span
-                className={`network-badge ${wallet.network === 'TESTNET' ? 'testnet' : 'mainnet'}`}
-                title={wallet.network === 'TESTNET' ? 'Testnet (no real funds)' : 'Mainnet (real funds)'}
-                aria-label={wallet.network === 'TESTNET' ? 'Testnet network (test funds)' : 'Mainnet network (real funds)'}
-              >
-                <span className="dot" />
-                <span className="network-icon" aria-hidden="true">{wallet.network === 'TESTNET' ? '⚠️' : '✅'}</span>
-                {wallet.network === 'TESTNET' ? 'Testnet' : 'Mainnet'}
-              </span>
+             <span
+               className={`network-badge ${wallet.network === "TESTNET" ? "testnet" : "mainnet"}`}
+               title={
+                 wallet.network === "TESTNET"
+                   ? "Testnet (no real funds)"
+                   : "Mainnet (real funds)"
+               }
+               aria-label={
+                 wallet.network === "TESTNET"
+                   ? "Testnet network (test funds)"
+                   : "Mainnet network (real funds)"
+               }
+             >
+               <span className="dot" />
+               <span className="network-icon" aria-hidden="true">
+                 {wallet.network === "TESTNET" ? "⚠️" : "✅"}
+               </span>
+               {wallet.network === "TESTNET" ? "Testnet" : "Mainnet"}
+             </span>
           </div>
         )}
       </div>
 
-      {/* Summary Cards */}
+      <WhatsChangedPanel />
+
       <div className="summary-cards" aria-busy={loading}>
         {loading ? (
           <>
             <div className="summary-card skeleton-card">
-              <Skeleton style={{ width: '60%', height: '14px', marginBottom: '16px', borderRadius: '4px' }} />
-              <Skeleton style={{ width: '80%', height: '32px', marginBottom: '12px', borderRadius: '4px' }} />
-              <Skeleton style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+              <Skeleton
+                style={{
+                  width: "60%",
+                  height: "14px",
+                  marginBottom: "16px",
+                  borderRadius: "4px",
+                }}
+              />
+              <Skeleton
+                style={{
+                  width: "80%",
+                  height: "32px",
+                  marginBottom: "12px",
+                  borderRadius: "4px",
+                }}
+              />
+              <Skeleton
+                style={{ width: "40%", height: "12px", borderRadius: "4px" }}
+              />
             </div>
             <div className="summary-card skeleton-card">
-              <Skeleton style={{ width: '60%', height: '14px', marginBottom: '16px', borderRadius: '4px' }} />
-              <Skeleton style={{ width: '80%', height: '32px', marginBottom: '12px', borderRadius: '4px' }} />
-              <Skeleton style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+              <Skeleton
+                style={{
+                  width: "60%",
+                  height: "14px",
+                  marginBottom: "16px",
+                  borderRadius: "4px",
+                }}
+              />
+              <Skeleton
+                style={{
+                  width: "80%",
+                  height: "32px",
+                  marginBottom: "12px",
+                  borderRadius: "4px",
+                }}
+              />
+              <Skeleton
+                style={{ width: "40%", height: "12px", borderRadius: "4px" }}
+              />
             </div>
             <div className="summary-card skeleton-card">
-              <Skeleton style={{ width: '60%', height: '14px', marginBottom: '16px', borderRadius: '4px' }} />
-              <Skeleton style={{ width: '80%', height: '32px', marginBottom: '12px', borderRadius: '4px' }} />
-              <Skeleton style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+              <Skeleton
+                style={{
+                  width: "60%",
+                  height: "14px",
+                  marginBottom: "16px",
+                  borderRadius: "4px",
+                }}
+              />
+              <Skeleton
+                style={{
+                  width: "80%",
+                  height: "32px",
+                  marginBottom: "12px",
+                  borderRadius: "4px",
+                }}
+              />
+              <Skeleton
+                style={{ width: "40%", height: "12px", borderRadius: "4px" }}
+              />
             </div>
           </>
         ) : (
@@ -348,322 +515,624 @@ export function Dashboard() {
             <div className="summary-card">
               <div className="glow" style={{ background: COLOR.accent }} />
               <p className="label">Total Credit Limit</p>
-              <p className="value" style={{ color: COLOR.accent }}>{fmt(totalLimit)}</p>
-              <p className="sub">Across {activeLinesOnly.length} active line{activeLinesOnly.length !== 1 ? 's' : ''}</p>
+              <p className="value" style={{ color: COLOR.accent }}>
+                {fmt(totalLimit)}
+              </p>
+              <p className="sub">
+                Across {activeLinesOnly.length} active line
+                {activeLinesOnly.length !== 1 ? "s" : ""}
+              </p>
             </div>
             <div className="summary-card">
-              <div className="glow" style={{ background: UTIL_COLOR[overallLevel] }} />
+              <div
+                className="glow"
+                style={{ background: UTIL_COLOR[overallLevel] }}
+              />
               <p className="label">Total Utilized</p>
-              <p className="value" style={{ color: UTIL_COLOR[overallLevel] }}>{fmt(totalUtilized)}</p>
+              <p className="value" style={{ color: UTIL_COLOR[overallLevel] }}>
+                {fmt(totalUtilized)}
+              </p>
               <p className="sub">{overallPct}% of total limit</p>
             </div>
             <div className="summary-card">
               <div className="glow" style={{ background: COLOR.success }} />
               <p className="label">Available Credit</p>
-              <p className="value" style={{ color: COLOR.success }}>{fmt(totalAvailable)}</p>
+              <p className="value" style={{ color: COLOR.success }}>
+                {fmt(totalAvailable)}
+              </p>
               <p className="sub">Ready to draw</p>
             </div>
           </>
         )}
       </div>
 
-      {/* Main Grid */}
       <div className="dashboard-grid">
-        {/* Left Column */}
         <div>
-          {/* Credit Summary */}
-          <div className="card" style={{ animationDelay: '0.1s' }}>
-            <h2><span className="icon">📊</span> Credit Summary</h2>
-
+          <div className="card" style={{ animationDelay: "0.1s" }}>
+            <h2>
+              <span className="icon">📊</span> Credit Summary
+            </h2>
             <div className="util-bar-container">
               <div className="util-bar-header">
                 <span style={{ color: COLOR.muted }}>Utilization</span>
-                <span style={{ fontWeight: 600, color: UTIL_COLOR[overallLevel] }}>{overallPct}%</span>
+                <span
+                  style={{ fontWeight: 600, color: UTIL_COLOR[overallLevel] }}
+                >
+                  {overallPct}%
+                </span>
               </div>
               <div className="util-bar-track">
                 <div
                   className="util-bar-fill"
-                  style={{ width: `${overallPct}%`, background: UTIL_COLOR[overallLevel] }}
+                  style={{
+                    width: `${overallPct}%`,
+                    background: UTIL_COLOR[overallLevel],
+                  }}
                 />
               </div>
             </div>
-
             <div className="credit-breakdown">
               <div className="credit-breakdown-item">
                 <p className="cb-label">Total Limit</p>
-                <p className="cb-value" style={{ color: COLOR.accent }}>{fmt(totalLimit)}</p>
+                <p className="cb-value" style={{ color: COLOR.accent }}>
+                  {fmt(totalLimit)}
+                </p>
               </div>
               <div className="credit-breakdown-item">
                 <p className="cb-label">Utilized</p>
-                <p className="cb-value" style={{ color: UTIL_COLOR[overallLevel] }}>{fmt(totalUtilized)}</p>
+                <p
+                  className="cb-value"
+                  style={{ color: UTIL_COLOR[overallLevel] }}
+                >
+                  {fmt(totalUtilized)}
+                </p>
               </div>
               <div className="credit-breakdown-item">
                 <p className="cb-label">Available</p>
-                <p className="cb-value" style={{ color: COLOR.success }}>{fmt(totalAvailable)}</p>
+                <p className="cb-value" style={{ color: COLOR.success }}>
+                  {fmt(totalAvailable)}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Risk Score */}
-          <div className="card" style={{ animationDelay: '0.15s' }} aria-busy={loading}>
-            <h2><span className="icon">🛡️</span> Risk Score</h2>
-            {loading ? (
-              <div className="risk-gauge-container">
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px', width: '160px', marginBottom: '0.75rem' }}>
-                  <Skeleton style={{ width: '80px', height: '80px', borderRadius: '50%' }} />
-                </div>
-                <div className="risk-meta" style={{ width: '100%' }}>
-                  <div className="risk-meta-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Skeleton style={{ width: '40px', height: '10px', marginBottom: '6px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '60px', height: '14px', borderRadius: '2px' }} />
-                  </div>
-                  <div className="risk-meta-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Skeleton style={{ width: '60px', height: '10px', marginBottom: '6px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '50px', height: '14px', borderRadius: '2px' }} />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <RiskGauge
-                score={avgRiskScore}
-                trend="improving"
-                lastUpdated={activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()}
-              />
-            )}
-          </div>
+           <div className="card" style={{ animationDelay: "0.15s" }} aria-busy={loading}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+               <h2 style={{ margin: 0 }}><span className="icon">🛡️</span> Risk Score</h2>
+               {!loading && (
+                 <button 
+                   ref={explainTriggerRef}
+                   onClick={() => setIsExplainOpen(true)}
+                   style={{ 
+                     background: "transparent", 
+                     border: `1px solid ${COLOR.border}`, 
+                     color: COLOR.text, 
+                     fontSize: "0.75rem", 
+                     padding: "0.25rem 0.5rem", 
+                     borderRadius: 4, 
+                     cursor: "pointer",
+                     fontWeight: 500
+                   }}
+                 >
+                   Explain
+                 </button>
+               )}
+             </div>
+             {loading ? (
+               <div className="risk-gauge-container">
+                 <div
+                   style={{
+                     display: "flex",
+                     justifyContent: "center",
+                     alignItems: "center",
+                     height: "100px",
+                     width: "160px",
+                     marginBottom: "0.75rem",
+                   }}
+                 >
+                   <Skeleton
+                     style={{
+                       width: "80px",
+                       height: "80px",
+                       borderRadius: "50%",
+                     }}
+                   />
+                 </div>
+                 <div className="risk-meta" style={{ width: "100%" }}>
+                   <div
+                     className="risk-meta-item"
+                     style={{
+                       flex: 1,
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "center",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "40px",
+                         height: "10px",
+                         marginBottom: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="risk-meta-item"
+                     style={{
+                       flex: 1,
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "center",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "10px",
+                         marginBottom: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "50px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+               </div>
+             ) : (
+               <>
+                 <RiskGauge
+                   score={avgRiskScore}
+                   trend="improving"
+                   lastUpdated={
+                     activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()
+                   }
+                 />
+                 <RiskExplainer score={avgRiskScore} address={wallet?.publicKey} />
+               </>
+             )}
+           </div>
 
-          {/* Active Credit Lines Preview */}
-          <div className="card" style={{ animationDelay: '0.2s' }} aria-busy={loading}>
-            <h2>
-              <span className="icon">💳</span> Active Credit Lines
-              {!loading && (
-                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 400, color: COLOR.muted }}>
-                  {activeLines.length} line{activeLines.length !== 1 ? 's' : ''}
-                </span>
-              )}
-            </h2>
+           <div
+             className="card"
+             style={{ animationDelay: "0.2s" }}
+             aria-busy={loading}
+           >
+             <h2>
+               <span className="icon">💳</span> Active Credit Lines
+               {!loading && (
+                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                   {activeLines.length >= 2 && (
+                     <button
+                       ref={compareTriggerRef}
+                       type="button"
+                       onClick={handleOpenCompare}
+                       disabled={selectedCompareLines.length !== 2}
+                       style={{
+                         padding: "0.35rem 0.75rem",
+                         fontSize: "0.75rem",
+                         fontWeight: 600,
+                         borderRadius: "4px",
+                         background: selectedCompareLines.length === 2 ? "var(--accent)" : "rgba(139,148,158,0.12)",
+                         color: selectedCompareLines.length === 2 ? "#0d1117" : "var(--muted)",
+                         border: "none",
+                         cursor: selectedCompareLines.length === 2 ? "pointer" : "not-allowed",
+                         opacity: selectedCompareLines.length === 2 ? 1 : 0.6,
+                         transition: "all 0.15s",
+                       }}
+                     >
+                       Compare Selected ({selectedCompareLines.length}/2)
+                     </button>
+                   )}
+                   <span
+                     style={{
+                       fontSize: "0.75rem",
+                       fontWeight: 400,
+                       color: COLOR.muted,
+                     }}
+                   >
+                     {activeLines.length} line{activeLines.length !== 1 ? "s" : ""}
+                   </span>
+                 </div>
+               )}
+             </h2>
+             {loading ? (
+               <>
+                 <div className="cl-preview-item">
+                   <div style={{ flex: 1, minWidth: 0 }}>
+                     <div
+                       style={{
+                         display: "flex",
+                         alignItems: "center",
+                         gap: "0.5rem",
+                         marginBottom: "0.4rem",
+                       }}
+                     >
+                       <Skeleton
+                         style={{
+                           width: "100px",
+                           height: "14px",
+                           borderRadius: "2px",
+                         }}
+                       />
+                       <Skeleton
+                         style={{
+                           width: "50px",
+                           height: "14px",
+                           borderRadius: "4px",
+                         }}
+                       />
+                     </div>
+                     <Skeleton
+                       style={{
+                         width: "120px",
+                         height: "10px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="cl-preview-right"
+                     style={{
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "flex-end",
+                       gap: "0.4rem",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "80px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+                 <div className="cl-preview-item">
+                   <div style={{ flex: 1, minWidth: 0 }}>
+                     <div
+                       style={{
+                         display: "flex",
+                         alignItems: "center",
+                         gap: "0.5rem",
+                         marginBottom: "0.4rem",
+                       }}
+                     >
+                       <Skeleton
+                         style={{
+                           width: "80px",
+                           height: "14px",
+                           borderRadius: "2px",
+                         }}
+                       />
+                       <Skeleton
+                         style={{
+                           width: "50px",
+                           height: "14px",
+                           borderRadius: "4px",
+                         }}
+                       />
+                     </div>
+                     <Skeleton
+                       style={{
+                         width: "100px",
+                         height: "10px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="cl-preview-right"
+                     style={{
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "flex-end",
+                       gap: "0.4rem",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "70px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "50px",
+                         height: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+                 <div className="cl-preview-item">
+                   <div style={{ flex: 1, minWidth: 0 }}>
+                     <div
+                       style={{
+                         display: "flex",
+                         alignItems: "center",
+                         gap: "0.5rem",
+                         marginBottom: "0.4rem",
+                       }}
+                     >
+                       <Skeleton
+                         style={{
+                           width: "90px",
+                           height: "14px",
+                           borderRadius: "2px",
+                         }}
+                       />
+                       <Skeleton
+                         style={{
+                           width: "50px",
+                           height: "14px",
+                           borderRadius: "4px",
+                         }}
+                       />
+                     </div>
+                     <Skeleton
+                       style={{
+                         width: "110px",
+                         height: "10px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="cl-preview-right"
+                     style={{
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "flex-end",
+                       gap: "0.4rem",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "40px",
+                         height: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+               </>
+             ) : (
+               <>
+                 {activeLines.slice(0, 3).map((cl) => {
+                   const pct = utilizationPct(cl.utilized, cl.limit);
+                   const level = getUtilizationLevel(cl.utilized, cl.limit);
+                   const isSelected = selectedCompareLines.includes(cl.id);
+                   return (
+                     <div key={cl.id} className="cl-preview-item">
+                       {activeLines.length >= 2 && (
+                         <div style={{ paddingRight: "0.75rem", display: "flex", alignItems: "center" }}>
+                           <label
+                             className="cl-row-select"
+                             style={{
+                               margin: 0,
+                               display: "inline-flex",
+                               alignItems: "center",
+                               justifyContent: "center",
+                               cursor: "pointer",
+                               minWidth: "44px",
+                               minHeight: "44px",
+                             }}
+                           >
+                             <input
+                               type="checkbox"
+                               checked={isSelected}
+                               onChange={() => toggleCompareSelection(cl.id)}
+                               aria-label={`Select ${cl.name} for comparison`}
+                               style={{
+                                 cursor: "pointer",
+                                 width: "16px",
+                                 height: "16px",
+                                 accentColor: "var(--accent)",
+                               }}
+                             />
+                           </label>
+                         </div>
+                       )}
+                       <div style={{ flex: 1, minWidth: 0 }}>
+                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
+                           <p className="cl-preview-name">{cl.name}</p>
+                           <StatusBadge status={cl.status} />
+                         </div>
+                         <p className="cl-preview-id">{cl.id}</p>
+                       </div>
+                       <div className="cl-preview-right">
+                         <div className="cl-preview-amount">
+                           {fmt(cl.utilized)} <span style={{ color: COLOR.muted, fontWeight: 400, fontSize: "0.75rem" }}>/ {fmt(cl.limit)}</span>
+                         </div>
+                         <div className="cl-preview-bar">
+                           <div className="cl-preview-bar-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
+                         </div>
+                       </div>
+                     </div>
+                   );
+                 })}
+                 <Link to="/credit-lines" className="view-all-link">
+                   View all credit lines →
+                 </Link>
+               </>
+             )}
+           </div>
+         </div>
+ 
+         <div>
+           <div className="card" style={{ animationDelay: "0.12s" }}>
+             <h2><span className="icon">⚡</span> Quick Actions</h2>
+             <div className="quick-actions-grid">
+               {!hasLines && (
+                 <button
+                   className="qa-btn"
+                   style={{ borderColor: "rgba(88,166,255,0.3)" }}
+                 >
+                   <div className="qa-icon" style={{ background: "rgba(88,166,255,0.12)", color: COLOR.accent }}>🆕</div>
+                   <div>
+                     <div className="qa-label" style={{ color: COLOR.accent }}>Open Credit Line</div>
+                     <div className="qa-desc" style={{ color: COLOR.muted }}>Get started with your first line</div>
+                   </div>
+                   <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                 </button>
+               )}
+               {hasLines && activeLinesOnly.length > 0 && (
+                 <button
+                   className="qa-btn"
+                   style={{ borderColor: "rgba(88,166,255,0.3)" }}
+                 >
+                   <div className="qa-icon" style={{ background: "rgba(88,166,255,0.12)", color: COLOR.accent }}>↗</div>
+                   <div>
+                     <div className="qa-label" style={{ color: COLOR.accent }}>Draw Credit</div>
+                     <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalAvailable)} available</div>
+                   </div>
+                   <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                 </button>
+               )}
+               {hasUtilized && (
+                 <button
+                   className="qa-btn"
+                   style={{ borderColor: "rgba(63,185,80,0.3)" }}
+                 >
+                   <div className="qa-icon" style={{ background: "rgba(63,185,80,0.12)", color: COLOR.success }}>↙</div>
+                   <div>
+                     <div className="qa-label" style={{ color: COLOR.success }}>Repay Credit</div>
+                     <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalUtilized)} outstanding</div>
+                   </div>
+                   <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                 </button>
+               )}
+               <Link
+                 to="/credit-lines"
+                 className="qa-btn"
+                 style={{ borderColor: "transparent", textDecoration: "none" }}
+               >
+                 <div className="qa-icon" style={{ background: "rgba(139,148,158,0.12)", color: COLOR.muted }}>📋</div>
+                 <div>
+                   <div className="qa-label" style={{ color: COLOR.text }}>View Credit Lines</div>
+                   <div className="qa-desc" style={{ color: COLOR.muted }}>Manage all your credit lines</div>
+                 </div>
+                 <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+               </Link>
+             </div>
+           </div>
+ 
+           <div className="card" style={{ animationDelay: "0.18s" }} aria-busy={loading}>
+             <h2><span className="icon">📝</span> Recent Activity</h2>
+             {loading ? (
+               <>
+                 <div className="activity-item">
+                   <Skeleton className="activity-icon" style={{ borderRadius: "6px" }} />
+                   <div className="activity-content" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                     <Skeleton style={{ width: "120px", height: "14px", borderRadius: "2px" }} />
+                     <Skeleton style={{ width: "180px", height: "10px", borderRadius: "2px" }} />
+                   </div>
+                   <Skeleton style={{ width: "60px", height: "14px", marginLeft: "auto", borderRadius: "2px" }} />
+                 </div>
+                 <div className="activity-item">
+                   <Skeleton className="activity-icon" style={{ borderRadius: "6px" }} />
+                   <div className="activity-content" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                     <Skeleton style={{ width: "100px", height: "14px", borderRadius: "2px" }} />
+                     <Skeleton style={{ width: "150px", height: "10px", borderRadius: "2px" }} />
+                   </div>
+                   <Skeleton style={{ width: "50px", height: "14px", marginLeft: "auto", borderRadius: "2px" }} />
+                 </div>
+                 <div className="activity-item">
+                   <Skeleton className="activity-icon" style={{ borderRadius: "6px" }} />
+                   <div className="activity-content" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                     <Skeleton style={{ width: "140px", height: "14px", borderRadius: "2px" }} />
+                     <Skeleton style={{ width: "160px", height: "10px", borderRadius: "2px" }} />
+                   </div>
+                   <Skeleton style={{ width: "70px", height: "14px", marginLeft: "auto", borderRadius: "2px" }} />
+                 </div>
+               </>
+             ) : recentActivity.length === 0 ? (
+               <p style={{ color: COLOR.muted, fontSize: "0.8rem", textAlign: "center", padding: "1.5rem 0" }}>
+                 No transactions yet
+               </p>
+             ) : (
+               recentActivity.map((tx, i) => (
+                 <div key={`${tx.id}-${i}`} className="activity-item">
+                   <div
+                     className="activity-icon"
+                     style={{
+                       background: `${TX_COLOR[tx.type]}15`,
+                       color: TX_COLOR[tx.type],
+                     }}
+                   >
+                     {TX_ICON[tx.type]}
+                   </div>
+                   <div className="activity-content">
+                     <div className="activity-title">{tx.note || tx.type}</div>
+                     <div className="activity-sub">{tx.lineName} · {relativeTime(tx.date)}</div>
+                   </div>
+                   <div className="activity-amount" style={{ color: TX_COLOR[tx.type] }}>
+                     {tx.type === "Repay" ? "+" : "-"}{fmt(tx.amount)}
+                   </div>
+                 </div>
+               ))
+             )}
+           </div>
+ 
+           {notifications.length > 0 && (
+             <div className="card" style={{ animationDelay: "0.22s" }}>
+               <h2><span className="icon">🔔</span> Alerts</h2>
+               {notifications.map((note, i) => (
+                 <div 
+                   key={i} 
+                   className={`notification-item notification-item--${note.type}`}
+                   role={note.type === "danger" ? "alert" : "status"}
+                 >
+                   <span className="notification-icon" aria-hidden="true">{note.icon}</span>
+                   <div>
+                     <div className="notification-text">
+                       {note.content}
+                     </div>
+                     {note.time && (
+                       <div className="notification-time">{relativeTime(note.time)}</div>
+                     )}
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
+         </div>
+       </div>
 
-            {loading ? (
-              <>
-                <div className="cl-preview-item">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                      <Skeleton style={{ width: '100px', height: '14px', borderRadius: '2px' }} />
-                      <Skeleton style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
-                    </div>
-                    <Skeleton style={{ width: '120px', height: '10px', borderRadius: '2px' }} />
-                  </div>
-                  <div className="cl-preview-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
-                    <Skeleton style={{ width: '80px', height: '14px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '60px', height: '6px', borderRadius: '2px' }} />
-                  </div>
-                </div>
-                <div className="cl-preview-item">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                      <Skeleton style={{ width: '80px', height: '14px', borderRadius: '2px' }} />
-                      <Skeleton style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
-                    </div>
-                    <Skeleton style={{ width: '100px', height: '10px', borderRadius: '2px' }} />
-                  </div>
-                  <div className="cl-preview-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
-                    <Skeleton style={{ width: '70px', height: '14px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '50px', height: '6px', borderRadius: '2px' }} />
-                  </div>
-                </div>
-                <div className="cl-preview-item">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                      <Skeleton style={{ width: '90px', height: '14px', borderRadius: '2px' }} />
-                      <Skeleton style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
-                    </div>
-                    <Skeleton style={{ width: '110px', height: '10px', borderRadius: '2px' }} />
-                  </div>
-                  <div className="cl-preview-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
-                    <Skeleton style={{ width: '60px', height: '14px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '40px', height: '6px', borderRadius: '2px' }} />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {activeLines.slice(0, 3).map(cl => {
-                  const pct = utilizationPct(cl.utilized, cl.limit);
-                  const level = getUtilizationLevel(cl.utilized, cl.limit);
-                  return (
-                    <div key={cl.id} className="cl-preview-item">
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                          <p className="cl-preview-name">{cl.name}</p>
-                          <StatusBadge status={cl.status} />
-                        </div>
-                        <p className="cl-preview-id">{cl.id}</p>
-                      </div>
-                      <div className="cl-preview-right">
-                        <div className="cl-preview-amount">
-                          {fmt(cl.utilized)} <span style={{ color: COLOR.muted, fontWeight: 400, fontSize: '0.75rem' }}>/ {fmt(cl.limit)}</span>
-                        </div>
-                        <div className="cl-preview-bar">
-                          <div className="cl-preview-bar-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <Link to="/credit-lines" className="view-all-link">
-                  View all credit lines →
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div>
-          {/* Quick Actions */}
-          <div className="card" style={{ animationDelay: '0.12s' }}>
-            <h2><span className="icon">⚡</span> Quick Actions</h2>
-            <div className="quick-actions-grid">
-              {!hasLines && (
-                <button
-                  className="qa-btn"
-                  style={{ borderColor: 'rgba(88,166,255,0.3)' }}
-                >
-                  <div className="qa-icon" style={{ background: 'rgba(88,166,255,0.12)', color: COLOR.accent }}>🆕</div>
-                  <div>
-                    <div className="qa-label" style={{ color: COLOR.accent }}>Open Credit Line</div>
-                    <div className="qa-desc" style={{ color: COLOR.muted }}>Get started with your first line</div>
-                  </div>
-                  <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
-                </button>
-              )}
-              {hasLines && activeLinesOnly.length > 0 && (
-                <button
-                  className="qa-btn"
-                  style={{ borderColor: 'rgba(88,166,255,0.3)' }}
-                >
-                  <div className="qa-icon" style={{ background: 'rgba(88,166,255,0.12)', color: COLOR.accent }}>↗</div>
-                  <div>
-                    <div className="qa-label" style={{ color: COLOR.accent }}>Draw Credit</div>
-                    <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalAvailable)} available</div>
-                  </div>
-                  <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
-                </button>
-              )}
-              {hasUtilized && (
-                <button
-                  className="qa-btn"
-                  style={{ borderColor: 'rgba(63,185,80,0.3)' }}
-                >
-                  <div className="qa-icon" style={{ background: 'rgba(63,185,80,0.12)', color: COLOR.success }}>↙</div>
-                  <div>
-                    <div className="qa-label" style={{ color: COLOR.success }}>Repay Credit</div>
-                    <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalUtilized)} outstanding</div>
-                  </div>
-                  <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
-                </button>
-              )}
-              <Link
-                to="/credit-lines"
-                className="qa-btn"
-                style={{ borderColor: 'transparent', textDecoration: 'none' }}
-              >
-                <div className="qa-icon" style={{ background: 'rgba(139,148,158,0.12)', color: COLOR.muted }}>📋</div>
-                <div>
-                  <div className="qa-label" style={{ color: COLOR.text }}>View Credit Lines</div>
-                  <div className="qa-desc" style={{ color: COLOR.muted }}>Manage all your credit lines</div>
-                </div>
-                <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="card" style={{ animationDelay: '0.18s' }} aria-busy={loading}>
-            <h2><span className="icon">📝</span> Recent Activity</h2>
-
-            {loading ? (
-              <>
-                <div className="activity-item">
-                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
-                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <Skeleton style={{ width: '120px', height: '14px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '180px', height: '10px', borderRadius: '2px' }} />
-                  </div>
-                  <Skeleton style={{ width: '60px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
-                </div>
-                <div className="activity-item">
-                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
-                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <Skeleton style={{ width: '100px', height: '14px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '150px', height: '10px', borderRadius: '2px' }} />
-                  </div>
-                  <Skeleton style={{ width: '50px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
-                </div>
-                <div className="activity-item">
-                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
-                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <Skeleton style={{ width: '140px', height: '14px', borderRadius: '2px' }} />
-                    <Skeleton style={{ width: '160px', height: '10px', borderRadius: '2px' }} />
-                  </div>
-                  <Skeleton style={{ width: '70px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
-                </div>
-              </>
-            ) : recentActivity.length === 0 ? (
-              <p style={{ color: COLOR.muted, fontSize: '0.8rem', textAlign: 'center', padding: '1.5rem 0' }}>
-                No transactions yet
-              </p>
-            ) : (
-              recentActivity.map((tx, i) => (
-                <div key={`${tx.id}-${i}`} className="activity-item">
-                  <div
-                    className="activity-icon"
-                    style={{
-                      background: `${TX_COLOR[tx.type]}15`,
-                      color: TX_COLOR[tx.type],
-                    }}
-                  >
-                    {TX_ICON[tx.type]}
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-title">{tx.note || tx.type}</div>
-                    <div className="activity-sub">{tx.lineName} · {relativeTime(tx.date)}</div>
-                  </div>
-                  <div className="activity-amount" style={{ color: TX_COLOR[tx.type] }}>
-                    {tx.type === 'Repay' ? '+' : '-'}{fmt(tx.amount)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Notifications */}
-          {notifications.length > 0 && (
-            <div className="card" style={{ animationDelay: '0.22s' }}>
-              <h2><span className="icon">🔔</span> Alerts</h2>
-
-              {notifications.map((note, i) => (
-                <div 
-                  key={i} 
-                  className={`notification-item notification-item--${note.type}`}
-                  role={note.type === 'danger' ? 'alert' : 'status'}
-                >
-                  <span className="notification-icon" aria-hidden="true">{note.icon}</span>
-                  <div>
-                    <div className="notification-text">
-                      {note.content}
-                    </div>
-                    {note.time && (
-                      <div className="notification-time">{relativeTime(note.time)}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+       <RiskBandsPanel 
+         isOpen={isExplainOpen} 
+         onClose={() => setIsExplainOpen(false)} 
+         triggerRef={explainTriggerRef}
+       />
+     </div>
+   );
 }

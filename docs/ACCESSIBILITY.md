@@ -53,6 +53,9 @@ heading.
 - `aria-sort="ascending|descending|none"` is set on the active column header.
 - Row order is the visual order; no reordering of DOM relative to layout.
 - Filter chips are styled `<button>`s with `aria-pressed` reflecting the toggle state.
+- Notification filters use the WAI-ARIA tab pattern: the group has `role="tablist"`,
+  each filter has `role="tab"`, the active filter sets `aria-selected="true"`, and
+  Arrow/Home/End keys move focus and selection.
 
 ### Forms
 
@@ -91,8 +94,9 @@ heading.
 | --- | --- | --- |
 | Form field errors | `role="alert"` (assertive) | `FormMessage` |
 | Copy-to-clipboard success | `aria-live="polite"` | `CopyToClipboard` |
+| Route changes | `role="status" aria-live="polite"` | `RouteAnnouncer` |
 | Post-action confirmation | `role="status" aria-live="polite"` | `SuccessState` |
-| Toast notifications | `role="status" aria-live="polite"` for info/success, `role="alert"` for error | `ToastContainer` |
+| Toast notifications | Polite `ToastContainer` live region for confirmations; individual error toasts escalate to `role="alert"` | `ToastContainer` |
 
 ### Focus management
 
@@ -100,6 +104,24 @@ heading.
 - Active nav links keep focus styling distinct from active styling (see the comment block
   around `.header-nav-link.active` in `src/index.css`).
 - Modal close returns focus to the trigger via `useFocusTrap`'s `triggerRef`.
+
+### Anchor/sidebar nav (HelpCenter)
+
+`HelpCenter.tsx` uses an anchor-link sidebar with `aria-current="true"` on the link whose
+target section intersects the viewport.
+
+- The active section is detected via `IntersectionObserver` (`src/hooks/useActiveSection.ts`).
+  The observer uses a `-80px 0px -60% 0px` root margin so the active link updates slightly
+  before the section reaches the top of the viewport, and a multi-threshold `[0, 0.25, 0.5, 0.75, 1]`
+  so the most-visible section wins when multiple overlap.
+- Only one nav link carries `aria-current="true"` at any time. The attribute is absent on all
+  other links.
+- Clicking an anchor calls `target.scrollIntoView({ behavior: 'smooth', block: 'start' })`.
+  Reduced-motion state is read from `useReducedMotion()` — when active, behavior switches to
+  `"instant"`.
+- The `<nav>` has `aria-label="Help topics"`. Links are real `<a href="#id">` elements —
+  keyboard navigable via Tab, activatable via Enter/Space, and receive the global
+  `:focus-visible` ring from `src/index.css`.
 
 ---
 
@@ -122,15 +144,17 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `Skeleton` | n/a | n/a | n/a | reduced-motion gated | OK |
 | `CopyToClipboard` | Real `<button>`; Enter copies | Specific `aria-label`; polite live region announces "Copied" | AA | n/a | OK |
 | `AccessibleTooltip` | Trigger is keyboard-focusable | `role="tooltip"`, `aria-describedby` | AA | n/a | OK |
+| `RouteAnnouncer` | n/a (route observer) | Updates `document.title`, meta description, and a polite live region | AA | n/a | OK |
 | `NotificationBell` | Tab/Enter; counter is decorative | `aria-label="Notifications, N unread"` | AA | n/a | OK |
-| `NotificationCenter` | Focus trap inside the panel | `role="dialog"`, category filters use `aria-pressed` | AA | reduced-motion gated | OK |
+| `NotificationCenter` | Focus trap inside the panel; mobile Expand/Collapse snap controls for keyboard users | `role="dialog"`, category filters use `role="tab"` + `aria-selected`; iOS safe-area insets on bottom sheet | AA | reduced-motion disables snap transitions | OK |
 | `ToastContainer` | Tab/Esc to dismiss | `role="status"` / `role="alert"` per severity | AA | reduced-motion gated | OK |
 | `BannerAlert` | Tab/Enter on action & dismiss | `role="alert"` for warning/error | AA | n/a | OK |
-| `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<text>` + sibling text | AA | n/a | OK |
+| `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<title>` + polite `sr-only` sibling; arc animates on value change with reduced-motion fallback | AA | reduced-motion gated (CSS + JS `matchMedia`) | OK |
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
-| `RepayModal` | Focus trap | `role="dialog"`; uses focus-trap hook | AA | n/a | OK |
+| `RepayModal` | Focus trap (canonical `{ isActive }` form) + return focus to trigger | `role="dialog"`, `aria-modal`, `aria-labelledby` | AA | n/a | OK |
 | `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state | AA | n/a | OK |
-| `HelpCenter` | Accordion buttons and transcript links are keyboard reachable | Video thumbnails are real buttons; iframe created only after opt-in | AA | n/a | OK |
+| `HelpCenter` | Tab/Enter on sidebar anchor links; accordion buttons and transcript links keyboard reachable | Sidebar nav has `aria-label="Help topics"`; `aria-current="true"` on active section via IntersectionObserver | AA | `useReducedMotion()` gates smooth scroll | OK |
+| `SupportWidget` | Floating trigger, search field, FAQ toggles, and email handoff are keyboard reachable | `aria-expanded`, `aria-controls`, visible focus ring, non-modal `role="dialog"` shell | AA | n/a | OK |
 | `LandingPage` | Tab through CTAs and FAQ accordion | Framer Motion guarded by `useReducedMotion` | AA | reduced-motion gated | OK |
 | `ErrorBoundary` / `ErrorPage` | Tab through "Go back" and "Reload" | Semantic landmarks | AA | n/a | OK |
 
@@ -139,9 +163,9 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | ID | Component | Gap | Target |
 | --- | --- | --- | --- |
 | A11Y-001 | `OnboardingFlow` | Arrow-key step navigation not wired (today uses Next/Back buttons only) | next minor release |
-| A11Y-002 | `RepayModal` | Focus-trap call site uses legacy boolean signature; needs migration to `useFocusTrap({ isActive })` | next minor release |
+| ~~A11Y-002~~ | ~~`RepayModal`~~ | ~~Focus-trap call site uses legacy boolean signature; needs migration to `useFocusTrap({ isActive })`~~ | **Fixed** — migrated to `{ isActive }` form; `triggerRef` wired; regression test added |
 | A11Y-003 | `NotificationCenter` | Filter tabs use `aria-pressed` but should additionally expose `role="tab"` + `aria-selected` for AT consistency | next minor release |
-| A11Y-004 | Tables | `aria-sort` is set but caption text describing the table is not yet announced | next minor release |
+| ~~A11Y-004~~ | ~~Tables~~ | ~~`aria-sort` is set but caption text describing the table is not yet announced~~ | **Closed** — `<caption>` added to TransactionHistory; `<section aria-label>` added to CreditLines; both update dynamically with filter state |
 
 ---
 
@@ -189,6 +213,7 @@ pattern:
 | `BannerAlert` | `.banner-close` | ~20×20 | 44×44 | yes |
 | `BannerAlert` | `.banner-action` | ~20 h | 44 h | yes |
 | `ToastContainer` | `.toast-close` | ~20×20 | 44×44 | yes |
+| `TransactionHistory` | `.export-btn` | ~32 h | 44 h | yes |
 | `Dashboard` | `.wallet-address-chip` | ~32 h | 44 h | yes |
 | `WalletButton` | `.connect-wallet-btn` | 44 h | 44 h | yes (already) |
 | `WalletButton` | `.wallet-address-btn` | 44 h | 44 h | yes (already) |
@@ -220,8 +245,11 @@ or transaction hash. Its contract:
 ## 6. Reduced motion
 
 Every animation in the codebase is gated by
-`@media (prefers-reduced-motion: reduce)`. Inventory:
+`@media (prefers-reduced-motion: reduce)` and the equivalent `[data-motion="reduced"]` attribute. 
 
+For testing and verifying reduced-motion states without altering OS settings, use the **Reduced Motion Preview toggle** in the Settings page. This toggle sets `[data-motion="reduced"]` on the root `<html>` element, which disables animations globally across the app.
+
+Inventory of CSS files with reduced motion overrides:
 - `src/index.css` — two top-level reduced-motion blocks
 - `src/components/Skeleton.css`
 - `src/components/OnboardingFlow.css`
@@ -229,9 +257,8 @@ Every animation in the codebase is gated by
 - `src/components/FormField.css`
 - `src/components/LandingPage.css`
 
-JS-driven animations (Framer Motion) call `useReducedMotion()` and switch to instant
-state changes. The landing hero in `src/components/LandingPage.tsx` is the canonical
-example.
+JS-driven animations (Framer Motion) call `useReducedMotion()` from the context and switch to instant
+state changes. The landing hero in `src/components/LandingPage.tsx` and risk gauge in `src/components/RiskGauge.tsx` are canonical examples.
 
 ---
 

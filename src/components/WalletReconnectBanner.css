@@ -1,0 +1,166 @@
+/*
+  WalletReconnectBanner styles
+  ──────────────────────────────────────────────────────────────────────────
+  All colours reference semantic design tokens (var(--*)) so the banner
+  adapts automatically to dark mode and [data-contrast="high"] without
+  any extra media queries here.
+
+  Layout: single horizontal flex row — spinner | message | retry | dismiss.
+  On narrow viewports (≤ 480 px) the row wraps so the message stays
+  readable and touch targets remain at least 44 × 44 px.
+
+  Animation
+  ──────────────────────────────────────────────────────────────────────────
+  - Banner entrance: slides down from –100 % (matches BannerAlert animation
+    so the two components feel consistent).
+  - Spinner: continuous rotation suppressed under prefers-reduced-motion.
+    The banner itself still appears — only the decorative spin is removed.
+    Focus indicators are never suppressed.
+*/
+
+/* ── Banner container ────────────────────────────────────────────────────── */
+
+.wallet-reconnect-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1.5rem;
+
+  /*
+    Warning-toned background using semantic tokens.
+    --warning-bg / --warning-border are the same values used by other
+    system banners in BannerAlert.css.
+  */
+  background: rgba(210, 153, 34, 0.1);    /* var(--warning) at 10% opacity */
+  border-bottom: 1px solid rgba(210, 153, 34, 0.35);
+
+  font-size: 0.85rem;
+  line-height: 1.4;
+
+  /* Entrance animation — matches BannerAlert's bannerSlideDown */
+  animation: wrb-slide-down 0.25s ease both;
+}
+
+@keyframes wrb-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallet-reconnect-banner {
+    animation: none;
+  }
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+
+/*
+  Inline CSS spinner built from a partially-visible border — no image asset
+  needed. Decorative (aria-hidden="true" in the TSX).
+*/
+.wrb-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(210, 153, 34, 0.3);  /* track — faint warning tint */
+  border-top-color: var(--warning, #d29922);   /* sweep arm — full warning */
+  border-radius: 50%;
+  animation: wrb-spin 0.8s linear infinite;
+}
+
+@keyframes wrb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrb-spinner {
+    /*
+      Reduced-motion: replace spin with a static indicator.
+      The banner message already conveys the status textually.
+    */
+    animation: none;
+    border-top-color: var(--warning, #d29922);
+    opacity: 0.7;
+  }
+}
+
+/* ── Message ─────────────────────────────────────────────────────────────── */
+
+.wrb-message {
+  flex: 1;
+  color: var(--text, #e6edf3);
+  min-width: 0;            /* allow text to shrink on narrow viewports */
+}
+
+/* ── Buttons (Retry + Dismiss) ───────────────────────────────────────────── */
+
+/*
+  Shared base — both buttons are borderless, inherit font, and meet the
+  44 × 44 px WCAG 2.5.5 minimum touch target.
+*/
+.wrb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-sm, 4px);
+  transition: opacity 0.15s ease;
+  /* Focus ring supplied by .focus-ring utility (src/styles/focus.css) */
+}
+
+.wrb-btn:hover {
+  opacity: 0.75;
+}
+
+/* Retry — accented text to draw attention */
+.wrb-btn--retry {
+  color: var(--accent, #58a6ff);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* Dismiss — muted ×, accessible via aria-label */
+.wrb-btn--dismiss {
+  color: var(--muted, #8b949e);
+  font-size: 1rem;
+  line-height: 1;
+  min-width: 44px;
+  padding: 0.625rem;
+}
+
+.wrb-btn--dismiss:hover {
+  color: var(--text, #e6edf3);
+  opacity: 1;   /* override base hover for dismiss — use colour change instead */
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .wallet-reconnect-banner {
+    flex-wrap: wrap;
+    padding: 0.625rem 1rem;
+  }
+
+  .wrb-message {
+    /* On wrap, message takes full width so buttons sit on their own row */
+    width: 100%;
+  }
+
+  .wrb-btn--retry {
+    /* Push retry to start of button row */
+    margin-left: 1.5rem;
+  }
+}

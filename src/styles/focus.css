@@ -1,0 +1,126 @@
+/*
+  focus.css — Shared focus-ring design tokens and utilities
+  ──────────────────────────────────────────────────────────
+  Consumed by any component that needs WCAG 2.1 AA compliant focus
+  indicators.  All values reference semantic tokens so they adapt to
+  dark-mode and [data-contrast="high"] automatically.
+
+  Usage
+  ─────
+  Import at the component level:
+    @import '../styles/focus.css';
+
+  Or once globally in index.css:
+    @import './styles/focus.css';
+
+  Then apply .focus-ring to any interactive element; the outline is
+  revealed only on keyboard navigation (`:focus-visible`), never on
+  mouse click.
+
+  SVG-specific
+  ────────────
+  Standard CSS `outline` does not apply to SVG elements in all
+  browsers.  For SVG targets, use `.focus-ring-svg` which renders the
+  ring via `box-shadow` on the nearest HTML ancestor, or rely on the
+  per-component SVG <rect> overlay described in RiskGauge.tsx.
+*/
+
+/* ── Focus-ring tokens ───────────────────────────────────────────────────── */
+
+:root {
+  /**
+   * --focus-ring-color
+   * Default accent colour.  Overridden by [data-contrast="high"] below.
+   * Contrast vs --bg (#0d1117): 58a6ff → ≈ 5.9:1 (AA pass, close to AAA).
+   */
+  --focus-ring-color: var(--accent, #58a6ff);
+
+  /**
+   * --focus-ring-width
+   * 2 px is the WCAG 2.4.11 (Level AA) minimum for focus appearance.
+   */
+  --focus-ring-width: 2px;
+
+  /**
+   * --focus-ring-offset
+   * Separates the ring from the element edge so it is never obscured
+   * by the element's own border or background.
+   */
+  --focus-ring-offset: 3px;
+
+  /**
+   * --focus-ring-radius
+   * Matches the surrounding element's border-radius so the ring hugs
+   * the shape rather than appearing as a rectangle around a rounded card.
+   * Override per-component as needed.
+   */
+  --focus-ring-radius: var(--radius-md, 6px);
+}
+
+/* High-contrast override — 7:1 minimum (WCAG AAA) */
+[data-contrast="high"] {
+  --focus-ring-color: #ffffff;
+}
+
+/* ── Utility classes ─────────────────────────────────────────────────────── */
+
+/**
+ * .focus-ring
+ * Drop-in replacement for default browser outlines on HTML elements.
+ * Suppresses the outline on mouse/touch; shows it on keyboard navigation.
+ */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--focus-ring-radius);
+}
+
+/**
+ * .focus-ring-inset
+ * Variant for elements where an outer outline would be clipped by a
+ * parent with overflow: hidden (e.g. table cells, cards with clip).
+ * Uses box-shadow to paint the ring inside the element boundary.
+ */
+.focus-ring-inset {
+  outline: none;
+}
+
+.focus-ring-inset:focus-visible {
+  box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+/**
+ * .focus-ring-svg
+ * For interactive SVG host elements.  SVG roots don't support `outline`
+ * in the same way as block elements, so we use box-shadow on the wrapper.
+ * `overflow: visible` must be set on the SVG to prevent clipping.
+ */
+.focus-ring-svg {
+  outline: none;
+}
+
+.focus-ring-svg:focus-visible {
+  /*
+    box-shadow paints outside the SVG bounds (since overflow is visible)
+    and is visible in all browsers that support :focus-visible.
+  */
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--bg, #0d1117),
+    0 0 0 calc(var(--focus-ring-width) + var(--focus-ring-offset)) var(--focus-ring-color);
+  border-radius: var(--focus-ring-radius);
+}
+
+/* ── Reduced-motion ──────────────────────────────────────────────────────── */
+/*
+  Focus indicators must remain visible even under prefers-reduced-motion;
+  only decorative animations are suppressed.  No rules here suppress the
+  focus ring — the block below is a no-op placeholder so future authors
+  do not accidentally add `transition: none` to focus styles.
+*/
+@media (prefers-reduced-motion: reduce) {
+  /* Focus rings must NOT be suppressed — intentionally empty. */
+}

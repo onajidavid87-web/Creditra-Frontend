@@ -16,6 +16,7 @@ import {
 import "./Dashboard.css";
 import { Skeleton } from "../components/Skeleton";
 import { NoDataGraph } from "../components/illustrations";
+import { RecentTransactionsRail } from "../components/RecentTransactionsRail";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,20 +29,6 @@ const relativeTime = (iso: string): string => {
   const days = Math.floor(hrs / 24);
   if (days < 30) return `${days}d ago`;
   return fmtDate(iso);
-};
-
-const TX_ICON: Record<string, string> = {
-  Draw: "↗",
-  Repay: "↙",
-  Fee: "📋",
-  Interest: "📈",
-};
-
-const TX_COLOR: Record<string, string> = {
-  Draw: COLOR.danger,
-  Repay: COLOR.success,
-  Fee: COLOR.muted,
-  Interest: COLOR.warning,
 };
 
 // ─── Risk Score Gauge ─────────────────────────────────────────────────────────
@@ -1069,169 +1056,10 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div
-            className="card"
-            style={{ animationDelay: "0.18s" }}
-            aria-busy={loading}
-          >
-            <h2>
-              <span className="icon">📝</span> Recent Activity
-            </h2>
-
-            {loading ? (
-              <>
-                <div className="activity-item">
-                  <Skeleton
-                    className="activity-icon"
-                    style={{ borderRadius: "6px" }}
-                  />
-                  <div
-                    className="activity-content"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "120px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "180px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <Skeleton
-                    style={{
-                      width: "60px",
-                      height: "14px",
-                      marginLeft: "auto",
-                      borderRadius: "2px",
-                    }}
-                  />
-                </div>
-                <div className="activity-item">
-                  <Skeleton
-                    className="activity-icon"
-                    style={{ borderRadius: "6px" }}
-                  />
-                  <div
-                    className="activity-content"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "100px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "150px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <Skeleton
-                    style={{
-                      width: "50px",
-                      height: "14px",
-                      marginLeft: "auto",
-                      borderRadius: "2px",
-                    }}
-                  />
-                </div>
-                <div className="activity-item">
-                  <Skeleton
-                    className="activity-icon"
-                    style={{ borderRadius: "6px" }}
-                  />
-                  <div
-                    className="activity-content"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "140px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "160px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <Skeleton
-                    style={{
-                      width: "70px",
-                      height: "14px",
-                      marginLeft: "auto",
-                      borderRadius: "2px",
-                    }}
-                  />
-                </div>
-              </>
-            ) : recentActivity.length === 0 ? (
-              <p
-                style={{
-                  color: COLOR.muted,
-                  fontSize: "0.8rem",
-                  textAlign: "center",
-                  padding: "1.5rem 0",
-                }}
-              >
-                No transactions yet
-              </p>
-            ) : (
-              recentActivity.map((tx, i) => (
-                <div key={`${tx.id}-${i}`} className="activity-item">
-                  <div
-                    className="activity-icon"
-                    style={{
-                      background: `${TX_COLOR[tx.type]}15`,
-                      color: TX_COLOR[tx.type],
-                    }}
-                  >
-                    {TX_ICON[tx.type]}
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-title">{tx.note || tx.type}</div>
-                    <div className="activity-sub">
-                      {tx.lineName} · {relativeTime(tx.date)}
-                    </div>
-                  </div>
-                  <div
-                    className="activity-amount"
-                    style={{ color: TX_COLOR[tx.type] }}
-                  >
-                    {tx.type === "Repay" ? "+" : "-"}
-                    {fmt(tx.amount)}
-                  </div>
-                </div>
-              ))
-            )}
+          {/* Recent Transactions Rail */}
+          <div className="card" style={{ animationDelay: "0.18s" }} aria-busy={loading}>
+            <h2><span className="icon">📝</span> Recent Activity</h2>
+            <RecentTransactionsRail transactions={recentActivity} loading={loading} />
           </div>
 
           {/* Notifications */}

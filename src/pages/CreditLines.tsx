@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
@@ -7,9 +7,55 @@ import {
   COLOR, UTIL_COLOR,
   fmt, fmtDate, getUtilizationLevel, utilizationPct,
 } from '../utils/tokens';
+import { formatCountdown, getCountdownAriaLabel } from '../utils/dates';
 import './CreditLines.css';
 
 // ─── Credit Line Card ────────────────────────────────────────────────────────
+
+function NextAccrualChip({ target }: { target: string }) {
+  const [now, setNow] = useState(() => new Date());
+  const timerRef = { current: undefined as ReturnType<typeof setInterval> | undefined };
+
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (timerRef.current !== undefined) {
+          clearInterval(timerRef.current);
+          timerRef.current = undefined;
+        }
+      } else {
+        if (timerRef.current !== undefined) {
+          clearInterval(timerRef.current);
+        }
+        tick();
+        timerRef.current = setInterval(tick, 60000);
+      }
+    };
+
+    if (!document.hidden) {
+      timerRef.current = setInterval(tick, 60000);
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      if (timerRef.current !== undefined) {
+        clearInterval(timerRef.current);
+      }
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  const label = formatCountdown(target, now);
+  const ariaLabel = getCountdownAriaLabel(target, now);
+
+  return (
+    <span className="cl-accrual-chip" aria-label={ariaLabel}>
+      {label}
+    </span>
+  );
+}
 
 function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
   const pct = utilizationPct(line.utilized, line.limit);
@@ -65,6 +111,12 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
             <span className="value">{fmtDate(line.openedAt)}</span>
           </div>
         </div>
+
+        {line.nextInterestAccrualDate && (
+          <div className="cl-accrual">
+            <NextAccrualChip target={line.nextInterestAccrualDate} />
+          </div>
+        )}
       </div>
 
       <div className="cl-card-footer">

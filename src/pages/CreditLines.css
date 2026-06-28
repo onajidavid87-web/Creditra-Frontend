@@ -276,6 +276,41 @@
     line-height: var(--lh-body);
 }
 
+.cl-accrual {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.cl-accrual-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    line-height: var(--lh-small);
+}
+
+.cl-accrual-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.15rem 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted);
+    line-height: var(--lh-small);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    min-width: 4.5rem;
+}
+
 .cl-card-footer {
     display: flex;
     gap: 0.75rem;

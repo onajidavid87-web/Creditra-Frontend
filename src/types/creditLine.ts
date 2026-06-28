@@ -87,4 +87,6 @@ export interface CreditLine {
   nextPaymentDate?: string;
   /** Amount of the next scheduled payment, paired with `nextPaymentDate`. */
   nextPaymentAmount?: number;
+  /** ISO 8601 timestamp when the next interest accrual is expected. */
+  nextInterestAccrualDate?: string;
 }

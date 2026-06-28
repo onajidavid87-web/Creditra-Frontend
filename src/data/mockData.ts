@@ -14,6 +14,7 @@ export const MOCK_CREDIT_LINES: CreditLine[] = [
     updatedAt: '2025-02-20T14:32:00Z',
     nextPaymentDate: '2025-03-01',
     nextPaymentAmount: 3200,
+    nextInterestAccrualDate: '2025-03-01',
     transactions: [
       { id: 'TX-001', type: 'Draw', amount: 50000, date: '2025-02-18T10:30:00Z', note: 'Equipment purchase', status: 'Completed', txHash: '0xabc123def456' },
       { id: 'TX-002', type: 'Repay', amount: 12500, date: '2025-02-10T14:15:00Z', note: 'Monthly repayment', status: 'Completed', txHash: '0xdef789ghi012' },
@@ -39,6 +40,7 @@ export const MOCK_CREDIT_LINES: CreditLine[] = [
     updatedAt: '2025-02-19T09:15:00Z',
     nextPaymentDate: '2025-03-05',
     nextPaymentAmount: 5100,
+    nextInterestAccrualDate: '2025-03-01',
     transactions: [
       { id: 'TX-007', type: 'Draw', amount: 100000, date: '2025-02-05T08:30:00Z', note: 'Market expansion', status: 'Completed', txHash: '0xabc111def222' },
       { id: 'TX-008', type: 'Repay', amount: 40000, date: '2025-01-28T13:45:00Z', note: 'Partial repayment', status: 'Completed', txHash: '0xdef333ghi444' },
@@ -62,6 +64,7 @@ export const MOCK_CREDIT_LINES: CreditLine[] = [
     riskScore: 610,
     openedAt: '2023-11-10',
     updatedAt: '2025-01-15T16:45:00Z',
+    nextInterestAccrualDate: '2025-02-01',
     transactions: [
       { id: 'TX-014', type: 'Draw', amount: 45000, date: '2024-12-10T12:00:00Z', note: 'Operations', status: 'Completed', txHash: '0xaaa111bbb222' },
       { id: 'TX-015', type: 'Interest', amount: 413, date: '2025-01-01T00:00:00Z', note: 'Monthly interest', status: 'Completed' },
@@ -128,6 +131,7 @@ export const MOCK_CREDIT_LINES: CreditLine[] = [
     collateral: 'USDC Treasury',
     openedAt: '2025-01-15',
     updatedAt: '2025-02-20T10:00:00Z',
+    nextInterestAccrualDate: '2025-03-15',
     transactions: [
       { id: 'TX-027', type: 'Draw', amount: 15000, date: '2025-02-15T09:00:00Z', note: 'Initial funding', status: 'Completed', txHash: '0xiii999jjj000' },
       { id: 'TX-028', type: 'Repay', amount: 15000, date: '2025-02-18T11:30:00Z', note: 'Quick repayment', status: 'Completed', txHash: '0xkkk111lll222' },

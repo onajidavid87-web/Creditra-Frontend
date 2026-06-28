@@ -289,3 +289,11 @@
     gap: 0.5rem;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .risk-gauge-fill {
+    animation: none;
+    transition: none;
+    /* stroke-dashoffset is set to the final value by the JS component */
+  }
+

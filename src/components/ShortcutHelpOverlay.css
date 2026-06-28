@@ -223,3 +223,9 @@
     animation: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .shortcut-help-dialog {
+    animation: none;
+  }
+

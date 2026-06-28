@@ -244,3 +244,12 @@
     transition: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .apr-breakdown-panel,
+[data-motion="reduced"] .apr-breakdown-panel.bottom-sheet,
+[data-motion="reduced"] .apr-breakdown-chevron {
+    animation: none;
+    transition: none;
+  }
+

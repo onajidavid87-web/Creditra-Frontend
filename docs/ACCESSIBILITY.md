@@ -227,8 +227,11 @@ or transaction hash. Its contract:
 ## 6. Reduced motion
 
 Every animation in the codebase is gated by
-`@media (prefers-reduced-motion: reduce)`. Inventory:
+`@media (prefers-reduced-motion: reduce)` and the equivalent `[data-motion="reduced"]` attribute. 
 
+For testing and verifying reduced-motion states without altering OS settings, use the **Reduced Motion Preview toggle** in the Settings page. This toggle sets `[data-motion="reduced"]` on the root `<html>` element, which disables animations globally across the app.
+
+Inventory of CSS files with reduced motion overrides:
 - `src/index.css` — two top-level reduced-motion blocks
 - `src/components/Skeleton.css`
 - `src/components/OnboardingFlow.css`
@@ -236,9 +239,8 @@ Every animation in the codebase is gated by
 - `src/components/FormField.css`
 - `src/components/LandingPage.css`
 
-JS-driven animations (Framer Motion) call `useReducedMotion()` and switch to instant
-state changes. The landing hero in `src/components/LandingPage.tsx` is the canonical
-example.
+JS-driven animations (Framer Motion) call `useReducedMotion()` from the context and switch to instant
+state changes. The landing hero in `src/components/LandingPage.tsx` and risk gauge in `src/components/RiskGauge.tsx` are canonical examples.
 
 ---
 

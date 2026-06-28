@@ -113,3 +113,12 @@
     transform: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .video-thumbnail-button {
+    transition: none;
+  }
+[data-motion="reduced"] .video-thumbnail-button:hover {
+    transform: none;
+  }
+

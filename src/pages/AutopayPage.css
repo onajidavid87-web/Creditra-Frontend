@@ -219,3 +219,10 @@
     animation: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .autopay-page,
+[data-motion="reduced"] .autopay-page__success-banner {
+    animation: none;
+  }
+

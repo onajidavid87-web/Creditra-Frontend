@@ -10,6 +10,7 @@
 
 import { Settings as SettingsIcon } from 'lucide-react';
 import { HighContrastToggle } from '../components/HighContrastToggle';
+import { ReducedMotionToggle } from '../components/ReducedMotionToggle';
 
 export function Settings() {
   return (
@@ -37,6 +38,7 @@ export function Settings() {
           the label / description / switch row.
         */}
         <HighContrastToggle />
+        <ReducedMotionToggle />
 
         {/*
           Placeholder: theme toggle (light / dark / system) lives here once

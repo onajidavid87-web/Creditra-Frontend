@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { AmountRangeChips } from "../components/AmountRangeChips";
 import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
+import { AmountRangeChips, type AmountRangePreset } from "../components/AmountRangeChips";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   CreditLineStatus,

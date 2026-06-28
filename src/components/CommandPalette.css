@@ -207,3 +207,7 @@
   .cp-overlay { padding-top: 2rem; padding-inline: 0.5rem; }
   .cp-footer  { display: none; }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .cp-dialog { animation: none; }
+

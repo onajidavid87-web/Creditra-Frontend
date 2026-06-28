@@ -4,6 +4,7 @@ import { AccessibleTooltip } from '@/components/AccessibleTooltip';
 import { FormMessage } from '@/components/FormMessage';
 import { PendingButton } from '@/components/PendingButton';
 import { Skeleton } from '@/components/Skeleton';
+import { useReducedMotion } from '@/context/ReducedMotionContext';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type EvalState = 'idle' | 'running' | 'success' | 'rejected' | 'error';
@@ -77,6 +78,7 @@ interface EvalResult {
 }
 
 export function RequestEvaluation() {
+  const { isReducedMotionActive } = useReducedMotion();
   const [step, setStep] = useState<Step>(1);
   const [evalState, setEvalState] = useState<EvalState>('idle');
   const [progress, setProgress] = useState(0);
@@ -270,7 +272,7 @@ export function RequestEvaluation() {
         display: 'grid',
         gap: '0.75rem',
         opacity: evalState === 'running' ? 1 : 0,
-        transition: typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'opacity 300ms ease',
+        transition: isReducedMotionActive ? 'none' : 'opacity 300ms ease',
       }}
     >
       {/* Title placeholder */}

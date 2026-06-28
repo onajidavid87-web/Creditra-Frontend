@@ -475,3 +475,12 @@
     transition: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .kyc-drawer,
+[data-motion="reduced"] .kyc-drawer-backdrop,
+[data-motion="reduced"] .kyc-drawer__progress-bar-fill {
+    animation: none;
+    transition: none;
+  }
+

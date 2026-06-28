@@ -837,3 +837,13 @@
     transition: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .csm-backdrop,
+[data-motion="reduced"] .csm-dialog,
+[data-motion="reduced"] .csm-success-icon,
+[data-motion="reduced"] .csm-ltv-fill {
+    animation: none;
+    transition: none;
+  }
+

@@ -742,3 +742,9 @@
 .activity-item {
     min-height: 48px;
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .risk-explainer {
+    animation: none;
+  }
+

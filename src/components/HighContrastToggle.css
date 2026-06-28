@@ -99,3 +99,10 @@
     transition: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .hc-toggle-track,
+[data-motion="reduced"] .hc-toggle-thumb {
+    transition: none;
+  }
+

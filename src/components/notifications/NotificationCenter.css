@@ -456,3 +456,15 @@
     animation: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .nc-panel:not(.nc-panel-dragging) {
+    transition: none;
+  }
+
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .nc-backdrop {
+    animation: none;
+  }
+

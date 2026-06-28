@@ -200,7 +200,7 @@ export function RepayModal({
                   letterSpacing: '0.05em',
                 }}
               >
-                Current Debt
+                Outstanding debt
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <p style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLOR.danger, lineHeight: 1 }}>
@@ -219,11 +219,11 @@ export function RepayModal({
 
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <label htmlFor="repay-amount-input" style={{ fontSize: '0.9rem', color: COLOR.text, fontWeight: 500 }}>Amount to Repay</label>
+                <label htmlFor="repay-amount-input" style={{ fontSize: '0.9rem', color: COLOR.text, fontWeight: 500 }}>Repayment amount</label>
                 <span style={{ fontSize: '0.8rem', color: validation.feedback.severity === 'danger' ? COLOR.danger : COLOR.muted }}>Wallet: {fmt(walletBalance)}</span>
               </div>
               <p id={repayAmountHintId} style={{ margin: '0 0 0.75rem', fontSize: '0.82rem', color: COLOR.muted }}>
-                Enter a repayment amount and we will show the minimum, safe maximum, and reserve guidance inline.
+                Enter the dollar amount you wish to repay. We'll show minimum and maximum guidance.
               </p>
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {[25, 50, 75, 100].map(pct => (
@@ -263,15 +263,15 @@ export function RepayModal({
               </div>
               <div id={repayAmountConstraintsId} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <div style={{ background: COLOR.bg, border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.65rem 0.75rem' }}>
-                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Minimum</p>
+                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Minimum repayment</p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: COLOR.text, fontWeight: 600 }}>{formatMoney(validation.minAmount)}</p>
                 </div>
                 <div style={{ background: COLOR.bg, border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.65rem 0.75rem' }}>
-                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Safe maximum</p>
+                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Maximum repayment</p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: COLOR.text, fontWeight: 600 }}>{formatMoney(validation.maxRepayAmount)}</p>
                 </div>
                 <div style={{ background: COLOR.bg, border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.65rem 0.75rem' }}>
-                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reserve target</p>
+                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wallet reserve</p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: COLOR.text, fontWeight: 600 }}>{formatMoney(validation.recommendedWalletReserve)}</p>
                 </div>
               </div>
@@ -308,11 +308,11 @@ export function RepayModal({
                   letterSpacing: '0.05em',
                 }}
               >
-                Preview
+                Repayment preview
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.9rem', color: COLOR.muted }}>Remaining Debt</span>
+                <span style={{ fontSize: '0.9rem', color: COLOR.muted }}>Remaining debt</span>
                 <span
                   style={{
                     fontSize: '0.9rem',
@@ -325,7 +325,7 @@ export function RepayModal({
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '0.8rem', color: COLOR.muted }}>New Utilization</span>
+                <span style={{ fontSize: '0.8rem', color: COLOR.muted }}>Utilization after repayment</span>
                 <span style={{ fontSize: '0.8rem', color: amount > 0 ? COLOR.success : COLOR.text }}>
                   {newPct}%{' '}
                   <span style={{ textDecoration: 'line-through', color: COLOR.muted, marginLeft: 4 }}>
@@ -414,7 +414,7 @@ export function RepayModal({
                   borderBottom: `1px solid ${COLOR.border}`,
                 }}
               >
-                <span style={{ color: COLOR.muted, fontSize: '0.9rem' }}>Remaining Debt After</span>
+                <span style={{ color: COLOR.muted, fontSize: '0.9rem' }}>Remaining debt after repayment</span>
                 <span style={{ fontWeight: 600, color: remainingDebt === 0 ? COLOR.success : COLOR.text }}>
                   {fmt(remainingDebt)}
                 </span>
@@ -555,7 +555,7 @@ export function RepayModal({
               }}
             />
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', color: COLOR.text }}>
-              Processing Repayment
+              Processing repayment
             </h3>
             <p style={{ margin: 0, fontSize: '0.9rem', color: COLOR.muted }}>
               Confirming transaction on network...
@@ -600,7 +600,7 @@ export function RepayModal({
                   justifyContent: 'space-between',
                 }}
               >
-                <span style={{ color: COLOR.muted }}>Remaining Debt:</span>
+                <span style={{ color: COLOR.muted }}>Remaining debt:</span>
                 <span style={{ fontWeight: 600 }}>{fmt(remainingDebt)}</span>
               </p>
               <p
@@ -612,7 +612,7 @@ export function RepayModal({
                   justifyContent: 'space-between',
                 }}
               >
-                <span>Credit Line Utilization:</span>
+                <span>Credit utilization:</span>
                 <span style={{ color: remainingDebt === 0 ? COLOR.success : COLOR.text }}>
                   Reduced to {newPct}%
                 </span>

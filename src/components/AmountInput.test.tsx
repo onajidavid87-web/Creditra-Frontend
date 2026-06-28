@@ -21,7 +21,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    const input = screen.getByLabelText(/amount to draw/i);
+    const input = screen.getByLabelText(/draw amount/i);
     const describedBy = input.getAttribute("aria-describedby");
     expect(describedBy).toContain("draw-amount-helper");
   });
@@ -36,7 +36,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
 
     fireEvent.change(input, {
       target: { value: "36000" },
@@ -61,7 +61,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "36000" },
     });
 
@@ -79,7 +79,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "0.50" },
     });
 
@@ -119,7 +119,7 @@ describe("AmountInput", () => {
     });
     fireEvent.click(maxButton);
 
-    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
     expect(input.value).toBe(creditLine.available.toString());
   });
 
@@ -133,7 +133,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "10000" },
     });
 
@@ -156,7 +156,7 @@ describe("AmountInput", () => {
     const continueButton = screen.getByRole("button", { name: /continue/i });
     expect(continueButton).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "15000" },
     });
 
@@ -175,7 +175,7 @@ describe("AmountInput", () => {
 
     const helperPara = document.getElementById("draw-amount-helper");
     expect(helperPara).toBeInTheDocument();
-    expect(helperPara).toHaveTextContent(/available limit/i);
+    expect(helperPara).toHaveTextContent(/available credit/i);
     expect(helperPara).toHaveTextContent("$35,000");
   });
 
@@ -189,7 +189,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
 
     fireEvent.change(input, {
       target: { value: "50000" },

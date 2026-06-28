@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { StatusBadge } from "../components/StatusBadge";
 import { useWallet } from "../context/WalletContext";
+import { RiskBandsPanel } from "../components/RiskBandsPanel";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type { Transaction } from "../types/creditLine";
 import {
@@ -10,17 +11,19 @@ import {
   UTIL_COLOR,
   fmt,
   fmtDate,
-  getUtilizationLevel,
+  getUtilizationLvl,
   utilizationPct,
+  RISK_COLOR,
 } from "../utils/tokens";
 import { readJson, writeJson } from "../utils/storage";
 import "./Dashboard.css";
-import { Skeleton } from "../components/Skeleton";
+import {T Skeleton} from "../components/Skeleton";
 import { NoDataGraph } from "../components/illustrations";
 import CompareLinesPanel from "../components/CompareLinesPanel";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useInertBackdrop } from "../hooks/useInertBackdrop";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import { getUtilizationLevel } from "../utils/tokens";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -60,11 +63,10 @@ function RiskGauge({
   trend: "improving" | "declining" | "stable";
   lastUpdated: string;
 }) {
-  // SVG arc from 180° to 0° (semicircle)
   const radius = 55;
   const cx = 80;
   const cy = 75;
-  const circumference = Math.PI * radius; // half circle
+  const circumference = Math.PI * radius;
   const normalizedScore = Math.min(100, Math.max(0, score));
   const offset = circumference - (normalizedScore / 100) * circumference;
 
@@ -82,12 +84,10 @@ function RiskGauge({
   return (
     <div className="risk-gauge-container">
       <svg className="risk-gauge-svg" viewBox="0 0 160 100">
-        {/* Background arc */}
         <path
           className="risk-gauge-bg"
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
         />
-        {/* Filled arc */}
         <path
           className="risk-gauge-fill"
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
@@ -95,7 +95,6 @@ function RiskGauge({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
         />
-        {/* Score text */}
         <text x={cx} y={cy - 12} className="risk-gauge-score">
           {normalizedScore}
         </text>
@@ -124,17 +123,6 @@ function RiskGauge({
 
 // ─── Risk Explainer ───────────────────────────────────────────────────────────
 
-/**
- * Inline explainer beneath the RiskGauge that translates the score band
- * into a plain‑language sentence.
- *
- * - Text is derived from `RISK_COLOR(score)` so it stays in sync with the
- *   design‑system colour band.
- * - Dismissal is persisted per wallet address via `storage.ts`.
- * - Fade‑in animation is disabled when `prefers-reduced-motion` is set.
- *
- * @see docs/MICROCOPY.md — tone and sentence inventory
- */
 function RiskExplainer({ score, address }: { score: number; address?: string }) {
   const [dismissed, setDismissed] = useState(() => {
     if (!address) return true;
@@ -175,35 +163,13 @@ function RiskExplainer({ score, address }: { score: number; address?: string }) 
 
 // ─── Dashboard Component ──────────────────────────────────────────────────────
 
-/**
- * Default landing screen for a connected user.
- *
- * Renders four blocks in order of importance to the user:
- *
- *   1. Risk gauge — the score that determines every other number on the
- *      page. Highest visual priority. See UX_RATIONALE.md "Risk gauge
- *      prominently on the dashboard".
- *   2. Credit summary tiles — total limit, drawn, available, next
- *      payment.
- *   3. Active credit lines — quick navigation into the credit-line
- *      detail view.
- *   4. Recent transactions — a five-row preview of the ledger with a
- *      link into the full history.
- *
- * Loading state is simulated by a `setTimeout` to demonstrate the
- * shimmer-skeleton pattern; when the backend lands, replace it with a
- * real fetch (and keep the four-state loading -> empty / ready /
- * error policy documented in `ARCHITECTURE.md` section 5).
- *
- * The page is intentionally stateless from a navigation perspective —
- * it pulls wallet info from `useWallet()` and credit data from the mock
- * data layer; everything else is rendered output.
- */
 export function Dashboard() {
   const { wallet, status } = useWallet();
   const creditLines = MOCK_CREDIT_LINES;
 
   const [loading, setLoading] = useState(true);
+  const [isExplainOpen, setIsExplainOpen] = useState(false);
+  const explainTriggerRef = useRef<HTMLButtonElement>(null);
   const [selectedCompareLines, setSelectedCompareLines] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const compareTriggerRef = useRef<HTMLButtonElement>(null);
@@ -251,8 +217,6 @@ export function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // ─── Derived data ────────────────────────────────────────────────────────
-
   const activeLines = useMemo(
     () =>
       creditLines.filter(
@@ -273,7 +237,6 @@ export function Dashboard() {
   const overallLevel =
     totalLimit > 0 ? getUtilizationLevel(totalUtilized, totalLimit) : "low";
 
-  // Weighted average risk score across active lines
   const avgRiskScore =
     activeLinesOnly.length > 0
       ? Math.round(
@@ -282,7 +245,6 @@ export function Dashboard() {
         )
       : 0;
 
-  // All transactions across all lines, sorted by date descending
   const recentActivity = useMemo(() => {
     const all: (Transaction & { lineName: string; lineId: string })[] = [];
     creditLines.forEach((cl) => {
@@ -294,7 +256,6 @@ export function Dashboard() {
     return all.slice(0, 5);
   }, [creditLines]);
 
-  // Notifications
   const notifications = useMemo(() => {
     const notes: {
       icon: string;
@@ -364,7 +325,6 @@ export function Dashboard() {
         }
       }
     });
-
     return notes;
   }, [creditLines]);
 
@@ -376,12 +336,9 @@ export function Dashboard() {
     ? `${wallet.publicKey.slice(0, 6)}...${wallet.publicKey.slice(-4)}`
     : "";
 
-  // ─── Empty State ─────────────────────────────────────────────────────────
-
   if (!loading && !hasLines) {
     return (
       <>
-        {/* Header */}
         <div className="dashboard-header">
           <div>
             <h1>Dashboard</h1>
@@ -397,29 +354,28 @@ export function Dashboard() {
                 className="wallet-address-chip"
                 valueClassName="wallet-address-value"
               />
-              <span
-                className={`network-badge ${wallet.network === "TESTNET" ? "testnet" : "mainnet"}`}
-                title={
-                  wallet.network === "TESTNET"
-                    ? "Testnet (no real funds)"
-                    : "Mainnet (real funds)"
-                }
-                aria-label={
-                  wallet.network === "TESTNET"
-                    ? "Testnet network (test funds)"
-                    : "Mainnet network (real funds)"
-                }
-              >
-                <span className="dot" />
-                <span className="network-icon" aria-hidden="true">
-                  {wallet.network === "TESTNET" ? "⚠️" : "✅"}
-                </span>
-                {wallet.network === "TESTNET" ? "Testnet" : "Mainnet"}
-              </span>
+               <span
+                 className={`network-badge ${wallet.network === "TESTNET" ? "testnet" : "mainnet"}`}
+                 title={
+                   wallet.network === "TESTNET"
+                     ? "Testnet (no real funds)"
+                     : "Mainnet (real funds)"
+                 }
+                 aria-label={
+                   wallet.network === "TESTNET"
+                     ? "Testnet network (test funds)"
+                     : "Mainnet network (real funds)"
+                 }
+               >
+                 <span className="dot" />
+                 <span className="network-icon" aria-hidden="true">
+                   {wallet.network === "TESTNET" ? "⚠️" : "✅"}
+                 </span>
+                 {wallet.network === "TESTNET" ? "Testnet" : "Mainnet"}
+               </span>
             </div>
           )}
         </div>
-
         <div className="empty-state">
           <NoDataGraph className="empty-state-illustration--muted" />
           <h2>No credit lines yet</h2>
@@ -436,8 +392,6 @@ export function Dashboard() {
     );
   }
 
-  // ─── Main Dashboard ──────────────────────────────────────────────────────
-
   return (
     <div
       role="status"
@@ -449,7 +403,6 @@ export function Dashboard() {
         {loading ? "Loading dashboard" : "Dashboard loaded"}
       </span>
 
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
@@ -465,32 +418,31 @@ export function Dashboard() {
               className="wallet-address-chip"
               valueClassName="wallet-address-value"
             />
-            <span
-              className={`network-badge ${wallet.network === "TESTNET" ? "testnet" : "mainnet"}`}
-              title={
-                wallet.network === "TESTNET"
-                  ? "Testnet (no real funds)"
-                  : "Mainnet (real funds)"
-              }
-              aria-label={
-                wallet.network === "TESTNET"
-                  ? "Testnet network (test funds)"
-                  : "Mainnet network (real funds)"
-              }
-            >
-              <span className="dot" />
-              <span className="network-icon" aria-hidden="true">
-                {wallet.network === "TESTNET" ? "⚠️" : "✅"}
-              </span>
-              {wallet.network === "TESTNET" ? "Testnet" : "Mainnet"}
-            </span>
+             <span
+               className={`network-badge ${wallet.network === "TESTNET" ? "testnet" : "mainnet"}`}
+               title={
+                 wallet.network === "TESTNET"
+                   ? "Testnet (no real funds)"
+                   : "Mainnet (real funds)"
+               }
+               aria-label={
+                 wallet.network === "TESTNET"
+                   ? "Testnet network (test funds)"
+                   : "Mainnet network (real funds)"
+               }
+             >
+               <span className="dot" />
+               <span className="network-icon" aria-hidden="true">
+                 {wallet.network === "TESTNET" ? "⚠️" : "✅"}
+               </span>
+               {wallet.network === "TESTNET" ? "Testnet" : "Mainnet"}
+             </span>
           </div>
         )}
       </div>
 
       <WhatsChangedPanel />
 
-      {/* Summary Cards */}
       <div className="summary-cards" aria-busy={loading}>
         {loading ? (
           <>
@@ -594,16 +546,12 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Main Grid */}
       <div className="dashboard-grid">
-        {/* Left Column */}
         <div>
-          {/* Credit Summary */}
           <div className="card" style={{ animationDelay: "0.1s" }}>
             <h2>
               <span className="icon">📊</span> Credit Summary
             </h2>
-
             <div className="util-bar-container">
               <div className="util-bar-header">
                 <span style={{ color: COLOR.muted }}>Utilization</span>
@@ -623,7 +571,6 @@ export function Dashboard() {
                 />
               </div>
             </div>
-
             <div className="credit-breakdown">
               <div className="credit-breakdown-item">
                 <p className="cb-label">Total Limit</p>
@@ -649,750 +596,543 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* Risk Score */}
-          <div
-            className="card"
-            style={{ animationDelay: "0.15s" }}
-            aria-busy={loading}
-          >
-            <h2>
-              <span className="icon">🛡️</span> Risk Score
-            </h2>
-            {loading ? (
-              <div className="risk-gauge-container">
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "100px",
-                    width: "160px",
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  <Skeleton
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                    }}
-                  />
-                </div>
-                <div className="risk-meta" style={{ width: "100%" }}>
-                  <div
-                    className="risk-meta-item"
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "40px",
-                        height: "10px",
-                        marginBottom: "6px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "60px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="risk-meta-item"
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "60px",
-                        height: "10px",
-                        marginBottom: "6px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "50px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <RiskGauge
-                score={avgRiskScore}
-                trend="improving"
-                lastUpdated={
-                  activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()
-                }
-              />
-            )}
-          </div>
+           <div className="card" style={{ animationDelay: "0.15s" }} aria-busy={loading}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+               <h2 style={{ margin: 0 }}><span className="icon">🛡️</span> Risk Score</h2>
+               {!loading && (
+                 <button 
+                   ref={explainTriggerRef}
+                   onClick={() => setIsExplainOpen(true)}
+                   style={{ 
+                     background: "transparent", 
+                     border: `1px solid ${COLOR.border}`, 
+                     color: COLOR.text, 
+                     fontSize: "0.75rem", 
+                     padding: "0.25rem 0.5rem", 
+                     borderRadius: 4, 
+                     cursor: "pointer",
+                     fontWeight: 500
+                   }}
+                 >
+                   Explain
+                 </button>
+               )}
+             </div>
+             {loading ? (
+               <div className="risk-gauge-container">
+                 <div
+                   style={{
+                     display: "flex",
+                     justifyContent: "center",
+                     alignItems: "center",
+                     height: "100px",
+                     width: "160px",
+                     marginBottom: "0.75rem",
+                   }}
+                 >
+                   <Skeleton
+                     style={{
+                       width: "80px",
+                       height: "80px",
+                       borderRadius: "50%",
+                     }}
+                   />
+                 </div>
+                 <div className="risk-meta" style={{ width: "100%" }}>
+                   <div
+                     className="risk-meta-item"
+                     style={{
+                       flex: 1,
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "center",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "40px",
+                         height: "10px",
+                         marginBottom: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="risk-meta-item"
+                     style={{
+                       flex: 1,
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "center",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "10px",
+                         marginBottom: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "50px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+               </div>
+             ) : (
+               <>
+                 <RiskGauge
+                   score={avgRiskScore}
+                   trend="improving"
+                   lastUpdated={
+                     activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()
+                   }
+                 />
+                 <RiskExplainer score={avgRiskScore} address={wallet?.publicKey} />
+               </>
+             )}
+           </div>
 
-          {/* Active Credit Lines Preview */}
-          <div
-            className="card"
-            style={{ animationDelay: "0.2s" }}
-            aria-busy={loading}
-          >
-            <h2>
-              <span className="icon">💳</span> Active Credit Lines
-              {!loading && (
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  {activeLines.length >= 2 && (
-                    <button
-                      ref={compareTriggerRef}
-                      type="button"
-                      onClick={handleOpenCompare}
-                      disabled={selectedCompareLines.length !== 2}
-                      style={{
-                        padding: "0.35rem 0.75rem",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        borderRadius: "4px",
-                        background: selectedCompareLines.length === 2 ? "var(--accent)" : "rgba(139,148,158,0.12)",
-                        color: selectedCompareLines.length === 2 ? "#0d1117" : "var(--muted)",
-                        border: "none",
-                        cursor: selectedCompareLines.length === 2 ? "pointer" : "not-allowed",
-                        opacity: selectedCompareLines.length === 2 ? 1 : 0.6,
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      Compare Selected ({selectedCompareLines.length}/2)
-                    </button>
-                  )}
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      fontWeight: 400,
-                      color: COLOR.muted,
-                    }}
-                  >
-                    {activeLines.length} line{activeLines.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              )}
-            </h2>
+           <div
+             className="card"
+             style={{ animationDelay: "0.2s" }}
+             aria-busy={loading}
+           >
+             <h2>
+               <span className="icon">💳</span> Active Credit Lines
+               {!loading && (
+                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                   {activeLines.length >= 2 && (
+                     <button
+                       ref={compareTriggerRef}
+                       type="button"
+                       onClick={handleOpenCompare}
+                       disabled={selectedCompareLines.length !== 2}
+                       style={{
+                         padding: "0.35rem 0.75rem",
+                         fontSize: "0.75rem",
+                         fontWeight: 600,
+                         borderRadius: "4px",
+                         background: selectedCompareLines.length === 2 ? "var(--accent)" : "rgba(139,148,158,0.12)",
+                         color: selectedCompareLines.length === 2 ? "#0d1117" : "var(--muted)",
+                         border: "none",
+                         cursor: selectedCompareLines.length === 2 ? "pointer" : "not-allowed",
+                         opacity: selectedCompareLines.length === 2 ? 1 : 0.6,
+                         transition: "all 0.15s",
+                       }}
+                     >
+                       Compare Selected ({selectedCompareLines.length}/2)
+                     </button>
+                   )}
+                   <span
+                     style={{
+                       fontSize: "0.75rem",
+                       fontWeight: 400,
+                       color: COLOR.muted,
+                     }}
+                   >
+                     {activeLines.length} line{activeLines.length !== 1 ? "s" : ""}
+                   </span>
+                 </div>
+               )}
+             </h2>
+             {loading ? (
+               <>
+                 <div className="cl-preview-item">
+                   <div style={{ flex: 1, minWidth: 0 }}>
+                     <div
+                       style={{
+                         display: "flex",
+                         alignItems: "center",
+                         gap: "0.5rem",
+                         marginBottom: "0.4rem",
+                       }}
+                     >
+                       <Skeleton
+                         style={{
+                           width: "100px",
+                           height: "14px",
+                           borderRadius: "2px",
+                         }}
+                       />
+                       <Skeleton
+                         style={{
+                           width: "50px",
+                           height: "14px",
+                           borderRadius: "4px",
+                         }}
+                       />
+                     </div>
+                     <Skeleton
+                       style={{
+                         width: "120px",
+                         height: "10px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="cl-preview-right"
+                     style={{
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "flex-end",
+                       gap: "0.4rem",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "80px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+                 <div className="cl-preview-item">
+                   <div style={{ flex: 1, minWidth: 0 }}>
+                     <div
+                       style={{
+                         display: "flex",
+                         alignItems: "center",
+                         gap: "0.5rem",
+                         marginBottom: "0.4rem",
+                       }}
+                     >
+                       <Skeleton
+                         style={{
+                           width: "80px",
+                           height: "14px",
+                           borderRadius: "2px",
+                         }}
+                       />
+                       <Skeleton
+                         style={{
+                           width: "50px",
+                           height: "14px",
+                           borderRadius: "4px",
+                         }}
+                       />
+                     </div>
+                     <Skeleton
+                       style={{
+                         width: "100px",
+                         height: "10px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="cl-preview-right"
+                     style={{
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "flex-end",
+                       gap: "0.4rem",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "70px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "50px",
+                         height: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+                 <div className="cl-preview-item">
+                   <div style={{ flex: 1, minWidth: 0 }}>
+                     <div
+                       style={{
+                         display: "flex",
+                         alignItems: "center",
+                         gap: "0.5rem",
+                         marginBottom: "0.4rem",
+                       }}
+                     >
+                       <Skeleton
+                         style={{
+                           width: "90px",
+                           height: "14px",
+                           borderRadius: "2px",
+                         }}
+                       />
+                       <Skeleton
+                         style={{
+                           width: "50px",
+                           height: "14px",
+                           borderRadius: "4px",
+                         }}
+                       />
+                     </div>
+                     <Skeleton
+                       style={{
+                         width: "110px",
+                         height: "10px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                   <div
+                     className="cl-preview-right"
+                     style={{
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "flex-end",
+                       gap: "0.4rem",
+                     }}
+                   >
+                     <Skeleton
+                       style={{
+                         width: "60px",
+                         height: "14px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                     <Skeleton
+                       style={{
+                         width: "40px",
+                         height: "6px",
+                         borderRadius: "2px",
+                       }}
+                     />
+                   </div>
+                 </div>
+               </>
+             ) : (
+               <>
+                 {activeLines.slice(0, 3).map((cl) => {
+                   const pct = utilizationPct(cl.utilized, cl.limit);
+                   const level = getUtilizationLevel(cl.utilized, cl.limit);
+                   const isSelected = selectedCompareLines.includes(cl.id);
+                   return (
+                     <div key={cl.id} className="cl-preview-item">
+                       {activeLines.length >= 2 && (
+                         <div style={{ paddingRight: "0.75rem", display: "flex", alignItems: "center" }}>
+                           <label
+                             className="cl-row-select"
+                             style={{
+                               margin: 0,
+                               display: "inline-flex",
+                               alignItems: "center",
+                               justifyContent: "center",
+                               cursor: "pointer",
+                               minWidth: "44px",
+                               minHeight: "44px",
+                             }}
+                           >
+                             <input
+                               type="checkbox"
+                               checked={isSelected}
+                               onChange={() => toggleCompareSelection(cl.id)}
+                               aria-label={`Select ${cl.name} for comparison`}
+                               style={{
+                                 cursor: "pointer",
+                                 width: "16px",
+                                 height: "16px",
+                                 accentColor: "var(--accent)",
+                               }}
+                             />
+                           </label>
+                         </div>
+                       )}
+                       <div style={{ flex: 1, minWidth: 0 }}>
+                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
+                           <p className="cl-preview-name">{cl.name}</p>
+                           <StatusBadge status={cl.status} />
+                         </div>
+                         <p className="cl-preview-id">{cl.id}</p>
+                       </div>
+                       <div className="cl-preview-right">
+                         <div className="cl-preview-amount">
+                           {fmt(cl.utilized)} <span style={{ color: COLOR.muted, fontWeight: 400, fontSize: "0.75rem" }}>/ {fmt(cl.limit)}</span>
+                         </div>
+                         <div className="cl-preview-bar">
+                           <div className="cl-preview-bar-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
+                         </div>
+                       </div>
+                     </div>
+                   );
+                 })}
+                 <Link to="/credit-lines" className="view-all-link">
+                   View all credit lines →
+                 </Link>
+               </>
+             )}
+           </div>
+         </div>
+ 
+         <div>
+           <div className="card" style={{ animationDelay: "0.12s" }}>
+             <h2><span className="icon">⚡</span> Quick Actions</h2>
+             <div className="quick-actions-grid">
+               {!hasLines && (
+                 <button
+                   className="qa-btn"
+                   style={{ borderColor: "rgba(88,166,255,0.3)" }}
+                 >
+                   <div className="qa-icon" style={{ background: "rgba(88,166,255,0.12)", color: COLOR.accent }}>🆕</div>
+                   <div>
+                     <div className="qa-label" style={{ color: COLOR.accent }}>Open Credit Line</div>
+                     <div className="qa-desc" style={{ color: COLOR.muted }}>Get started with your first line</div>
+                   </div>
+                   <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                 </button>
+               )}
+               {hasLines && activeLinesOnly.length > 0 && (
+                 <button
+                   className="qa-btn"
+                   style={{ borderColor: "rgba(88,166,255,0.3)" }}
+                 >
+                   <div className="qa-icon" style={{ background: "rgba(88,166,255,0.12)", color: COLOR.accent }}>↗</div>
+                   <div>
+                     <div className="qa-label" style={{ color: COLOR.accent }}>Draw Credit</div>
+                     <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalAvailable)} available</div>
+                   </div>
+                   <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                 </button>
+               )}
+               {hasUtilized && (
+                 <button
+                   className="qa-btn"
+                   style={{ borderColor: "rgba(63,185,80,0.3)" }}
+                 >
+                   <div className="qa-icon" style={{ background: "rgba(63,185,80,0.12)", color: COLOR.success }}>↙</div>
+                   <div>
+                     <div className="qa-label" style={{ color: COLOR.success }}>Repay Credit</div>
+                     <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalUtilized)} outstanding</div>
+                   </div>
+                   <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                 </button>
+               )}
+               <Link
+                 to="/credit-lines"
+                 className="qa-btn"
+                 style={{ borderColor: "transparent", textDecoration: "none" }}
+               >
+                 <div className="qa-icon" style={{ background: "rgba(139,148,158,0.12)", color: COLOR.muted }}>📋</div>
+                 <div>
+                   <div className="qa-label" style={{ color: COLOR.text }}>View Credit Lines</div>
+                   <div className="qa-desc" style={{ color: COLOR.muted }}>Manage all your credit lines</div>
+                 </div>
+                 <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+               </Link>
+             </div>
+           </div>
+ 
+           <div className="card" style={{ animationDelay: "0.18s" }} aria-busy={loading}>
+             <h2><span className="icon">📝</span> Recent Activity</h2>
+             {loading ? (
+               <>
+                 <div className="activity-item">
+                   <Skeleton className="activity-icon" style={{ borderRadius: "6px" }} />
+                   <div className="activity-content" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                     <Skeleton style={{ width: "120px", height: "14px", borderRadius: "2px" }} />
+                     <Skeleton style={{ width: "180px", height: "10px", borderRadius: "2px" }} />
+                   </div>
+                   <Skeleton style={{ width: "60px", height: "14px", marginLeft: "auto", borderRadius: "2px" }} />
+                 </div>
+                 <div className="activity-item">
+                   <Skeleton className="activity-icon" style={{ borderRadius: "6px" }} />
+                   <div className="activity-content" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                     <Skeleton style={{ width: "100px", height: "14px", borderRadius: "2px" }} />
+                     <Skeleton style={{ width: "150px", height: "10px", borderRadius: "2px" }} />
+                   </div>
+                   <Skeleton style={{ width: "50px", height: "14px", marginLeft: "auto", borderRadius: "2px" }} />
+                 </div>
+                 <div className="activity-item">
+                   <Skeleton className="activity-icon" style={{ borderRadius: "6px" }} />
+                   <div className="activity-content" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                     <Skeleton style={{ width: "140px", height: "14px", borderRadius: "2px" }} />
+                     <Skeleton style={{ width: "160px", height: "10px", borderRadius: "2px" }} />
+                   </div>
+                   <Skeleton style={{ width: "70px", height: "14px", marginLeft: "auto", borderRadius: "2px" }} />
+                 </div>
+               </>
+             ) : recentActivity.length === 0 ? (
+               <p style={{ color: COLOR.muted, fontSize: "0.8rem", textAlign: "center", padding: "1.5rem 0" }}>
+                 No transactions yet
+               </p>
+             ) : (
+               recentActivity.map((tx, i) => (
+                 <div key={`${tx.id}-${i}`} className="activity-item">
+                   <div
+                     className="activity-icon"
+                     style={{
+                       background: `${TX_COLOR[tx.type]}15`,
+                       color: TX_COLOR[tx.type],
+                     }}
+                   >
+                     {TX_ICON[tx.type]}
+                   </div>
+                   <div className="activity-content">
+                     <div className="activity-title">{tx.note || tx.type}</div>
+                     <div className="activity-sub">{tx.lineName} · {relativeTime(tx.date)}</div>
+                   </div>
+                   <div className="activity-amount" style={{ color: TX_COLOR[tx.type] }}>
+                     {tx.type === "Repay" ? "+" : "-"}{fmt(tx.amount)}
+                   </div>
+                 </div>
+               ))
+             )}
+           </div>
+ 
+           {notifications.length > 0 && (
+             <div className="card" style={{ animationDelay: "0.22s" }}>
+               <h2><span className="icon">🔔</span> Alerts</h2>
+               {notifications.map((note, i) => (
+                 <div 
+                   key={i} 
+                   className={`notification-item notification-item--${note.type}`}
+                   role={note.type === "danger" ? "alert" : "status"}
+                 >
+                   <span className="notification-icon" aria-hidden="true">{note.icon}</span>
+                   <div>
+                     <div className="notification-text">
+                       {note.content}
+                     </div>
+                     {note.time && (
+                       <div className="notification-time">{relativeTime(note.time)}</div>
+                     )}
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
+         </div>
+       </div>
 
-            {loading ? (
-              <>
-                <div className="cl-preview-item">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
-                      <Skeleton
-                        style={{
-                          width: "100px",
-                          height: "14px",
-                          borderRadius: "2px",
-                        }}
-                      />
-                      <Skeleton
-                        style={{
-                          width: "50px",
-                          height: "14px",
-                          borderRadius: "4px",
-                        }}
-                      />
-                    </div>
-                    <Skeleton
-                      style={{
-                        width: "120px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="cl-preview-right"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "80px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "60px",
-                        height: "6px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="cl-preview-item">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
-                      <Skeleton
-                        style={{
-                          width: "80px",
-                          height: "14px",
-                          borderRadius: "2px",
-                        }}
-                      />
-                      <Skeleton
-                        style={{
-                          width: "50px",
-                          height: "14px",
-                          borderRadius: "4px",
-                        }}
-                      />
-                    </div>
-                    <Skeleton
-                      style={{
-                        width: "100px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="cl-preview-right"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "70px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "50px",
-                        height: "6px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="cl-preview-item">
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
-                      <Skeleton
-                        style={{
-                          width: "90px",
-                          height: "14px",
-                          borderRadius: "2px",
-                        }}
-                      />
-                      <Skeleton
-                        style={{
-                          width: "50px",
-                          height: "14px",
-                          borderRadius: "4px",
-                        }}
-                      />
-                    </div>
-                    <Skeleton
-                      style={{
-                        width: "110px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="cl-preview-right"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "60px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "40px",
-                        height: "6px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {activeLines.slice(0, 3).map((cl) => {
-                  const pct = utilizationPct(cl.utilized, cl.limit);
-                  const level = getUtilizationLevel(cl.utilized, cl.limit);
-                  const isSelected = selectedCompareLines.includes(cl.id);
-                  return (
-                    <div key={cl.id} className="cl-preview-item">
-                      {activeLines.length >= 2 && (
-                        <div style={{ paddingRight: "0.75rem", display: "flex", alignItems: "center" }}>
-                          <label
-                            className="cl-row-select"
-                            style={{
-                              margin: 0,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              minWidth: "44px",
-                              minHeight: "44px",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleCompareSelection(cl.id)}
-                              aria-label={`Select ${cl.name} for comparison`}
-                              style={{
-                                cursor: "pointer",
-                                width: "16px",
-                                height: "16px",
-                                accentColor: "var(--accent)",
-                              }}
-                            />
-                          </label>
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            marginBottom: "0.2rem",
-                          }}
-                        >
-                          <p className="cl-preview-name">{cl.name}</p>
-                          <StatusBadge status={cl.status} />
-                        </div>
-                        <p className="cl-preview-id">{cl.id}</p>
-                      </div>
-                      <div className="cl-preview-right">
-                        <div className="cl-preview-amount">
-                          {fmt(cl.utilized)}{" "}
-                          <span
-                            style={{
-                              color: COLOR.muted,
-                              fontWeight: 400,
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            / {fmt(cl.limit)}
-                          </span>
-                        </div>
-                        <div className="cl-preview-bar">
-                          <div
-                            className="cl-preview-bar-fill"
-                            style={{
-                              width: `${pct}%`,
-                              background: UTIL_COLOR[level],
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <Link to="/credit-lines" className="view-all-link">
-                  View all credit lines →
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div>
-          {/* Quick Actions */}
-          <div className="card" style={{ animationDelay: "0.12s" }}>
-            <h2>
-              <span className="icon">⚡</span> Quick Actions
-            </h2>
-            <div className="quick-actions-grid">
-              {!hasLines && (
-                <button
-                  className="qa-btn"
-                  style={{ borderColor: "rgba(88,166,255,0.3)" }}
-                >
-                  <div
-                    className="qa-icon"
-                    style={{
-                      background: "rgba(88,166,255,0.12)",
-                      color: COLOR.accent,
-                    }}
-                  >
-                    🆕
-                  </div>
-                  <div>
-                    <div className="qa-label" style={{ color: COLOR.accent }}>
-                      Open Credit Line
-                    </div>
-                    <div className="qa-desc" style={{ color: COLOR.muted }}>
-                      Get started with your first line
-                    </div>
-                  </div>
-                  <span className="qa-arrow" style={{ color: COLOR.muted }}>
-                    →
-                  </span>
-                </button>
-              )}
-              {hasLines && activeLinesOnly.length > 0 && (
-                <button
-                  className="qa-btn"
-                  style={{ borderColor: "rgba(88,166,255,0.3)" }}
-                >
-                  <div
-                    className="qa-icon"
-                    style={{
-                      background: "rgba(88,166,255,0.12)",
-                      color: COLOR.accent,
-                    }}
-                  >
-                    ↗
-                  </div>
-                  <div>
-                    <div className="qa-label" style={{ color: COLOR.accent }}>
-                      Draw Credit
-                    </div>
-                    <div className="qa-desc" style={{ color: COLOR.muted }}>
-                      {fmt(totalAvailable)} available
-                    </div>
-                  </div>
-                  <span className="qa-arrow" style={{ color: COLOR.muted }}>
-                    →
-                  </span>
-                </button>
-              )}
-              {hasUtilized && (
-                <button
-                  className="qa-btn"
-                  style={{ borderColor: "rgba(63,185,80,0.3)" }}
-                >
-                  <div
-                    className="qa-icon"
-                    style={{
-                      background: "rgba(63,185,80,0.12)",
-                      color: COLOR.success,
-                    }}
-                  >
-                    ↙
-                  </div>
-                  <div>
-                    <div className="qa-label" style={{ color: COLOR.success }}>
-                      Repay Credit
-                    </div>
-                    <div className="qa-desc" style={{ color: COLOR.muted }}>
-                      {fmt(totalUtilized)} outstanding
-                    </div>
-                  </div>
-                  <span className="qa-arrow" style={{ color: COLOR.muted }}>
-                    →
-                  </span>
-                </button>
-              )}
-              <Link
-                to="/credit-lines"
-                className="qa-btn"
-                style={{ borderColor: "transparent", textDecoration: "none" }}
-              >
-                <div
-                  className="qa-icon"
-                  style={{
-                    background: "rgba(139,148,158,0.12)",
-                    color: COLOR.muted,
-                  }}
-                >
-                  📋
-                </div>
-                <div>
-                  <div className="qa-label" style={{ color: COLOR.text }}>
-                    View Credit Lines
-                  </div>
-                  <div className="qa-desc" style={{ color: COLOR.muted }}>
-                    Manage all your credit lines
-                  </div>
-                </div>
-                <span className="qa-arrow" style={{ color: COLOR.muted }}>
-                  →
-                </span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div
-            className="card"
-            style={{ animationDelay: "0.18s" }}
-            aria-busy={loading}
-          >
-            <h2>
-              <span className="icon">📝</span> Recent Activity
-            </h2>
-
-            {loading ? (
-              <>
-                <div className="activity-item">
-                  <Skeleton
-                    className="activity-icon"
-                    style={{ borderRadius: "6px" }}
-                  />
-                  <div
-                    className="activity-content"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "120px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "180px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <Skeleton
-                    style={{
-                      width: "60px",
-                      height: "14px",
-                      marginLeft: "auto",
-                      borderRadius: "2px",
-                    }}
-                  />
-                </div>
-                <div className="activity-item">
-                  <Skeleton
-                    className="activity-icon"
-                    style={{ borderRadius: "6px" }}
-                  />
-                  <div
-                    className="activity-content"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "100px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "150px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <Skeleton
-                    style={{
-                      width: "50px",
-                      height: "14px",
-                      marginLeft: "auto",
-                      borderRadius: "2px",
-                    }}
-                  />
-                </div>
-                <div className="activity-item">
-                  <Skeleton
-                    className="activity-icon"
-                    style={{ borderRadius: "6px" }}
-                  />
-                  <div
-                    className="activity-content"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Skeleton
-                      style={{
-                        width: "140px",
-                        height: "14px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <Skeleton
-                      style={{
-                        width: "160px",
-                        height: "10px",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  </div>
-                  <Skeleton
-                    style={{
-                      width: "70px",
-                      height: "14px",
-                      marginLeft: "auto",
-                      borderRadius: "2px",
-                    }}
-                  />
-                </div>
-              </>
-            ) : recentActivity.length === 0 ? (
-              <p
-                style={{
-                  color: COLOR.muted,
-                  fontSize: "0.8rem",
-                  textAlign: "center",
-                  padding: "1.5rem 0",
-                }}
-              >
-                No transactions yet
-              </p>
-            ) : (
-              recentActivity.map((tx, i) => (
-                <div key={`${tx.id}-${i}`} className="activity-item">
-                  <div
-                    className="activity-icon"
-                    style={{
-                      background: `${TX_COLOR[tx.type]}15`,
-                      color: TX_COLOR[tx.type],
-                    }}
-                  >
-                    {TX_ICON[tx.type]}
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-title">{tx.note || tx.type}</div>
-                    <div className="activity-sub">
-                      {tx.lineName} · {relativeTime(tx.date)}
-                    </div>
-                  </div>
-                  <div
-                    className="activity-amount"
-                    style={{ color: TX_COLOR[tx.type] }}
-                  >
-                    {tx.type === "Repay" ? "+" : "-"}
-                    {fmt(tx.amount)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Notifications */}
-          {notifications.length > 0 && (
-            <div className="card" style={{ animationDelay: "0.22s" }}>
-              <h2>
-                <span className="icon">🔔</span> Alerts
-              </h2>
-
-              {notifications.map((note, i) => (
-                <div
-                  key={i}
-                  className={`notification-item notification-item--${note.type}`}
-                  role={note.type === "danger" ? "alert" : "status"}
-                >
-                  <span className="notification-icon" aria-hidden="true">
-                    {note.icon}
-                  </span>
-                  <div>
-                    <div className="notification-text">{note.content}</div>
-                    {note.time && (
-                      <div className="notification-time">
-                        {relativeTime(note.time)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-      {showCompare && selectedCreditLines.length === 2 && (
-        <div
-          id="compare-lines-drawer-dashboard"
-          ref={comparePanelRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="compare-lines-title"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1200,
-            display: "flex",
-            justifyContent: "flex-end",
-            background: "rgba(15, 23, 42, 0.45)",
-            pointerEvents: "auto",
-          }}
-        >
-          <div
-            style={{
-              width: "min(480px, 100%)",
-              height: "100%",
-              position: "relative",
-              zIndex: 1201,
-            }}
-          >
-            <CompareLinesPanel
-              lines={selectedCreditLines}
-              onClose={handleCloseCompare}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+       <RiskBandsPanel 
+         isOpen={isExplainOpen} 
+         onClose={() => setIsExplainOpen(false)} 
+         triggerRef={explainTriggerRef}
+       />
+     </div>
+   );
 }

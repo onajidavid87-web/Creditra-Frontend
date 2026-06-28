@@ -15,8 +15,13 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
 
+  const isDefaulted = line.status === 'Defaulted';
+
   return (
-    <div className="cl-card">
+    <div
+      className={`cl-card${isDefaulted ? ' cl-row--defaulted' : ''}`}
+      aria-label={isDefaulted ? `Credit line ${line.id} is defaulted` : undefined}
+    >
       <div className="cl-card-header">
         <div>
           <h3 className="cl-name">{line.name}</h3>

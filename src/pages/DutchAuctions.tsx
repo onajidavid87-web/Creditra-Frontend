@@ -30,7 +30,7 @@ export const DutchAuctions: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        {(['all', 'active', 'completed'].map((f) => (
+        {['all', 'active', 'completed'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f as any)}

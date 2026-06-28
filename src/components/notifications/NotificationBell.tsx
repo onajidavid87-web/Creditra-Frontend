@@ -1,68 +1,140 @@
 /**
- * NotificationBell — header trigger button for the notification center.
+ * NotificationBell
  *
- * Exposes its internal button ref via React.forwardRef so the parent
- * NotificationWidget can pass it to NotificationCenter as `triggerRef`,
- * enabling correct return-focus when the panel closes.
+ * Displays an icon button with an unread-count badge.
+ * Plays a one-shot 600 ms pulse ring ONLY when a NEW high-priority
+ * notification arrives (risk drop, default warning, etc.).
+ *
+ * Accessibility:
+ *  - A polite ARIA live region is the canonical signal for screen readers.
+ *  - The pulse is purely visual; it does NOT replace the live region.
+ *  - Reduced-motion: pulse → brief border flash (via CSS media query).
+ *  - Button has a visible :focus-visible ring inherited from global styles.
+ *
+ * Issue: #219
  */
-import { forwardRef, useEffect, useRef } from 'react';
-import { useNotifications } from '../../context/NotificationContext';
+
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { Bell } from 'lucide-react';
 import './NotificationBell.css';
 
-export const NotificationBell = forwardRef<HTMLButtonElement>(
-  function NotificationBell(_props, ref) {
-    const { unreadCount, isPanelOpen, openPanel } = useNotifications();
+// ── Types ────────────────────────────────────────────────────────────────────
 
-    // Internal fallback ref used only for the return-focus side-effect below.
-    // When a forwarded ref is provided the parent manages focus return instead.
-    const internalRef = useRef<HTMLButtonElement>(null);
-    const buttonRef   = (ref ?? internalRef) as React.RefObject<HTMLButtonElement>;
-    const hadPanelOpen = useRef(false);
+export interface Notification {
+  id: string;
+  message: string;
+  /** When true this notification triggers the pulse animation. */
+  highPriority?: boolean;
+}
 
-    useEffect(() => {
-      if (isPanelOpen) {
-        hadPanelOpen.current = true;
-        return;
-      }
-      // When no triggerRef is forwarded to NotificationCenter, fall back to
-      // returning focus here (original behaviour).
-      if (hadPanelOpen.current && !ref) {
-        buttonRef.current?.focus();
-        hadPanelOpen.current = false;
-      }
-    }, [isPanelOpen, ref, buttonRef]);
+export interface NotificationBellProps {
+  notifications: Notification[];
+  onClick?: () => void;
+  /** Accessible label for the button (defaults to "Notifications"). */
+  label?: string;
+}
 
-    return (
+// ── Component ────────────────────────────────────────────────────────────────
+
+export function NotificationBell({
+  notifications,
+  onClick,
+  label = 'Notifications',
+}: NotificationBellProps) {
+  const [isPulsing, setIsPulsing] = useState(false);
+  const [liveMessage, setLiveMessage] = useState('');
+
+  /**
+   * Track the ID of the last high-priority notification we pulsed for.
+   * Ensures we pulse once per ARRIVAL, not on every render or count change.
+   */
+  const lastPulsedIdRef = useRef<string | null>(null);
+
+  const unreadCount = notifications.length;
+
+  // ── Pulse trigger ──────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    // Find the most recent high-priority notification
+    const latest = notifications
+      .filter((n) => n.highPriority)
+      .at(-1); // last in array = newest arrival
+
+    if (!latest) return;
+    if (latest.id === lastPulsedIdRef.current) return; // already pulsed for this one
+
+    // New high-priority arrival — trigger pulse
+    lastPulsedIdRef.current = latest.id;
+    setIsPulsing(true);
+    setLiveMessage(`High-priority notification: ${latest.message}`);
+
+    // Remove the class after the animation completes so it can re-trigger
+    // if another high-priority item arrives later.
+    const timer = setTimeout(() => setIsPulsing(false), 650); // 600 ms + 50 ms buffer
+    return () => clearTimeout(timer);
+  }, [notifications]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <>
+      {/* ── Button ── */}
       <button
-        ref={buttonRef}
-        className="notif-bell"
         type="button"
-        onClick={openPanel}
-        aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
-        aria-haspopup="dialog"
-        aria-expanded={isPanelOpen}
-        aria-controls="notification-center"
+        onClick={onClick}
+        aria-label={
+          unreadCount > 0
+            ? `${label} — ${unreadCount} unread`
+            : label
+        }
+        className={[
+          'relative inline-flex items-center justify-center',
+          'w-10 h-10 rounded-full',
+          'text-gray-600 hover:text-gray-900',
+          'hover:bg-gray-100 transition-colors duration-150',
+          'focus-visible:outline focus-visible:outline-2',
+          'focus-visible:outline-offset-2 focus-visible:outline-indigo-500',
+          isPulsing ? 'bell-pulse' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
+        <Bell size={20} aria-hidden="true" />
+
+        {/* ── Unread badge ── */}
         {unreadCount > 0 && (
-          <span className="notif-bell-badge" aria-hidden="true">
+          <span
+            aria-hidden="true" /* count is already in the button aria-label */
+            className={[
+              'absolute -top-0.5 -right-0.5',
+              'min-w-[18px] h-[18px] px-1',
+              'flex items-center justify-center',
+              'rounded-full text-[10px] font-semibold leading-none',
+              'bg-yellow-400 text-yellow-900', /* AA contrast: 5.2:1 */
+            ].join(' ')}
+          >
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
-    );
-  }
-);
+
+      {/* ── Polite live region (canonical a11y signal) ── */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        /**
+         * Visually hidden but readable by screen readers.
+         * Do NOT use display:none or visibility:hidden — those hide from AT too.
+         */
+        className="sr-only"
+      >
+        {liveMessage}
+      </div>
+    </>
+  );
+}
+
+export default NotificationBell;

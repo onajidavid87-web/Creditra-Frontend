@@ -16,6 +16,7 @@ import {
 import "./Dashboard.css";
 import { Skeleton } from "../components/Skeleton";
 import { NoDataGraph } from "../components/illustrations";
+import { WhatsChangedPanel } from "../components/WhatsChangedPanel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -443,6 +444,8 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      <WhatsChangedPanel />
 
       {/* Summary Cards */}
       <div className="summary-cards" aria-busy={loading}>

@@ -221,3 +221,16 @@
     transform: none !important;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .onboarding-overlay,
+[data-motion="reduced"] .onboarding-content,
+[data-motion="reduced"] .step-icon,
+[data-motion="reduced"] .indicator,
+[data-motion="reduced"] .primary-btn,
+[data-motion="reduced"] .secondary-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+

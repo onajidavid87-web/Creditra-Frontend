@@ -95,6 +95,17 @@ export const fmtDateTime = (iso: string) =>
     hour: '2-digit', minute: '2-digit',
   });
 
+export const relativeTime = (iso: string): string => {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return fmtDate(iso);
+};
+
 // ─── Utilization helpers ──────────────────────────────────────────────────────
 
 export const getUtilizationLevel = (utilized: number, limit: number): UtilizationLevel => {

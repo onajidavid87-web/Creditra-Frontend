@@ -1,0 +1,55 @@
+.offline-banner {
+  position: fixed;
+  bottom: var(--space-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--text);
+  max-width: calc(100vw - var(--space-xl));
+  width: max-content;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.offline-banner--restored {
+  background: var(--success);
+  color: var(--bg);
+  border-color: var(--success);
+}
+
+.offline-banner__content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.offline-banner__retry-button {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.offline-banner__retry-button:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.offline-banner__retry-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

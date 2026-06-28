@@ -1,9 +1,8 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { DutchAuctionCard } from '../components/DutchAuctionCard';
 import { MOCK_DUTCH_AUCTIONS } from '../data/mockDutchAuctions';
 import { COLOR } from '../utils/tokens';
-import type { DutchAuction } from '../types/dutchAuction';
 
 export const DutchAuctions: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
@@ -30,7 +29,7 @@ export const DutchAuctions: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        {(['all', 'active', 'completed'].map((f) => (
+        {['all', 'active', 'completed'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f as any)}
@@ -47,7 +46,7 @@ export const DutchAuctions: React.FC = () => {
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
-        ))}
+        )))}
       </div>
 
       <div>

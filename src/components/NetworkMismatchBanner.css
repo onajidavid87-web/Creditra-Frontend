@@ -1,0 +1,66 @@
+.network-mismatch-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.network-mismatch-banner__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.network-mismatch-banner__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.network-mismatch-banner__copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.network-mismatch-banner__button {
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.network-mismatch-banner__button:hover {
+  transform: translateY(-1px);
+}
+
+.network-mismatch-banner__button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.network-mismatch-banner__button:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+  .network-mismatch-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .network-mismatch-banner__button {
+    width: 100%;
+  }
+}

@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { beforeEach } from "vitest";
+import { beforeEach, vi } from "vitest";
 
 const createLocalStorage = (): Storage => {
   let store: Record<string, string> = {};
@@ -36,4 +36,18 @@ Object.defineProperty(globalThis, "localStorage", {
 
 beforeEach(() => {
   window.localStorage.clear();
+});
+
+// JSDOM does not implement window.matchMedia — provide a stub that always
+// reports non-mobile so components that branch on media queries work in tests.
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: vi.fn((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
 });

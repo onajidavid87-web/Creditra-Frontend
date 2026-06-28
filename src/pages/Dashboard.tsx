@@ -24,6 +24,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useInertBackdrop } from "../hooks/useInertBackdrop";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { getUtilizationLevel } from "../utils/tokens";
+import { NextSteps } from "../components/NextSteps";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -442,6 +443,8 @@ export function Dashboard() {
       </div>
 
       <WhatsChangedPanel />
+
+      <NextSteps totalAvailable={totalAvailable} totalUtilized={totalUtilized} />
 
       <div className="summary-cards" aria-busy={loading}>
         {loading ? (

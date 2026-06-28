@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import ActivityFeed from "../components/ActivityFeed";
 import { CopyToClipboard } from "../components/CopyToClipboard";
@@ -25,6 +25,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useInertBackdrop } from "../hooks/useInertBackdrop";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { getUtilizationLevel } from "../utils/tokens";
+import { SyncIndicator } from "../components/SyncIndicator";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -170,6 +171,26 @@ export function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [isExplainOpen, setIsExplainOpen] = useState(false);
+
+  // ─── Sync timestamps ─────────────────────────────────────────────────────
+  const [riskSyncedAt, setRiskSyncedAt] = useState<Date>(() => new Date());
+  const [creditSyncedAt, setCreditSyncedAt] = useState<Date>(() => new Date());
+  const [activitySyncedAt, setActivitySyncedAt] = useState<Date>(() => new Date());
+
+  const handleRiskRefresh = useCallback(async () => {
+    await new Promise<void>((r) => setTimeout(r, 600));
+    setRiskSyncedAt(new Date());
+  }, []);
+
+  const handleCreditRefresh = useCallback(async () => {
+    await new Promise<void>((r) => setTimeout(r, 600));
+    setCreditSyncedAt(new Date());
+  }, []);
+
+  const handleActivityRefresh = useCallback(async () => {
+    await new Promise<void>((r) => setTimeout(r, 600));
+    setActivitySyncedAt(new Date());
+  }, []);
   const explainTriggerRef = useRef<HTMLButtonElement>(null);
   const [selectedCompareLines, setSelectedCompareLines] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
@@ -554,6 +575,13 @@ export function Dashboard() {
           <div className="card" style={{ animationDelay: "0.1s" }}>
             <h2>
               <span className="icon">📊</span> Credit Summary
+              {!loading && (
+                <SyncIndicator
+                  lastSyncedAt={creditSyncedAt}
+                  onRefresh={handleCreditRefresh}
+                  className="sync-indicator--card-header"
+                />
+              )}
             </h2>
             <div className="util-bar-container">
               <div className="util-bar-header">
@@ -602,24 +630,33 @@ export function Dashboard() {
            <div className="card" style={{ animationDelay: "0.15s" }} aria-busy={loading}>
              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                <h2 style={{ margin: 0 }}><span className="icon">🛡️</span> Risk Score</h2>
-               {!loading && (
-                 <button 
-                   ref={explainTriggerRef}
-                   onClick={() => setIsExplainOpen(true)}
-                   style={{ 
-                     background: "transparent", 
-                     border: `1px solid ${COLOR.border}`, 
-                     color: COLOR.text, 
-                     fontSize: "0.75rem", 
-                     padding: "0.25rem 0.5rem", 
-                     borderRadius: 4, 
-                     cursor: "pointer",
-                     fontWeight: 500
-                   }}
-                 >
-                   Explain
-                 </button>
-               )}
+               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                 {!loading && (
+                   <SyncIndicator
+                     lastSyncedAt={riskSyncedAt}
+                     onRefresh={handleRiskRefresh}
+                     className="sync-indicator--card-header"
+                   />
+                 )}
+                 {!loading && (
+                   <button 
+                     ref={explainTriggerRef}
+                     onClick={() => setIsExplainOpen(true)}
+                     style={{ 
+                       background: "transparent", 
+                       border: `1px solid ${COLOR.border}`, 
+                       color: COLOR.text, 
+                       fontSize: "0.75rem", 
+                       padding: "0.25rem 0.5rem", 
+                       borderRadius: 4, 
+                       cursor: "pointer",
+                       fontWeight: 500
+                     }}
+                   >
+                     Explain
+                   </button>
+                 )}
+               </div>
              </div>
              {loading ? (
                <div className="risk-gauge-container">
@@ -1050,7 +1087,16 @@ export function Dashboard() {
            </div>
  
            <div className="card" style={{ animationDelay: "0.18s" }} aria-busy={loading}>
-             <h2><span className="icon">📝</span> Recent Activity</h2>
+             <h2>
+               <span className="icon">📝</span> Recent Activity
+               {!loading && (
+                 <SyncIndicator
+                   lastSyncedAt={activitySyncedAt}
+                   onRefresh={handleActivityRefresh}
+                   className="sync-indicator--card-header"
+                 />
+               )}
+             </h2>
              {loading ? (
                <>
                  <div className="activity-item">

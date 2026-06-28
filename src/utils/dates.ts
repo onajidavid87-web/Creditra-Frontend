@@ -94,3 +94,68 @@ export function endOfMonth(reference: Date = new Date()): Date {
   date.setDate(0);
   return endOfDay(date);
 }
+
+/**
+ * Return a locale-aware relative label for a past timestamp.
+ *
+ * Examples:
+ *   – just now          (< 10 s ago)
+ *   – 3 minutes ago
+ *   – 2 hours ago
+ *   – yesterday
+ *   – Jun 12            (same year, > 1 day)
+ *   – Jun 12, 2024      (different year)
+ *
+ * Uses `Intl.RelativeTimeFormat` for the short-range cases and
+ * `Intl.DateTimeFormat` for anything older than 24 h, so the string
+ * is always locale-correct without a third-party library.
+ */
+export function formatRelative(
+  ts: Date | string | number,
+  now: Date = new Date(),
+  locale: string = DEFAULT_LOCALE,
+): string {
+  const then = ts instanceof Date ? ts : new Date(ts);
+  const diffMs = now.getTime() - then.getTime();
+  const diffSec = Math.round(diffMs / 1000);
+
+  if (diffSec < 10) return 'just now';
+
+  if (diffSec < 60) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -diffSec,
+      'second',
+    );
+  }
+
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -diffMin,
+      'minute',
+    );
+  }
+
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -diffHr,
+      'hour',
+    );
+  }
+
+  if (diffHr < 48) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -1,
+      'day',
+    );
+  }
+
+  // Older than 48 h → absolute date
+  const sameYear = then.getFullYear() === now.getFullYear();
+  return new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(then);
+}

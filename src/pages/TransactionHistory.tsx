@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import {
   DateRangeChips,
@@ -105,6 +105,18 @@ const TYPE_FILTER_OPTIONS: Array<{
 ];
 
 type TypeFilter = (typeof TYPE_FILTER_OPTIONS)[number]["value"];
+
+const AMOUNT_FILTER_OPTIONS: Array<{
+  value: "all" | "lt100" | "100-1000" | "gt1000";
+  label: string;
+}> = [
+  { value: "all", label: "All Amounts" },
+  { value: "lt100", label: "<$100" },
+  { value: "100-1000", label: "$100–$1,000" },
+  { value: "gt1000", label: ">$1,000" },
+];
+
+type AmountFilter = (typeof AMOUNT_FILTER_OPTIONS)[number]["value"];
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -328,6 +340,12 @@ export function TransactionHistory() {
   const [selectedLine, setSelectedLine] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<TypeFilter>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedAmount, setSelectedAmount] = useState<AmountFilter>(() => {
+    const url = searchParams.get("amount");
+    if (url === "lt100" || url === "100-1000" || url === "gt1000") return url;
+    return "all";
+  });
   const [dateRange, setDateRange] = useState<DatePreset>("custom");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -377,6 +395,10 @@ export function TransactionHistory() {
       if (selectedType !== "all" && tx.type !== selectedType) return false;
       if (selectedStatus !== "all" && tx.status !== selectedStatus)
         return false;
+      if (selectedAmount === "lt100" && tx.amount >= 100) return false;
+      if (selectedAmount === "100-1000" && (tx.amount < 100 || tx.amount > 1000))
+        return false;
+      if (selectedAmount === "gt1000" && tx.amount <= 1000) return false;
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesNote = tx.note?.toLowerCase().includes(query);
@@ -416,6 +438,7 @@ export function TransactionHistory() {
     selectedLine,
     selectedType,
     selectedStatus,
+    selectedAmount,
     searchQuery,
     dateRange,
     customStartDate,
@@ -513,6 +536,7 @@ export function TransactionHistory() {
     selectedLine !== "all" ||
     selectedType !== "all" ||
     selectedStatus !== "all" ||
+    selectedAmount !== "all" ||
     dateRange !== "custom" ||
     customStartDate.length > 0 ||
     customEndDate.length > 0 ||
@@ -534,12 +558,18 @@ export function TransactionHistory() {
     setSelectedLine("all");
     setSelectedType("all");
     setSelectedStatus("all");
+    setSelectedAmount("all");
     setDateRange("custom");
     setCustomStartDate("");
     setCustomEndDate("");
     setSearchQuery("");
     setCurrentPage(1);
     setExpandedTx(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("amount");
+      return next;
+    });
   };
 
   /**
@@ -755,6 +785,52 @@ export function TransactionHistory() {
                 onClick={() => {
                   setSelectedType(option.value);
                   setCurrentPage(1);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/*
+         * Amount Range Filter Chips
+         * Implements accessible toggle button group for amount-range filtering
+         *
+         * Filters by absolute transaction amount:
+         * - <$100: amounts under 100
+         * - $100–$1,000: amounts between 100 and 1,000 inclusive
+         * - >$1,000: amounts over 1,000
+         *
+         * URL state is synced via ?amount=lt100 | ?amount=100-1000 | ?amount=gt1000.
+         * Uses same aria-pressed toggle pattern as Type and Date chips.
+         */}
+        <div className="th-filter-group th-filter-group-wide">
+          <span className="th-filter-label" id="amount-filter-label">
+            Amount
+          </span>
+          <div
+            className="th-chip-group"
+            role="group"
+            aria-labelledby="amount-filter-label"
+          >
+            {AMOUNT_FILTER_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className="th-filter-chip"
+                aria-pressed={selectedAmount === option.value}
+                onClick={() => {
+                  setSelectedAmount(option.value);
+                  setCurrentPage(1);
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    if (option.value === "all") {
+                      next.delete("amount");
+                    } else {
+                      next.set("amount", option.value);
+                    }
+                    return next;
+                  });
                 }}
               >
                 {option.label}

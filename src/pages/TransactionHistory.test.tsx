@@ -112,6 +112,44 @@ describe("TransactionHistory", () => {
     expect(allButtons[0].getAttribute("aria-pressed")).toBe("true");
   });
 
+  it("renders amount range filter chips with correct aria-pressed states", () => {
+    renderTransactionHistory();
+
+    const amountGroup = screen.getByRole("group", { name: /amount/i });
+
+    expect(
+      within(amountGroup).getByRole("button", { name: "All Amounts" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(amountGroup).getByRole("button", { name: "<$100" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      within(amountGroup).getByRole("button", { name: "$100–$1,000" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      within(amountGroup).getByRole("button", { name: ">$1,000" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("amount filter stacks with existing type and date filters (AND)", () => {
+    renderTransactionHistory();
+
+    // Start: 28 transactions
+    expect(screen.getByText("28 transactions shown")).toBeTruthy();
+
+    // Apply >$1,000 amount filter → 22 transactions (all >1000)
+    fireEvent.click(screen.getByRole("button", { name: ">$1,000" }));
+    expect(screen.getByText("22 transactions shown")).toBeTruthy();
+
+    // Stack with Fee type filter → 0 transactions (no Fees >1000)
+    fireEvent.click(screen.getByRole("button", { name: "Fee" }));
+    expect(screen.getByText("0 transactions shown")).toBeTruthy();
+
+    // Clear filters restores count
+    fireEvent.click(screen.getByRole("button", { name: /clear filters/i }));
+    expect(screen.getByText("28 transactions shown")).toBeTruthy();
+  });
+
   it("opens custom date inputs when Custom is selected", () => {
     renderTransactionHistory();
 

@@ -7,7 +7,7 @@ import {
   ChevronUp,
   Info,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   formatMoney,
   getDrawAmountValidation,
@@ -35,11 +35,14 @@ export function AmountInput({
   onBack,
 }: AmountInputProps) {
   const [amount, setAmount] = useState("");
+  const [pasteAnnouncement, setPasteAnnouncement] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputId = "draw-amount-input";
   const helperId = "draw-amount-helper";
   const errorId = "draw-amount-error";
   const constraintsId = "draw-amount-constraints";
   const statusId = "draw-amount-status";
+  const announcementId = "amount-paste-announcement";
 
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0;
@@ -58,6 +61,35 @@ export function AmountInput({
     },
     [creditLine.available],
   );
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    
+    // Sanitize: Strip $, commas, and whitespace
+    const sanitized = pastedText.replace(/[$,\s]/g, "");
+    
+    // Validate if it's a valid number
+    if (sanitized === "" || isNaN(parseFloat(sanitized))) {
+      setPasteAnnouncement("Invalid amount pasted. Please enter a numeric value.");
+      return;
+    }
+    
+    const numValue = parseFloat(sanitized);
+    setAmount(sanitized);
+    setPasteAnnouncement(`Pasted value sanitized to ${formatMoney(numValue)}`);
+
+    // Preserve caret position
+    // Note: since we are updating state, the re-render happens. 
+    // We can try to set the selection range after the render.
+    setTimeout(() => {
+      if (inputRef.current) {
+        const start = e.target.selectionStart || 0;
+        const end = e.target.selectionEnd || 0;
+        inputRef.current.setSelectionRange(start, end);
+      }
+    }, 0);
+  };
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -163,21 +195,24 @@ export function AmountInput({
           >
             $
           </span>
-          <input
-            id={inputId}
-            type="number"
-            placeholder="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="text-2xl font-bold bg-transparent outline-none flex-1 text-foreground placeholder:text-muted/50 min-w-0 tabular-nums"
-            min={validation.minAmount}
-            max={creditLine.available}
-            step={STEP_AMOUNT}
-            required
-            aria-invalid={hasError}
-            aria-describedby={describedBy}
-            aria-required="true"
-          />
+           <input
+             id={inputId}
+             type="number"
+             placeholder="0"
+             value={amount}
+             onChange={(e) => setAmount(e.target.value)}
+             onPaste={handlePaste}
+             ref={inputRef}
+             className="text-2xl font-bold bg-transparent outline-none flex-1 text-foreground placeholder:text-muted/50 min-w-0 tabular-nums"
+             min={validation.minAmount}
+             max={creditLine.available}
+             step={STEP_AMOUNT}
+             required
+             aria-invalid={hasError}
+             aria-describedby={describedBy}
+             aria-required="true"
+           />
+
           <button
             onClick={() => handleStep("up")}
             disabled={numAmount >= creditLine.available}
@@ -236,10 +271,21 @@ export function AmountInput({
           reserveSpace={true}
           minHeight={60}
         />
-      </div>
+       </div>
+ 
+       {/* Polite live region for paste announcements */}
+       <div 
+         id={announcementId} 
+         className="sr-only" 
+         role="status" 
+         aria-live="polite"
+       >
+         {pasteAnnouncement}
+       </div>
+ 
+       {/* Quick presets for percentage-based amounts */}
+       <div>
 
-      {/* Quick presets for percentage-based amounts */}
-      <div>
         <p className="text-sm font-semibold text-foreground mb-3">
           Quick amount
         </p>

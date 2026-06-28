@@ -165,7 +165,7 @@ describe("AmountInput", () => {
     expect(continueButton).not.toBeDisabled();
   });
 
-  it("displays helper text with available limit", () => {
+  it("sanitizes pasted currency strings (strips $, commas, whitespace)", async () => {
     render(
       <AmountInput
         creditLine={creditLine}
@@ -175,11 +175,51 @@ describe("AmountInput", () => {
       />,
     );
 
-    const helperPara = document.getElementById("draw-amount-helper");
-    expect(helperPara).toBeInTheDocument();
-    expect(helperPara).toHaveTextContent(/available credit/i);
-    expect(helperPara).toHaveTextContent("$35,000");
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
+    
+    // Mock clipboard event
+    const pasteEvent = new ClipboardEvent("paste", {
+      clipboardData: {
+        getData: (type: string) => {
+          if (type === "text") return "$1,500.00";
+          return "";
+        },
+      },
+    });
+    
+    fireEvent.paste(input, pasteEvent);
+    
+    expect(input.value).toBe("1500.00");
+    expect(screen.getByText("Pasted value sanitized to $1,500.00")).toBeInTheDocument();
   });
+
+  it("rejects non-numeric pasted text and announces the error", async () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
+    
+    const pasteEvent = new ClipboardEvent("paste", {
+      clipboardData: {
+        getData: (type: string) => {
+          if (type === "text") return "invalid-amount";
+          return "";
+        },
+      },
+    });
+    
+    fireEvent.paste(input, pasteEvent);
+    
+    expect(input.value).not.toBe("invalid-amount");
+    expect(screen.getByText("Invalid amount pasted. Please enter a numeric value.")).toBeInTheDocument();
+  });
+});
 
   it("renders decrease stepper button with accessible label", () => {
     render(

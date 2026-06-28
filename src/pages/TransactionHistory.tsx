@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
-import { useNotifications } from "../context/NotificationContext";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   CreditLineStatus,
@@ -103,6 +102,21 @@ const TYPE_FILTER_OPTIONS: Array<{
 
 type TypeFilter = (typeof TYPE_FILTER_OPTIONS)[number]["value"];
 type RangePreset = "this-week" | "this-month" | "all-time" | "custom";
+
+const RANGE_PRESET_OPTIONS: Array<{ value: Exclude<RangePreset, "custom">; label: string }> = [
+  { value: "this-week", label: "This Week" },
+  { value: "this-month", label: "This Month" },
+  { value: "all-time", label: "All Time" },
+];
+
+const AMOUNT_RANGE_PRESET_BOUNDS: Record<
+  Exclude<AmountRangePreset, "all">,
+  { min?: number; max?: number }
+> = {
+  "under-5k": { max: 5000 },
+  "5k-25k": { min: 5000, max: 25000 },
+  "25k-plus": { min: 25000 },
+};
 
 const RANGE_PRESET_OPTIONS: Array<{ value: Exclude<RangePreset, "custom">; label: string }> = [
   { value: "this-week", label: "This Week" },

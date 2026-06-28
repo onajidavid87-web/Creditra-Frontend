@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { WalletConnectionModal } from './WalletConnectionModal';
 import { OnboardingFlow } from './OnboardingFlow';
-import { NetworkMismatchBanner } from './NetworkMismatchBanner';
 import { WalletQrCode } from './WalletQrCode';
 import { CopyToClipboard } from './CopyToClipboard';
 import { shortenAddress } from '../utils/format-address';

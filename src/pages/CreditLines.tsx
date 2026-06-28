@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
@@ -7,20 +7,42 @@ import type {
   SortField,
   SortDirection,
 } from "../types/creditLine";
+import type { CollateralAsset } from "../types/collateral";
 import {
   COLOR,
   UTIL_COLOR,
   fmt,
   fmtDate,
+  fmtDateTime,
+  relativeTime,
   getUtilizationLevel,
   utilizationPct,
 } from "../utils/tokens";
 import "./CreditLines.css";
+import { AccessibleTooltip } from "../components/AccessibleTooltip";
+import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useInertBackdrop } from "../hooks/useInertBackdrop";
+import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
+import CompareLinesPanel from "../components/CompareLinesPanel";
+import { CollateralSubstitutionModal } from "../components/CollateralSubstitutionModal";
 import { NoLines } from "../components/illustrations";
 
 // ─── Credit Line Card ────────────────────────────────────────────────────────
 
-function CreditLineCard({ line }: { line: (typeof MOCK_CREDIT_LINES)[0] }) {
+function CreditLineCard({
+  line,
+  isSelected,
+  onToggle,
+  onSwapCollateral,
+}: {
+  line: (typeof MOCK_CREDIT_LINES)[0];
+  isSelected: boolean;
+  onToggle: () => void;
+  onSwapCollateral?: (
+    line: (typeof MOCK_CREDIT_LINES)[0],
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => void;
+}) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
   const swapTriggerRef = useRef<HTMLButtonElement>(null);
@@ -98,6 +120,17 @@ function CreditLineCard({ line }: { line: (typeof MOCK_CREDIT_LINES)[0] }) {
             <span className="value">{fmtDate(line.openedAt)}</span>
           </div>
         </div>
+
+        <div className="cl-last-activity">
+          <span className="cl-last-activity__label">Last Activity</span>
+          <span className="cl-last-activity__time">
+            <AccessibleTooltip
+              label={`Last updated: ${fmtDateTime(line.updatedAt)}`}
+            >
+              {relativeTime(line.updatedAt)}
+            </AccessibleTooltip>
+          </span>
+        </div>
       </div>
 
       <div className="cl-card-footer">
@@ -139,6 +172,30 @@ export default function CreditLines() {
   );
 
   const creditLines = MOCK_CREDIT_LINES;
+
+  const [showCompare, setShowCompare] = useState(false);
+  const [selectedLines, setSelectedLines] = useState<string[]>([]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [modalTarget, setModalTarget] = useState<{
+    line: (typeof MOCK_CREDIT_LINES)[0];
+    currentAsset: string;
+    triggerRef: React.RefObject<HTMLButtonElement | null>;
+  } | null>(null);
+
+  const handleModalClose = () => setModalTarget(null);
+  const handleModalSuccess = (_incomingAsset: CollateralAsset) => {
+    setModalTarget(null);
+  };
+  const handleSwapCollateral = (
+    line: (typeof MOCK_CREDIT_LINES)[0],
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    setModalTarget({
+      line,
+      currentAsset: "ETH",
+      triggerRef,
+    });
+  };
 
   const filteredAndSorted = useMemo(() => {
     let filtered =
@@ -340,7 +397,13 @@ export default function CreditLines() {
       ) : (
         <div className="cl-grid">
           {filteredAndSorted.map((line) => (
-            <CreditLineCard key={line.id} line={line} />
+            <CreditLineCard
+              key={line.id}
+              line={line}
+              isSelected={selectedLines.includes(line.id)}
+              onToggle={() => toggleSelection(line.id)}
+              onSwapCollateral={handleSwapCollateral}
+            />
           ))}
         </div>
       )}

@@ -47,8 +47,13 @@ function CreditLineCard({
   const level = getUtilizationLevel(line.utilized, line.limit);
   const swapTriggerRef = useRef<HTMLButtonElement>(null);
 
+  const isDefaulted = line.status === 'Defaulted';
+
   return (
-    <div className="cl-card">
+    <div
+      className={`cl-card${isDefaulted ? ' cl-row--defaulted' : ''}`}
+      aria-label={isDefaulted ? `Credit line ${line.id} is defaulted` : undefined}
+    >
       <div className="cl-card-header">
         <div className="cl-card-title-row">
           <label className="cl-row-select">

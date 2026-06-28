@@ -361,6 +361,27 @@
     background: rgba(63, 185, 80, 0.2);
 }
 
+/* ─── Defaulted Row — visual treatment ──────────────────────────────────────── */
+
+/* 3px left-edge error stripe (non-color emphasis) */
+.cl-row--defaulted {
+  border-left: 3px solid rgba(248, 81, 73, 0.8);
+  padding-left: calc(var(--space-md, 1rem) - 3px); /* compensate for border width */
+}
+
+/* Bold the line name in defaulted rows */
+.cl-row--defaulted .cl-name,
+.cl-row--defaulted .cl-col-name {
+  font-weight: 600;
+}
+
+/* Forced-colors mode: use system ButtonText so stripe stays visible */
+@media (forced-colors: active) {
+  .cl-row--defaulted {
+    border-left-color: ButtonText;
+  }
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

@@ -20,6 +20,7 @@ import { SupportWidget } from "./components/SupportWidget";
 import { DutchAuctions } from "./pages/DutchAuctions";
 import LandingPage from "./components/LandingPage";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
+import { NetworkMismatchBanner } from "./components/notifications/NetworkMismatchBanner";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -171,6 +172,7 @@ function App() {
               <WalletButton />
             </header>
             <main className="main">
+              <NetworkMismatchBanner />
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/transactions" element={<TransactionHistory />} />

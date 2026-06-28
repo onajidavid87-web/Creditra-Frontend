@@ -18,6 +18,7 @@ import { ShortcutHelpOverlay } from "./components/ShortcutHelpOverlay";
 import { SupportWidget } from "./components/SupportWidget";
 import { DutchAuctions } from "./pages/DutchAuctions";
 import LandingPage from "./components/LandingPage";
+import Profile from "./pages/Profile";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -193,7 +194,7 @@ function App() {
                 />
                 <Route path="/open-credit" element={<RequestEvaluation />} />
                 <Route path="/dutch-auctions" element={<DutchAuctions />} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="/profile" element={<Profile />} />
               </Routes>
             </main>
             <ShortcutHelpOverlay

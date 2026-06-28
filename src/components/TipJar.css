@@ -1,0 +1,313 @@
+.tip-jar-container {
+  position: relative;
+  background: rgba(22, 27, 34, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(48, 54, 61, 0.8);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.tip-jar-container:hover {
+  border-color: rgba(88, 166, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(88, 166, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.tip-jar-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 10% 20%, rgba(88, 166, 255, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.tip-jar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.tip-jar-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+  color: #58a6ff;
+  transition: transform 0.3s ease;
+}
+
+.tip-jar-container:hover .tip-jar-icon-wrapper {
+  transform: scale(1.05) rotate(5deg);
+}
+
+.tip-jar-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.tip-jar-icon.success {
+  color: #3fb950;
+}
+
+.tip-jar-sparkle-icon {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  color: #f0c96a;
+  animation: tip-jar-float 2s ease-in-out infinite;
+}
+
+@keyframes tip-jar-float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.1);
+  }
+}
+
+.tip-jar-intro {
+  display: flex;
+  flex-direction: column;
+}
+
+.tip-jar-kicker {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b949e;
+}
+
+.tip-jar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+}
+
+.tip-jar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tip-jar-description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #c9d1d9;
+  margin: 0;
+}
+
+.tip-jar-description strong {
+  color: #e6edf3;
+}
+
+.tip-jar-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(48, 54, 61, 0.5);
+}
+
+.tip-jar-actions-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8b949e;
+}
+
+.tip-jar-buttons-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tip-jar-action-btn {
+  background: rgba(88, 166, 255, 0.1);
+  color: #58a6ff;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.tip-jar-action-btn:hover:not(:disabled) {
+  background: #58a6ff;
+  color: #0d1117;
+  border-color: #58a6ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+}
+
+.tip-jar-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.tip-jar-action-btn:disabled {
+  background: rgba(48, 54, 61, 0.2);
+  color: #484f58;
+  border-color: rgba(48, 54, 61, 0.3);
+  cursor: not-allowed;
+}
+
+/* State Containers (Processing & Success) */
+.tip-jar-state-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  animation: tip-jar-fade-in 0.3s ease;
+}
+
+@keyframes tip-jar-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tip-jar-spinner {
+  width: 28px;
+  height: 28px;
+  color: #58a6ff;
+  animation: tip-jar-spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes tip-jar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tip-jar-success-icon {
+  width: 28px;
+  height: 28px;
+  color: #3fb950;
+  flex-shrink: 0;
+  animation: tip-jar-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tip-jar-pop {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tip-jar-state-content {
+  flex-grow: 1;
+}
+
+.tip-jar-state-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 0.25rem 0;
+}
+
+.tip-jar-state-desc {
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin: 0;
+}
+
+.tip-jar-state-desc strong {
+  color: #e6edf3;
+}
+
+.tip-jar-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: transparent;
+  border: none;
+  color: #58a6ff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-top: 0.5rem;
+  transition: color 0.2s;
+}
+
+.tip-jar-reset-btn:hover {
+  color: #79c0ff;
+  text-decoration: underline;
+}
+
+/* Empty State Styling */
+.tip-jar-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-color: rgba(63, 185, 80, 0.15);
+  background: rgba(63, 185, 80, 0.02);
+}
+
+.tip-jar-empty .tip-jar-icon-wrapper {
+  background: rgba(63, 185, 80, 0.1);
+  border-color: rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}
+
+/* High Contrast Mode Adjustments */
+@media (forced-colors: active) {
+  .tip-jar-container,
+  .tip-jar-action-btn,
+  .tip-jar-icon-wrapper {
+    border: 1px solid ButtonText;
+  }
+  .tip-jar-action-btn:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .tip-jar-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .tip-jar-buttons-group {
+    width: 100%;
+  }
+  .tip-jar-action-btn {
+    flex-grow: 1;
+    text-align: center;
+  }
+}

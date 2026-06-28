@@ -19,6 +19,7 @@ import { SupportWidget } from "./components/SupportWidget";
 import { DutchAuctions } from "./pages/DutchAuctions";
 import LandingPage from "./components/LandingPage";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
+import { WalletReconnectBanner } from "./components/WalletReconnectBanner";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -180,6 +181,9 @@ function App() {
               />
               <WalletButton />
             </header>
+            {/* Wallet auto-reconnect timeout banner — self-dismissing,
+                non-blocking; only visible when reconnect takes > 8 s. */}
+            <WalletReconnectBanner />
             <main className="main">
               <Routes>
                 <Route path="/" element={<Dashboard />} />

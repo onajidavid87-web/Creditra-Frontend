@@ -92,12 +92,12 @@ export function NotificationCenter() {
   const [snapPoint, setSnapPoint] = useState<SheetSnapPoint>('half');
   const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [undoToasts, setUndoToasts] = useState<Array<{ key: number; message: string; ids: string[] }>>([]);
-  const undoToastKeyRef = useRef(0);
+  const [markAllAnnouncement, setMarkAllAnnouncement] = useState('');
 
   const isMobileSheet = useMobileSheetActive();
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
+  const filterTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const panelRef = useFocusTrap({
     isActive: isPanelOpen,
@@ -137,7 +137,7 @@ export function NotificationCenter() {
     filterTabRefs.current[index]?.focus();
   };
 
-  const handleFilterKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+  const handleFilterKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
     const lastIndex = CATEGORIES.length - 1;
     let nextIndex: number | null = null;
 
@@ -162,6 +162,23 @@ export function NotificationCenter() {
 
     event.preventDefault();
     selectFilterAtIndex(nextIndex);
+  };
+
+  /**
+   * Mark all notifications as read and announce to screen readers.
+   */
+  const handleMarkAllAsRead = () => {
+    const count = unreadCount;
+    markAllAsRead();
+    
+    // Announce completion to screen readers
+    const message = count === 1 
+      ? '1 notification marked as read' 
+      : `${count} notifications marked as read`;
+    setMarkAllAnnouncement(message);
+    
+    // Clear announcement after it's been read
+    setTimeout(() => setMarkAllAnnouncement(''), 3000);
   };
 
   useEffect(() => {
@@ -302,7 +319,7 @@ export function NotificationCenter() {
             </button>
             <button
               className="nc-text-btn"
-              onClick={handleMarkAllRead}
+              onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               aria-label={`Mark all notifications as read${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
             >
@@ -341,19 +358,21 @@ export function NotificationCenter() {
         )}
 
         <div className="nc-filters" role="tablist">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.value}
-              ref={element => { filterTabRefs.current[index] = element; }}
-              role="tab"
-              aria-selected={isSelected}
-              tabIndex={isSelected ? 0 : -1}
-              className={`nc-filter-tab ${isSelected ? 'nc-filter-active' : ''}`}
-              onClick={() => setActiveFilter(cat.value)}
-              onKeyDown={event => handleFilterKeyDown(event, index)}
-            >
-              {cat.label}
-            </button>
+          {CATEGORIES.map((cat, index) => {
+            const isSelected = activeFilter === cat.value;
+            return (
+              <button
+                key={cat.value}
+                ref={element => { filterTabRefs.current[index] = element; }}
+                role="tab"
+                aria-selected={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                className={`nc-filter-tab ${isSelected ? 'nc-filter-active' : ''}`}
+                onClick={() => setActiveFilter(cat.value)}
+                onKeyDown={event => handleFilterKeyDown(event, index)}
+              >
+                {cat.label}
+              </button>
             );
           })}
         </div>
@@ -401,6 +420,18 @@ export function NotificationCenter() {
             })
           )}
         </div>
+
+        {/* Screen reader announcement for mark all as read action */}
+        {markAllAnnouncement && (
+          <div
+            className="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {markAllAnnouncement}
+          </div>
+        )}
       </div>
 
       {undoToasts.map(t => (

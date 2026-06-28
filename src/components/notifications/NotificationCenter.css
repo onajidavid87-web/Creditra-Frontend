@@ -1,15 +1,30 @@
+/* ── NotificationCenter ──────────────────────────────────────────────────────
+ *
+ * Desktop  : right-side slide-in panel (380 px).
+ * Mobile (≤ 640 px): full-height bottom sheet with drag handle and
+ *   safe-area-inset padding.
+ *
+ * All colours use CSS custom properties from src/index.css.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Backdrop ────────────────────────────────────────────────────────────── */
+
 .nc-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  animation: nc-fade-in 0.18s ease;
 }
 
-@keyframes fadeIn {
+@keyframes nc-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ── Panel — desktop default ─────────────────────────────────────────────── */
 
 .nc-panel {
   position: fixed;
@@ -18,33 +33,69 @@
   height: 100vh;
   width: 380px;
   max-width: 100vw;
-  background: #161b22;
-  border-left: 1px solid #30363d;
+  background: var(--surface, #161b22);
+  border-left: 1px solid var(--border, #30363d);
   z-index: 1001;
   display: flex;
   flex-direction: column;
+  /* Start off-screen to the right */
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0s linear 0.28s;
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  visibility: hidden;
 }
 
 .nc-panel[aria-hidden="true"] {
   pointer-events: none;
-  visibility: hidden;
 }
 
 .nc-panel-open {
   transform: translateX(0);
   visibility: visible;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0s linear 0s;
 }
 
-/* Header */
+/* ── Drag handle ─────────────────────────────────────────────────────────── */
+/*
+ * Hidden on desktop; shown only on mobile via the media query below.
+ * The touch target area (.nc-drag-handle-area) is 44 px tall to satisfy
+ * WCAG 2.5.5. The visual pill (.nc-drag-handle) is purely decorative.
+ */
+
+.nc-drag-handle-area {
+  display: none; /* shown in mobile media query */
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 8px 0 4px;
+  cursor: grab;
+  flex-shrink: 0;
+  touch-action: none; /* prevent browser scroll interference */
+}
+
+.nc-drag-handle-area:active {
+  cursor: grabbing;
+}
+
+.nc-drag-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border, #30363d);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
 .nc-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid var(--border, #30363d);
   flex-shrink: 0;
 }
 
@@ -57,12 +108,12 @@
 .nc-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #e6edf3;
+  color: var(--text, #e6edf3);
 }
 
 .nc-badge {
-  background: #58a6ff;
-  color: #0d1117;
+  background: var(--accent, #58a6ff);
+  color: var(--bg, #0d1117);
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.1rem 0.4rem;
@@ -80,10 +131,9 @@
 .nc-icon-btn {
   background: none;
   border: none;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   cursor: pointer;
   font-size: 1rem;
-  /* min 44×44px touch target (WCAG 2.5.5 / Apple HIG) */
   min-width: 44px;
   min-height: 44px;
   padding: 0.625rem;
@@ -95,7 +145,7 @@
 }
 
 .nc-icon-btn:hover {
-  color: #e6edf3;
+  color: var(--text, #e6edf3);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -103,17 +153,16 @@
 .nc-close-btn:focus-visible,
 .nc-text-btn:focus-visible,
 .nc-filter-tab:focus-visible {
-  outline: 2px solid #58a6ff;
+  outline: 2px solid var(--accent, #58a6ff);
   outline-offset: 2px;
 }
 
 .nc-text-btn {
   background: none;
   border: none;
-  color: #58a6ff;
+  color: var(--accent, #58a6ff);
   cursor: pointer;
   font-size: 0.75rem;
-  /* min 44px height touch target; horizontal padding kept compact */
   min-height: 44px;
   padding: 0.625rem 0.5rem;
   border-radius: 4px;
@@ -122,28 +171,19 @@
   transition: opacity 0.15s;
 }
 
-.nc-text-btn:hover { opacity: 0.75; }
-
-.nc-text-btn:disabled {
-  color: #6e7681;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
+.nc-text-btn:hover         { opacity: 0.75; }
+.nc-text-btn:disabled      { color: #6e7681; cursor: not-allowed; opacity: 0.6; }
 .nc-text-btn:disabled:hover { opacity: 0.6; }
 
-.nc-text-btn-danger {
-  color: #f85149;
-}
+.nc-text-btn-danger { color: var(--error, #f85149); }
 
 .nc-close-btn {
   background: none;
   border: none;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   cursor: pointer;
   font-size: 1.4rem;
   line-height: 1;
-  /* min 44×44px touch target (WCAG 2.5.5 / Apple HIG) */
   min-width: 44px;
   min-height: 44px;
   padding: 0.625rem;
@@ -154,20 +194,26 @@
   transition: color 0.15s;
 }
 
-.nc-close-btn:hover { color: #e6edf3; }
+.nc-close-btn:hover { color: var(--text, #e6edf3); }
 
-/* Preferences */
+/* ── Preferences ─────────────────────────────────────────────────────────── */
+
 .nc-prefs {
+  display: none; /* controlled by nc-prefs-open */
   padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid var(--border, #30363d);
   background: rgba(255, 255, 255, 0.02);
   flex-shrink: 0;
+}
+
+.nc-prefs-open {
+  display: block;
 }
 
 .nc-prefs-title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0 0 0.625rem;
@@ -183,7 +229,7 @@
 
 .nc-pref-label {
   font-size: 0.85rem;
-  color: #e6edf3;
+  color: var(--text, #e6edf3);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -193,15 +239,16 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #58a6ff;
+  accent-color: var(--accent, #58a6ff);
 }
 
-/* Filter tabs */
+/* ── Filter tabs ─────────────────────────────────────────────────────────── */
+
 .nc-filters {
   display: flex;
   gap: 0;
   padding: 0.625rem 1.25rem;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid var(--border, #30363d);
   overflow-x: auto;
   flex-shrink: 0;
   scrollbar-width: none;
@@ -212,10 +259,9 @@
 .nc-filter-tab {
   background: none;
   border: none;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   cursor: pointer;
   font-size: 0.78rem;
-  /* min 44px height touch target; compact horizontal padding */
   min-height: 44px;
   padding: 0.625rem 0.75rem;
   border-radius: 6px;
@@ -226,20 +272,23 @@
 }
 
 .nc-filter-tab:hover {
-  color: #e6edf3;
+  color: var(--text, #e6edf3);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .nc-filter-active {
-  color: #58a6ff;
+  color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.1);
 }
 
-/* List */
+/* ── Notification list ───────────────────────────────────────────────────── */
+
 .nc-list {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem 0;
+  /* Give the scroll container a stable stacking context */
+  position: relative;
 }
 
 .nc-empty {
@@ -249,7 +298,7 @@
   justify-content: center;
   padding: 3rem 1rem;
   gap: 0.5rem;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   font-size: 0.875rem;
 }
 
@@ -270,8 +319,7 @@
 }
 
 .nc-item:last-child { border-bottom: none; }
-
-.nc-item:hover { background: rgba(255, 255, 255, 0.03); }
+.nc-item:hover      { background: rgba(255, 255, 255, 0.03); }
 
 .nc-item-unread { background: rgba(88, 166, 255, 0.03); }
 
@@ -288,10 +336,7 @@
   margin-top: 0.1rem;
 }
 
-.nc-item-body {
-  flex: 1;
-  min-width: 0;
-}
+.nc-item-body { flex: 1; min-width: 0; }
 
 .nc-item-header {
   display: flex;
@@ -304,7 +349,7 @@
 .nc-item-title {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #e6edf3;
+  color: var(--text, #e6edf3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -312,13 +357,13 @@
 
 .nc-item-time {
   font-size: 0.72rem;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   flex-shrink: 0;
 }
 
 .nc-item-message {
   font-size: 0.8rem;
-  color: #8b949e;
+  color: var(--muted, #8b949e);
   margin: 0 0 0.3rem;
   line-height: 1.4;
 }
@@ -329,7 +374,6 @@
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  /* min 44px height touch target; zero horizontal padding to stay inline */
   min-height: 44px;
   padding: 0.625rem 0;
   display: inline-flex;
@@ -337,35 +381,59 @@
   transition: opacity 0.15s;
 }
 
-.nc-item-action:hover { opacity: 0.75; }
+.nc-item-action:hover         { opacity: 0.75; }
+.nc-item-action:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
 
 .nc-unread-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #58a6ff;
+  background: var(--accent, #58a6ff);
   flex-shrink: 0;
   margin-top: 0.4rem;
 }
 
+/* ── Mobile bottom-sheet variant (≤ 640 px) ──────────────────────────────── */
+
 @media (max-width: 640px) {
   .nc-panel {
-    inset: 0;
-    width: 100vw;
-    height: 100dvh;
+    /* Fill the entire viewport from bottom edge */
+    inset: auto 0 0 0;      /* auto top = natural height from bottom */
+    width: 100%;
+    height: 100dvh;          /* dynamic viewport height for mobile browsers */
     max-width: none;
     border-left: none;
+    border-top: 1px solid var(--border, #30363d);
+    /* Rounded top corners */
+    border-radius: 16px 16px 0 0;
+    /* Slide up from the bottom instead of in from the right */
     transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0s linear 0.3s;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+    /* Safe area insets for devices with home indicator / notch */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .nc-panel-open {
     transform: translateY(0);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0s linear 0s;
   }
 
+  /* Show the drag handle only on mobile */
+  .nc-drag-handle-area {
+    display: flex;
+  }
+
+  /* Slightly more compact horizontal padding on mobile */
   .nc-header {
+    padding: 0.75rem 1rem;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.875rem 1rem;
   }
 
   .nc-header-actions {
@@ -380,5 +448,16 @@
 
   .nc-item {
     padding-inline: 1rem;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .nc-panel,
+  .nc-panel-open,
+  .nc-backdrop {
+    transition: none;
+    animation: none;
   }
 }

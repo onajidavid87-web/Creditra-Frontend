@@ -4,8 +4,10 @@ import { Dashboard } from "./pages/Dashboard";
 import { WalletProvider } from "./context/WalletContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { KycProvider } from "./context/KycContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import { WalletButton } from "./components/WalletButton";
 import { KycDrawer, KycTriggerButton } from "./components/KycDrawer";
+import { NotificationWidget } from "./components/notifications/NotificationWidget";
 import DrawCreditPage from "./pages/DrawCreditPage";
 import CreditLines from "./pages/CreditLines";
 import { TransactionHistory } from "./pages/TransactionHistory";
@@ -81,6 +83,7 @@ function App() {
     <ErrorBoundary>
       <WalletProvider>
         <KycProvider>
+        <NotificationProvider>
         <BrowserRouter>
           <div className="app">
             <header className="header">
@@ -155,6 +158,7 @@ function App() {
                 triggerRef={kycTriggerRef}
                 onClick={() => setIsKycDrawerOpen(true)}
               />
+              <NotificationWidget />
               <WalletButton />
             </header>
             <main className="main">
@@ -191,6 +195,7 @@ function App() {
             />
           </div>
         </BrowserRouter>
+        </NotificationProvider>
         </KycProvider>
       </WalletProvider>
     </ErrorBoundary>

@@ -547,8 +547,8 @@ export function CollateralSubstitutionModal({
       // Simulate network delay. Replace with real API call.
       await new Promise<void>((resolve, reject) =>
         setTimeout(() => {
-          // Simulate a 5 % chance of error so the error path is testable.
-          if (Math.random() < 0.05) {
+          // In tests _delayMs=0 is used; random error only fires in real usage.
+          if (_delayMs > 0 && Math.random() < 0.05) {
             reject(new Error('Network error — please try again.'));
           } else {
             resolve();

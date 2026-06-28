@@ -74,7 +74,12 @@ export function ReducedMotionProvider({ children }: { children: ReactNode }) {
 export function useReducedMotion(): ReducedMotionContextValue {
   const ctx = useContext(ReducedMotionContext);
   if (!ctx) {
-    throw new Error('useReducedMotion must be used within a ReducedMotionProvider');
+    return {
+      motionOverride: 'system',
+      toggleMotionOverride: () => {},
+      setMotionOverride: () => {},
+      isReducedMotionActive: typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false,
+    };
   }
   return ctx;
 }

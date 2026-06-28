@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
+import { AmountRangeChips, type AmountRangePreset } from "../components/AmountRangeChips";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   TransactionType,

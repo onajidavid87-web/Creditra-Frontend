@@ -1,11 +1,11 @@
 import { AccessibleTooltip } from "@/components/AccessibleTooltip";
 import { CreditLine } from "@/types/draw-credit.types";
-import { AlertCircle, ChevronDown } from "lucide-react";
-import { useId, useState } from "react";
+import { AlertCircle, Info } from "lucide-react";
+import { useState } from "react";
 import { CreditLineSummaryBlock } from "@/components/CreditLineSummaryBlock";
 import { PendingButton } from "@/components/PendingButton";
 import { formatMoney } from "@/utils/amountValidation";
-import { getDrawPricingQuote } from "@/lib/draw-credit-pricing";
+import { useWallet } from "@/context/WalletContext";
 
 interface ConfirmationStepProps {
   /** The credit line the user is drawing from. */
@@ -54,8 +54,7 @@ export function ConfirmationStep({
   isLoading = false,
 }: ConfirmationStepProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [isAprDrawerOpen, setIsAprDrawerOpen] = useState(false);
-  const aprDrawerId = useId();
+  const { status } = useWallet();
   const utilizedBalance = creditLine.limit - creditLine.available;
   const safeAmount = Math.max(amount, 0);
   const { fee, apr, estimatedMonthlyInterest, riskBand, termMonths } =
@@ -241,6 +240,22 @@ export function ConfirmationStep({
           within 1-2 business days.
         </span>
       </label>
+
+      {status === 'connected' && !isLoading && (
+        <div 
+          className="flex items-start gap-3 rounded-lg border p-4"
+          style={{
+            backgroundColor: 'rgba(88,166,255,0.08)',
+            borderColor: 'rgba(88,166,255,0.3)',
+          }}
+          role="status"
+        >
+          <Info className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#58a6ff' }} aria-hidden="true" />
+          <span className="text-sm font-medium" style={{ color: '#e6edf3' }}>
+            Your wallet will ask you to sign next
+          </span>
+        </div>
+      )}
 
       <div className="sticky bottom-0 z-10 -mx-6 border-t border-border bg-surface/95 px-6 py-4 backdrop-blur sm:-mx-8 sm:px-8">
         <div className="flex flex-col-reverse gap-3 sm:flex-row">

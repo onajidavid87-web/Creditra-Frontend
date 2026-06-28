@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { WalletConnectionModal } from './WalletConnectionModal';
 import { OnboardingFlow } from './OnboardingFlow';
 import { WalletQrCode } from './WalletQrCode';
 import { CopyToClipboard } from './CopyToClipboard';
 import { shortenAddress } from '../utils/format-address';
+import { NetworkMismatchBanner } from './NetworkMismatchBanner';
 import './WalletButton.css';
 
 export const WalletButton = () => {

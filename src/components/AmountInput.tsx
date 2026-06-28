@@ -1,11 +1,25 @@
 import { CreditLine } from "@/types/draw-credit.types";
-import { AlertCircle, AlertTriangle, CheckCircle, Info } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Info,
+} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import {
   formatMoney,
   getDrawAmountValidation,
 } from "../utils/amountValidation";
 import { FormMessage } from "./FormMessage";
+
+const STEP_AMOUNT = 100;
+
+const stepClasses =
+  "flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-background/60 text-foreground hover:bg-surface hover:border-accent/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-40 disabled:cursor-not-allowed";
+
+const STEP_ICON_CLASS = "h-4 w-4";
 
 interface AmountInputProps {
   creditLine: CreditLine;
@@ -31,6 +45,32 @@ export function AmountInput({
     const numAmount = parseFloat(amount) || 0;
     onAmountChange(numAmount);
   }, [amount, onAmountChange]);
+
+  const handleStep = useCallback(
+    (direction: "up" | "down") => {
+      setAmount((prev) => {
+        const current = parseFloat(prev) || 0;
+        const next = direction === "up"
+          ? Math.min(current + STEP_AMOUNT, creditLine.available)
+          : Math.max(current - STEP_AMOUNT, 0);
+        return next.toString();
+      });
+    },
+    [creditLine.available],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        handleStep("up");
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        handleStep("down");
+      }
+    },
+    [handleStep],
+  );
 
   const handlePreset = (percent: number) => {
     const preset = Math.floor((creditLine.available * percent) / 100);
@@ -89,7 +129,7 @@ export function AmountInput({
           htmlFor={inputId}
           className="block text-sm font-medium text-foreground"
         >
-          Amount to Draw
+          Draw amount
           <span className="text-error ml-1" aria-label="required">
             *
           </span>
@@ -99,7 +139,7 @@ export function AmountInput({
         <p id={helperId} className="text-sm text-muted">
           Enter the amount you wish to draw from your available credit.
           Available limit:{" "}
-          <span className="font-semibold text-foreground">
+          <span className="font-semibold text-foreground tabular-nums">
             {formatMoney(creditLine.available)}
           </span>
         </p>
@@ -108,6 +148,15 @@ export function AmountInput({
         <div
           className={`flex items-center gap-2 bg-surface p-4 rounded-xl border-2 overflow-hidden transition-colors ${inputStateClassName}`}
         >
+          <button
+            onClick={() => handleStep("down")}
+            disabled={numAmount <= 0}
+            className={stepClasses}
+            aria-label="Decrease amount"
+            type="button"
+          >
+            <ChevronDown className={STEP_ICON_CLASS} aria-hidden="true" />
+          </button>
           <span
             className="text-3xl font-bold text-foreground flex-shrink-0"
             aria-hidden="true"
@@ -120,14 +169,24 @@ export function AmountInput({
             placeholder="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="text-2xl font-bold bg-transparent outline-none flex-1 text-foreground placeholder:text-muted/50 min-w-0"
+            className="text-2xl font-bold bg-transparent outline-none flex-1 text-foreground placeholder:text-muted/50 min-w-0 tabular-nums"
             min={validation.minAmount}
             max={creditLine.available}
+            step={STEP_AMOUNT}
             required
             aria-invalid={hasError}
             aria-describedby={describedBy}
             aria-required="true"
           />
+          <button
+            onClick={() => handleStep("up")}
+            disabled={numAmount >= creditLine.available}
+            className={stepClasses}
+            aria-label="Increase amount"
+            type="button"
+          >
+            <ChevronUp className={STEP_ICON_CLASS} aria-hidden="true" />
+          </button>
           {/* Max button for quick-fill with accessible label */}
           <button
             onClick={handleMaxClick}
@@ -143,25 +202,25 @@ export function AmountInput({
         <div id={constraintsId} className="grid gap-2 sm:grid-cols-3">
           <div className="rounded-lg border border-border bg-background/60 px-3 py-2">
             <p className="text-[11px] uppercase tracking-wide text-muted">
-              Minimum
+              Minimum draw
             </p>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-semibold text-foreground tabular-nums">
               {formatMoney(validation.minAmount)}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-background/60 px-3 py-2">
             <p className="text-[11px] uppercase tracking-wide text-muted">
-              Available limit
+              Available credit
             </p>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-semibold text-foreground tabular-nums">
               {formatMoney(validation.maxAmount)}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-background/60 px-3 py-2">
             <p className="text-[11px] uppercase tracking-wide text-muted">
-              Reserve target
+              Reserve
             </p>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-semibold text-foreground tabular-nums">
               {formatMoney(validation.recommendedReserve)}
             </p>
           </div>
@@ -182,7 +241,7 @@ export function AmountInput({
       {/* Quick presets for percentage-based amounts */}
       <div>
         <p className="text-sm font-semibold text-foreground mb-3">
-          Quick preset
+          Quick amount
         </p>
         <div className="grid grid-cols-4 gap-2">
           {[25, 50, 75, 100].map((percent) => (
@@ -207,20 +266,20 @@ export function AmountInput({
       <div className="bg-surface p-5 rounded-xl border border-border space-y-3 shadow-lg shadow-blue-500/5">
         <div className="flex justify-between text-sm">
           <span className="text-muted">Available:</span>
-          <span className="font-semibold text-foreground">
+          <span className="font-semibold text-foreground tabular-nums">
             {formatMoney(creditLine.available)}
           </span>
         </div>
         <div className="flex justify-between text-sm border-t border-border pt-3">
           <span className="text-muted">Requested:</span>
-          <span className="font-semibold text-foreground">
+          <span className="font-semibold text-foreground tabular-nums">
             {formatMoney(numAmount)}
           </span>
         </div>
         <div className="flex justify-between text-sm border-t border-border pt-3">
-          <span className="text-muted">Remaining:</span>
+          <span className="text-muted">Remaining credit:</span>
           <span
-            className={`font-semibold ${validation.remainingCredit < validation.recommendedReserve && numAmount > 0 ? "text-amber-400" : "text-foreground"}`}
+            className={`font-semibold tabular-nums ${validation.remainingCredit < validation.recommendedReserve && numAmount > 0 ? "text-amber-400" : "text-foreground"}`}
           >
             {formatMoney(validation.remainingCredit)}
           </span>

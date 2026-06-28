@@ -1,7 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { VideoThumbnail } from "../components/VideoThumbnail";
+import { useActiveSection } from "../hooks/useActiveSection";
+import { useReducedMotion } from "../context/ReducedMotionContext";
+import "./HelpCenter.css";
+
+const NAV_ITEMS = [
+  { id: "getting-started", label: "Getting Started" },
+  { id: "wallet", label: "Wallet" },
+  { id: "credit-lines", label: "Credit Lines" },
+  { id: "transactions", label: "Transactions" },
+  { id: "notifications", label: "Notifications" },
+  { id: "shortcuts", label: "Shortcuts" },
+  { id: "faq", label: "FAQ" },
+] as const;
 
 const categories = [
   { id: "getting-started", title: "Getting Started", desc: "Learn the basics of your account and credit setup." },
@@ -55,10 +68,15 @@ const faqs = [
   },
 ] as const;
 
+const SECTION_IDS = [...NAV_ITEMS.map((item) => item.id)];
+
 export default function HelpCenter() {
   const location = useLocation();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const activeSection = useActiveSection(SECTION_IDS);
+  const navRef = useRef<HTMLElement>(null);
+  const { isReducedMotionActive } = useReducedMotion();
 
   const filteredFaqs = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -79,99 +97,124 @@ export default function HelpCenter() {
     if (!target) return;
 
     window.requestAnimationFrame(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.scrollIntoView({
+        behavior: isReducedMotionActive ? "instant" : "smooth",
+        block: "start",
+      });
     });
-  }, [location.hash]);
+  }, [location.hash, isReducedMotionActive]);
+
+  const handleNavClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+      e.preventDefault();
+      const target = document.getElementById(sectionId);
+      if (!target) return;
+
+      target.scrollIntoView({
+        behavior: isReducedMotionActive ? "instant" : "smooth",
+        block: "start",
+      });
+    },
+    [isReducedMotionActive],
+  );
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white p-6">
-      {/* Header */}
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-6">Help Center</h1>
-        <p className="text-gray-600 mb-8 max-w-3xl">
-          Browse help topics, wallet walkthroughs, and keyboard tips without
-          loading third-party media until you ask for it.
-        </p>
-
-        {/* Search */}
-        <div className="flex items-center gap-2 bg-white shadow rounded-2xl p-4 mb-10">
-          <Search className="text-gray-400" />
-          <input
-            className="w-full outline-none"
-            placeholder="Search for help..."
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-          />
-        </div>
-
-        {/* Categories */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              id={cat.id}
-              className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition scroll-mt-24"
+    <div className="help-center">
+      <div className="help-center__layout">
+        <nav ref={navRef} className="help-center__nav" aria-label="Help topics">
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              className="help-center__nav-link"
+              aria-current={activeSection === item.id ? "true" : undefined}
+              onClick={(e) => handleNavClick(e, item.id)}
             >
-              <h3 className="text-xl font-semibold">{cat.title}</h3>
-              <p className="text-gray-500">{cat.desc}</p>
-            </div>
+              {item.label}
+            </a>
           ))}
-        </div>
+        </nav>
 
-        {/* FAQ */}
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">FAQ</h2>
-          {filteredFaqs.map((item, i) => (
-            <div key={item.id} className="border-b py-3 last:border-b-0">
-              <button
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="flex justify-between w-full text-left min-h-[44px] items-center gap-3"
-              >
-                <span>
-                  <span className="block font-medium text-gray-900">{item.q}</span>
-                  <span className="block text-sm text-gray-500 mt-1">
-                    {
-                      categories.find((category) => category.id === item.sectionId)
-                        ?.title
-                    }
+        <div className="help-center__content">
+          <h1 className="help-center__title">Help Center</h1>
+          <p className="help-center__subtitle">
+            Browse help topics, wallet walkthroughs, and keyboard tips without
+            loading third-party media until you ask for it.
+          </p>
+
+          <div className="help-center__search">
+            <Search className="help-center__search-icon" />
+            <input
+              className="help-center__search-input"
+              placeholder="Search for help..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
+
+          <div className="help-center__grid">
+            {categories.map((cat) => (
+              <div key={cat.id} id={cat.id} className="help-center__card">
+                <h3 className="help-center__card-title">{cat.title}</h3>
+                <p className="help-center__card-desc">{cat.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div id="faq" className="help-center__faq">
+            <h2 className="help-center__faq-title">FAQ</h2>
+            {filteredFaqs.map((item, i) => (
+              <div key={item.id} className="help-center__faq-item">
+                <button
+                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                  className="help-center__faq-btn"
+                  aria-expanded={openIndex === i}
+                  aria-controls={`faq-answer-${item.id}`}
+                >
+                  <span>
+                    <span className="help-center__faq-q">{item.q}</span>
+                    <span className="help-center__faq-category">
+                      {categories.find((category) => category.id === item.sectionId)?.title}
+                    </span>
                   </span>
-                </span>
-                <ChevronDown
-                  className={`transition ${openIndex === i ? "rotate-180" : ""}`}
-                />
-              </button>
-              {openIndex === i && (
-                <div className="mt-3">
-                  <p className="text-gray-600">{item.a}</p>
-                  {item.videoId && (
-                    <VideoThumbnail
-                      title={item.q}
-                      videoId={item.videoId}
-                      transcriptUrl={item.transcriptUrl}
-                    />
-                  )}
-                  {!item.videoId && item.transcriptUrl && (
-                    <a
-                      href={item.transcriptUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-[44px] items-center mt-3 text-blue-600 font-semibold"
-                    >
-                      Read transcript
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-          {filteredFaqs.length === 0 && (
-            <p className="text-gray-500 py-4">
-              No help articles match that search yet. Try “wallet”, “shortcut”,
-              or “transactions”.
-            </p>
-          )}
+                  <ChevronDown
+                    className={`help-center__faq-chevron${openIndex === i ? " help-center__faq-chevron--open" : ""}`}
+                  />
+                </button>
+                {openIndex === i && (
+                  <div id={`faq-answer-${item.id}`} className="help-center__faq-answer">
+                    <p>{item.a}</p>
+                    {item.videoId && (
+                      <VideoThumbnail
+                        title={item.q}
+                        videoId={item.videoId}
+                        transcriptUrl={item.transcriptUrl}
+                      />
+                    )}
+                    {!item.videoId && item.transcriptUrl && (
+                      <a
+                        href={item.transcriptUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="help-center__faq-transcript"
+                      >
+                        Read transcript
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {filteredFaqs.length === 0 && (
+              <p className="help-center__empty">
+                No help articles match that search yet. Try "wallet", "shortcut",
+                or "transactions".
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

@@ -124,9 +124,16 @@ export function FormField(props: FormFieldProps) {
       )}
 
       {error && (
-        <div id={errorId} className="form-field__error" role="alert" aria-live="polite">
+        <div id={errorId} className="form-field__error">
           <AlertCircle className="form-field__error-icon" aria-hidden="true" />
-          <span aria-live="polite">{debouncedErrorForAnnouncement}</span>
+          {error === debouncedErrorForAnnouncement ? (
+            <span aria-live="polite">{error}</span>
+          ) : (
+            <>
+              <span aria-hidden="true">{error}</span>
+              <span className="sr-only" role="status" aria-live="polite">{debouncedErrorForAnnouncement}</span>
+            </>
+          )}
         </div>
       )}
     </div>

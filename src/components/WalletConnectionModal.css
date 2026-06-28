@@ -840,3 +840,17 @@
   white-space: nowrap;
   border-width: 0;
 }
+/* Reduced Motion Override */
+[data-motion="reduced"] .wallet-modal-backdrop,
+[data-motion="reduced"] .wallet-modal-dialog,
+[data-motion="reduced"] .wallet-option-spinner {
+    animation: none;
+  }
+[data-motion="reduced"] .wallet-modal-dialog {
+    transform: none;
+    opacity: 1;
+  }
+[data-motion="reduced"] .wallet-option:active:not(:disabled) {
+    transform: none;
+  }
+

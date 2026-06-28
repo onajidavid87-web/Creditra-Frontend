@@ -91,8 +91,14 @@ npm run lint       # eslint .
 ### Environment
 
 ```env
-VITE_API_URL=http://localhost:3000     # backend base URL, read via import.meta.env
+VITE_API_URL=http://localhost:3000          # backend base URL, read via import.meta.env
+VITE_REPAY_CONFIRM_THRESHOLD=5000           # USD amount above which repayments require typed confirmation (default: 5000)
 ```
+
+`VITE_REPAY_CONFIRM_THRESHOLD` controls the typed-amount guard in the repayment flow.
+When a repayment amount meets or exceeds this value, the review step shows a confirmation
+input where the user must type the exact amount before the "Confirm Repayment" button
+enables. Set to `0` to disable the guard entirely (not recommended for production).
 
 ---
 

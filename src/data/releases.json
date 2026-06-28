@@ -1,0 +1,8 @@
+{
+  "id": "v1.2.0",
+  "changes": [
+    "Introduced High Contrast Mode for better accessibility",
+    "Added Reduced Motion preferences across all animations",
+    "Improved offline network resilience and retry logic"
+  ]
+}

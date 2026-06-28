@@ -1,0 +1,108 @@
+/*
+  HighContrastToggle styles
+  ─────────────────────────
+  All colours use semantic tokens — no component-internal hex.
+  The [data-contrast="high"] overrides in index.css automatically
+  restyle this component when high-contrast mode is active.
+*/
+
+/* ── Layout row ─────────────────────────────────────────────────────────── */
+.hc-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.hc-toggle-row--compact {
+  display: inline-flex;
+  gap: 0;
+}
+
+/* ── Label group ─────────────────────────────────────────────────────────── */
+.hc-toggle-label-group {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.hc-toggle-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hc-toggle-description {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: var(--lh-small);
+}
+
+/* ── Button (role=switch) ────────────────────────────────────────────────── */
+.hc-toggle-btn {
+  /* Reset */
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  /* Touch target (WCAG 2.5.5) */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hc-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-pill);
+}
+
+/* ── Track ───────────────────────────────────────────────────────────────── */
+.hc-toggle-track {
+  position: relative;
+  display: block;
+  width: 48px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  transition: background-color 0.2s ease;
+  padding: 2px;
+}
+
+.hc-toggle-btn[data-state="on"] .hc-toggle-track {
+  background: var(--accent);
+}
+
+/* ── Thumb ───────────────────────────────────────────────────────────────── */
+.hc-toggle-thumb {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+}
+
+.hc-toggle-btn[data-state="on"] .hc-toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hc-toggle-track,
+  .hc-toggle-thumb {
+    transition: none;
+  }
+}
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .hc-toggle-track,
+[data-motion="reduced"] .hc-toggle-thumb {
+    transition: none;
+  }
+

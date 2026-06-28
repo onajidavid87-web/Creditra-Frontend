@@ -17,11 +17,13 @@
  */
 import { useRef, useState } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useInertBackdrop } from '../../hooks/useInertBackdrop';
 import type { NotificationCategory } from '../../types/notification';
 import { CATEGORY_ICON, TYPE_COLOR, TYPE_ICON } from './notificationIcons';
+import { UndoToast } from './UndoToast';
 import './NotificationCenter.css';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -133,9 +135,62 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
     (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
   };
 
+  const getSnapHeightPx = useCallback(
+    (snap: SheetSnapPoint) => window.innerHeight * SHEET_SNAP_RATIOS[snap],
+    [],
+  );
+
+  const handleDragPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMobileSheet || !isPanelOpen) return;
+
+    if (typeof event.currentTarget.setPointerCapture === 'function') {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    dragStartY.current = event.clientY;
+    dragStartHeight.current =
+      dragHeightPx ?? getSnapHeightPx(snapPoint);
+    setIsDragging(true);
+  };
+
+  const handleDragPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !isMobileSheet) return;
+
+    const deltaY = dragStartY.current - event.clientY;
+    const maxHeight = window.innerHeight * SHEET_SNAP_RATIOS.full;
+    const minHeight = window.innerHeight * 0.25;
+    const nextHeight = Math.min(maxHeight, Math.max(minHeight, dragStartHeight.current + deltaY));
+    setDragHeightPx(nextHeight);
+  };
+
+  const finishDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !isMobileSheet) return;
+
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const currentHeight = dragHeightPx ?? getSnapHeightPx(snapPoint);
+    const ratio = currentHeight / window.innerHeight;
+    const resolved = resolveSheetSnapFromRatio(ratio);
+
+    setIsDragging(false);
+    setDragHeightPx(null);
+
+    if (resolved === 'dismiss') {
+      closePanel();
+      return;
+    }
+
+    setSnapPoint(resolved);
+  };
+
+  const panelStyle =
+    isMobileSheet && dragHeightPx != null
+      ? { height: `${dragHeightPx}px` }
+      : undefined;
+
   return (
     <>
-      {/* Backdrop */}
       {isPanelOpen && (
         <div
           className="nc-backdrop"
@@ -196,7 +251,7 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
             </button>
             <button
               className="nc-text-btn"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
               aria-label={`Mark all notifications as read${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
             >
@@ -320,7 +375,28 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
             })
           )}
         </div>
+
+        {/* Screen reader announcement for mark all as read action */}
+        {markAllAnnouncement && (
+          <div
+            className="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {markAllAnnouncement}
+          </div>
+        )}
       </div>
+
+      {undoToasts.map(t => (
+        <UndoToast
+          key={t.key}
+          message={t.message}
+          ids={t.ids}
+          onClose={() => setUndoToasts(prev => prev.filter(x => x.key !== t.key))}
+        />
+      ))}
     </>
   );
 }

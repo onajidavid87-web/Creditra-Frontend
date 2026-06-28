@@ -659,7 +659,8 @@
     margin-bottom: 1rem;
 }
 
-.empty-state h2 {
+.empty-state h2,
+.empty-state h3 {
     margin: 0 0 0.5rem;
     font-size: 1.25rem;
     color: var(--text);

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
+import { AmountRangeChips } from "../components/AmountRangeChips";
 import { DateRangeChips, type DatePreset } from "../components/DateRangeChips";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
@@ -11,7 +12,7 @@ import type {
 import { startOfDay, startOfMonth, startOfWeek } from "../utils/dates";
 import { COLOR, fmt, fmtDate, fmtDateTime } from "../utils/tokens";
 import "./TransactionHistory.css";
-import { NoActivity, NoLines } from "../components/illustrations";
+import { NoActivity, NoDataGraph, NoLines } from "../components/illustrations";
 
 /**
  * TransactionHistory Page Component
@@ -1136,8 +1137,8 @@ export function TransactionHistory() {
        */}
       <div className="th-table-container">
         {filteredTransactions.length === 0 ? (
-          <div className="th-empty th-empty-no-results">
-            <div className="th-empty-icon">🔍</div>
+          <div className="empty-state">
+            <NoDataGraph className="empty-state-illustration--muted" />
             <h3>No transactions match these filters</h3>
             <p>Try another transaction type, date range, or search term.</p>
             {hasActiveFilters && (

@@ -4,7 +4,7 @@ import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { TransactionHistory } from "./TransactionHistory";
 
 const renderTransactionHistory = (initialEntries: string[] = ["/transactions"]) => {
-  render(
+  return render(
     <MemoryRouter initialEntries={initialEntries}>
       <TransactionHistory />
     </MemoryRouter>,
@@ -93,7 +93,7 @@ describe("TransactionHistory", () => {
   });
 
   it("shows a no-results state with a clear filters action", () => {
-    renderTransactionHistory();
+    const { container } = renderTransactionHistory();
 
     fireEvent.click(screen.getByRole("button", { name: "Fee" }));
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
@@ -103,6 +103,12 @@ describe("TransactionHistory", () => {
       name: /no transactions match these filters/i,
     });
     expect(noResultsHeading).toBeTruthy();
+
+    // Check NoDataGraph illustration renders in the empty state
+    const illustration = container.querySelector(
+      ".empty-state .empty-state-illustration",
+    );
+    expect(illustration).toBeInTheDocument();
 
     // Check "no transactions yet" message is NOT present
     const noTransactionsMsg = screen.queryByText(/no transactions yet/i);

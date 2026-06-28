@@ -5,6 +5,7 @@ import { FormMessage } from '@/components/FormMessage';
 import { PendingButton } from '@/components/PendingButton';
 import { Skeleton } from '@/components/Skeleton';
 import { useReducedMotion } from '@/context/ReducedMotionContext';
+import { FileUploadZone } from '@/components/FileUploadZone';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type EvalState = 'idle' | 'running' | 'success' | 'rejected' | 'error';
@@ -84,7 +85,7 @@ export function RequestEvaluation() {
   const [progress, setProgress] = useState(0);
   const [eta, setEta] = useState(45); // seconds
   const [result, setResult] = useState<EvalResult | null>(null);
-  const [revenueFile, setRevenueFile] = useState<File | null>(null);
+  const [revenueFiles, setRevenueFiles] = useState<File[]>([]);
   const [hasIdentityBond, setHasIdentityBond] = useState(false);
   const [agreeTermsPreviewed, setAgreeTermsPreviewed] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -226,13 +227,9 @@ export function RequestEvaluation() {
                     Revenue attestation (PDF/CSV)
                     <AccessibleTooltip label="Upload recent revenue statements or attestations to potentially improve your limit and APR." />
                   </span>
-                  <input
-                    type="file"
-                    onChange={e => setRevenueFile(e.target.files?.[0] || null)}
-                    style={{ ...inputStyle, padding: '0.35rem 0.5rem' }}
-                    accept=".pdf,.csv"
+                  <FileUploadZone 
+                    onFilesUploaded={(files) => setRevenueFiles(files)} 
                   />
-                  {revenueFile && <span style={{ fontSize: '0.8rem', color: COLOR.muted }}>Attached: {revenueFile.name}</span>}
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
@@ -247,9 +244,10 @@ export function RequestEvaluation() {
                 </label>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button style={btn.ghost} onClick={() => { setRevenueFile(null); setHasIdentityBond(false); }}>Clear</button>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <button style={btn.ghost} onClick={() => { setRevenueFiles([]); setHasIdentityBond(false); }}>Clear</button>
+               <div style={{ display: 'flex', gap: '0.5rem' }}>
+
                 <button style={btn.secondary} onClick={() => setStep(1)}>Back</button>
                 <PendingButton
                   pending={evalState === 'running'}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
+import { CreditLineDetailDrawer } from '../components/CreditLineDetailDrawer';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
 import type { CreditLineStatus, SortField, SortDirection } from '../types/creditLine';
 import {
@@ -11,12 +12,24 @@ import './CreditLines.css';
 
 // ─── Credit Line Card ────────────────────────────────────────────────────────
 
-function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
+function CreditLineCard({ line, onSelect }: { line: typeof MOCK_CREDIT_LINES[0]; onSelect: () => void }) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
 
   return (
-    <div className="cl-card">
+    <div
+      className="cl-card"
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${line.name}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+    >
       <div className="cl-card-header">
         <div>
           <h3 className="cl-name">{line.name}</h3>
@@ -69,12 +82,21 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
 
       <div className="cl-card-footer">
         {line.status === 'Active' && line.limit > line.utilized && (
-          <Link to={`/draw-credit?line=${line.id}`} className="cl-action-btn draw">
+          <Link
+            to={`/draw-credit?line=${line.id}`}
+            className="cl-action-btn draw"
+            onClick={(e) => e.stopPropagation()}
+          >
             ↗ Draw
           </Link>
         )}
         {line.utilized > 0 && (
-          <button className="cl-action-btn repay">↙ Repay</button>
+          <button
+            className="cl-action-btn repay"
+            onClick={(e) => e.stopPropagation()}
+          >
+            ↙ Repay
+          </button>
         )}
       </div>
     </div>
@@ -87,8 +109,13 @@ export default function CreditLines() {
   const [sortField, setSortField] = useState<SortField>('updatedAt');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
   const [statusFilter, setStatusFilter] = useState<CreditLineStatus | 'all'>('all');
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
 
   const creditLines = MOCK_CREDIT_LINES;
+
+  const selectedLine = useMemo(() => {
+    return creditLines.find((line) => line.id === selectedLineId) || null;
+  }, [selectedLineId, creditLines]);
 
   const filteredAndSorted = useMemo(() => {
     let filtered = statusFilter === 'all'
@@ -199,9 +226,20 @@ export default function CreditLines() {
       ) : (
         <div className="cl-grid">
           {filteredAndSorted.map(line => (
-            <CreditLineCard key={line.id} line={line} />
+            <CreditLineCard
+              key={line.id}
+              line={line}
+              onSelect={() => setSelectedLineId(line.id)}
+            />
           ))}
         </div>
+      )}
+
+      {selectedLine && (
+        <CreditLineDetailDrawer
+          line={selectedLine}
+          onClose={() => setSelectedLineId(null)}
+        />
       )}
     </div>
   );

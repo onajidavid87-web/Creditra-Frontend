@@ -129,6 +129,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<text>` + sibling text | AA | n/a | OK |
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
 | `RepayModal` | Focus trap | `role="dialog"`; uses focus-trap hook | AA | n/a | OK |
+| `CreditLineDetailDrawer` | Focus trap + return; Escape closes; locks body scroll | `role="dialog"`, `aria-modal`, `aria-labelledby`, `aria-describedby`, sparkline uses screen reader text | AA | slide-in animation | OK |
 | `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state | AA | n/a | OK |
 | `HelpCenter` | Accordion buttons and transcript links are keyboard reachable | Video thumbnails are real buttons; iframe created only after opt-in | AA | n/a | OK |
 | `LandingPage` | Tab through CTAs and FAQ accordion | Framer Motion guarded by `useReducedMotion` | AA | reduced-motion gated | OK |

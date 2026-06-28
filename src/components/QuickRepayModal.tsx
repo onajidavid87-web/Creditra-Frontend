@@ -3,6 +3,10 @@ import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { formatMoney, getRepayAmountValidation, requiresRepayConfirmation } from '../utils/amountValidation';
 import { PendingButton } from './PendingButton';
+import {
+  TypedAmountConfirmField,
+  isTypedAmountMatch,
+} from './TypedAmountConfirm';
 
 interface RepaymentCreditLine {
   id: string;
@@ -81,6 +85,7 @@ export function QuickRepayModal({
   triggerRef,
 }: QuickRepayModalProps) {
   const [amountStr, setAmountStr] = useState(initialAmount || '');
+  const [confirmAmountStr, setConfirmAmountStr] = useState('');
   const [step, setStep] = useState<'confirm' | 'pending' | 'success'>('confirm');
   
   const modalRef = useFocusTrap({
@@ -116,6 +121,10 @@ export function QuickRepayModal({
     danger: { color: COLOR.danger, bg: 'rgba(248,81,73,0.08)', border: 'rgba(248,81,73,0.25)', icon: <AlertCircle size={16} aria-hidden="true" /> },
   } as const;
   const activeTone = toneMeta[validation.feedback.severity];
+
+  const needsConfirm = requiresRepayConfirmation(amount);
+  const isConfirmDisabled =
+    isInvalid || (needsConfirm && !isTypedAmountMatch(confirmAmountStr, amount));
 
   const handleConfirm = () => {
     setStep('pending');
@@ -228,14 +237,23 @@ export function QuickRepayModal({
               </div>
             </div>
 
+            {needsConfirm && (
+              <TypedAmountConfirmField
+                amount={amount}
+                value={confirmAmountStr}
+                onChange={setConfirmAmountStr}
+                idPrefix="quick-repay-confirm"
+              />
+            )}
+
             <button
               onClick={handleConfirm}
-              disabled={isInvalid}
+              disabled={isConfirmDisabled}
               style={{
                 ...btn.primary,
                 width: '100%',
-                opacity: isInvalid ? 0.5 : 1,
-                cursor: isInvalid ? 'not-allowed' : 'pointer',
+                opacity: isConfirmDisabled ? 0.5 : 1,
+                cursor: isConfirmDisabled ? 'not-allowed' : 'pointer',
               }}
             >
               Confirm Repayment

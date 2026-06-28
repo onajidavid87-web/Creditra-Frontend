@@ -19,6 +19,7 @@ import { SupportWidget } from "./components/SupportWidget";
 import { DutchAuctions } from "./pages/DutchAuctions";
 import LandingPage from "./components/LandingPage";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
+import { LinkedAccounts } from "./pages/LinkedAccounts";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -181,6 +182,7 @@ function App() {
                 />
                 <Route path="/open-credit" element={<RequestEvaluation />} />
                 <Route path="/dutch-auctions" element={<DutchAuctions />} />
+                <Route path="/linked-accounts" element={<LinkedAccounts />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

@@ -20,6 +20,8 @@ interface RepayModalProps {
   walletBalance: number;
   onClose: () => void;
   onSuccess: (amount: number) => void;
+  /** Ref to the element that triggered the modal; focus returns here on close. */
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 const COLOR = {
@@ -85,12 +87,14 @@ export function RepayModal({
   walletBalance,
   onClose,
   onSuccess,
+  triggerRef,
 }: RepayModalProps) {
   const [step, setStep] = useState<ModalStep>('input');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const helpTriggerRef = useRef<HTMLButtonElement>(null);
   const modalRef = useFocusTrap({
     isActive: !isHelpOpen,
+    triggerRef,
     onEscape: step !== 'pending' ? onClose : undefined,
   });
   const [amountStr, setAmountStr] = useState('');

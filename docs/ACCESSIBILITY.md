@@ -133,9 +133,8 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `BannerAlert` | Tab/Enter on action & dismiss | `role="alert"` for warning/error | AA | n/a | OK |
 | `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<title>` + polite `sr-only` sibling; arc animates on value change with reduced-motion fallback | AA | reduced-motion gated (CSS + JS `matchMedia`) | OK |
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
-| `RepayModal` | Focus trap | `role="dialog"`; uses focus-trap hook | AA | n/a | OK |
-| `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state; `<caption>` describes scope and updates with filters | AA | n/a | OK |
-| `CreditLines` | Filter select controls labelled with `htmlFor`/`id`; sort direction button has accessible name | `<section aria-label>` describes filter/sort scope and updates with changes | AA | n/a | OK |
+| `RepayModal` | Focus trap (canonical `{ isActive }` form) + return focus to trigger | `role="dialog"`, `aria-modal`, `aria-labelledby` | AA | n/a | OK |
+| `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state | AA | n/a | OK |
 | `HelpCenter` | Accordion buttons and transcript links are keyboard reachable | Video thumbnails are real buttons; iframe created only after opt-in | AA | n/a | OK |
 | `SupportWidget` | Floating trigger, search field, FAQ toggles, and email handoff are keyboard reachable | `aria-expanded`, `aria-controls`, visible focus ring, non-modal `role="dialog"` shell | AA | n/a | OK |
 | `LandingPage` | Tab through CTAs and FAQ accordion | Framer Motion guarded by `useReducedMotion` | AA | reduced-motion gated | OK |
@@ -146,7 +145,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | ID | Component | Gap | Target |
 | --- | --- | --- | --- |
 | A11Y-001 | `OnboardingFlow` | Arrow-key step navigation not wired (today uses Next/Back buttons only) | next minor release |
-| A11Y-002 | `RepayModal` | Focus-trap call site uses legacy boolean signature; needs migration to `useFocusTrap({ isActive })` | next minor release |
+| ~~A11Y-002~~ | ~~`RepayModal`~~ | ~~Focus-trap call site uses legacy boolean signature; needs migration to `useFocusTrap({ isActive })`~~ | **Fixed** — migrated to `{ isActive }` form; `triggerRef` wired; regression test added |
 | A11Y-003 | `NotificationCenter` | Filter tabs use `aria-pressed` but should additionally expose `role="tab"` + `aria-selected` for AT consistency | next minor release |
 | ~~A11Y-004~~ | ~~Tables~~ | ~~`aria-sort` is set but caption text describing the table is not yet announced~~ | **Closed** — `<caption>` added to TransactionHistory; `<section aria-label>` added to CreditLines; both update dynamically with filter state |
 

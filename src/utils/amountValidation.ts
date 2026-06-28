@@ -52,12 +52,15 @@ const MIN_AMOUNT = 1;
  * Threshold above which repayments require the user to type the exact amount
  * in a confirmation field before the "Confirm Repayment" button enables.
  *
- * Set to `0` or a negative value to disable the confirm-by-typing guard
- * entirely across the entire application.
- *
- * Configurable — update this value to change the threshold globally.
+ * Driven by the VITE_REPAY_CONFIRM_THRESHOLD environment variable (a plain
+ * non-negative number). Falls back to 5 000 when the variable is absent or
+ * cannot be parsed. Set the variable to "0" to disable the guard entirely.
  */
-export const REPAY_CONFIRM_THRESHOLD = 5000;
+export const REPAY_CONFIRM_THRESHOLD = (() => {
+  const raw = import.meta.env.VITE_REPAY_CONFIRM_THRESHOLD;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 5000;
+})();
 
 /**
  * Returns `true` when `amount` meets or exceeds `REPAY_CONFIRM_THRESHOLD`,

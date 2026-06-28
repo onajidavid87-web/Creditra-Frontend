@@ -25,3 +25,9 @@
     animation: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .skeleton::after {
+    animation: none;
+  }
+

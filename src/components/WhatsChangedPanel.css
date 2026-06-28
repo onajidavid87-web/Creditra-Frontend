@@ -1,0 +1,82 @@
+.whats-changed-panel {
+  background: var(--surface-default, #161b22);
+  border: 1px solid var(--border-default, #30363d);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.whats-changed-panel.no-motion {
+  animation: none;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.whats-changed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.whats-changed-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.whats-changed-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8b949e);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.whats-changed-panel.no-motion .whats-changed-dismiss {
+  transition: none;
+}
+
+.whats-changed-dismiss:hover,
+.whats-changed-dismiss:focus-visible {
+  background: rgba(139, 148, 158, 0.12);
+  color: var(--text-default, #c9d1d9);
+  outline: none;
+}
+
+.whats-changed-dismiss:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-accent, #58a6ff);
+}
+
+.whats-changed-list {
+  margin: 0;
+  padding-left: 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.whats-changed-list li {
+  margin-bottom: 0.25rem;
+}
+
+.whats-changed-list li:last-child {
+  margin-bottom: 0;
+}

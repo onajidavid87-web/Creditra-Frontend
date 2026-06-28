@@ -144,3 +144,11 @@
     transition: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .landing-card,
+[data-motion="reduced"] .landing-hero-card,
+[data-motion="reduced"] .landing-button {
+    transition: none;
+  }
+

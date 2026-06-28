@@ -1,0 +1,18 @@
+.empty-state-illustration {
+    width: min(180px, 100%);
+    height: auto;
+    margin: 0 auto 1.25rem;
+    display: block;
+    color: var(--accent);
+}
+
+.empty-state-illustration--muted {
+    color: var(--accent);
+    opacity: 0.9;
+}
+
+.empty-state-illustration svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}

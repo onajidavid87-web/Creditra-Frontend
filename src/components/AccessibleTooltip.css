@@ -6,6 +6,11 @@
   vertical-align: middle;
 }
 
+.accessible-tooltip--inline {
+  margin-left: 0;
+  vertical-align: baseline;
+}
+
 .accessible-tooltip__trigger {
   display: inline-flex;
   align-items: center;
@@ -22,10 +27,37 @@
   line-height: 1;
 }
 
+.accessible-tooltip__trigger--text {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.accessible-tooltip__label {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.18em;
+}
+
 .accessible-tooltip__trigger:hover,
 .accessible-tooltip__trigger:focus-visible {
   background: rgba(88, 166, 255, 0.12);
   border-color: var(--accent);
+}
+
+.accessible-tooltip__trigger--text:hover,
+.accessible-tooltip__trigger--text:focus-visible {
+  background: transparent;
+  border-color: transparent;
 }
 
 .accessible-tooltip__content {
@@ -66,4 +98,16 @@
 .accessible-tooltip:focus-within .accessible-tooltip__content {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+@media (forced-colors: active) {
+  .accessible-tooltip__label {
+    text-decoration-color: LinkText;
+  }
+
+  .accessible-tooltip__content {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
 }

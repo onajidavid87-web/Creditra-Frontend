@@ -1,21 +1,18 @@
-# PR Description
+# PR Description: Add MICROCOPY guide and surface inline financial terms
 
 ## Summary
-
-This PR adds wallet address QR code support to the connected wallet dropdown so users can easily share or scan their address from another device during wallet-related flows.
+Resolves #242. This PR introduces a centralized guide for financial definitions and an interactive tooltip component to surface those definitions in-context, reducing jargon friction and improving overall user experience.
 
 ## What changed
-
-- Added a toggle in the wallet dropdown to show or hide a QR code for the connected wallet address.
-- Generated the QR code client-side to keep the experience privacy-friendly and dependency-light.
-- Improved the dropdown layout and accessibility for keyboard and screen-reader users.
-- Added tests covering QR rendering, toggle behavior, and state reset logic.
+- Created `docs/MICROCOPY.md` to centralize our standard financial definitions and UI copy guidelines (e.g., APR, Utilization, Credit Limit, Default, Dutch Auction).
+- Added `InlineTermTooltip` component designed to wrap inline terminology with a dotted underline affordance.
+- Integrated the tooltip with our existing CSS custom properties for dark mode and accessibility tokens.
+- Added comprehensive unit tests and accessibility coverage (focus rings, `aria-describedby`, keyboard navigation) to ensure WCAG 2.1 AA compliance.
 
 ## Why
-
-Users connecting wallets often need a quick way to move the address to a phone or secondary device. This makes the wallet experience more practical for cross-device verification and transfers.
+Users need easy access to clarify complex financial terminology without breaking their flow or leaving the page. Centralizing the definitions ensures consistency across the app, while the inline tooltip solves the immediate UX need securely and accessibly.
 
 ## Testing
-
-- Ran `npx vitest run`
-- Result: 26/26 test files passed and 120/120 tests passed
+- Ran `npm test` successfully (Vitest & React Testing Library).
+- Verified keyboard accessibility (tab focus, visible focus ring).
+- Checked styling across varied screen widths to confirm that tooltips don't overflow on smaller devices.

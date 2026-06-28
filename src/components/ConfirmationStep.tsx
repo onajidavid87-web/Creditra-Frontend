@@ -1,10 +1,11 @@
 import { AccessibleTooltip } from "@/components/AccessibleTooltip";
 import { CreditLine } from "@/types/draw-credit.types";
-import { AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, ChevronDown } from "lucide-react";
+import { useId, useState } from "react";
 import { CreditLineSummaryBlock } from "@/components/CreditLineSummaryBlock";
 import { PendingButton } from "@/components/PendingButton";
 import { formatMoney } from "@/utils/amountValidation";
+import { getDrawPricingQuote } from "@/lib/draw-credit-pricing";
 
 interface ConfirmationStepProps {
   /** The credit line the user is drawing from. */
@@ -53,18 +54,15 @@ export function ConfirmationStep({
   isLoading = false,
 }: ConfirmationStepProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [isAprDrawerOpen, setIsAprDrawerOpen] = useState(false);
+  const aprDrawerId = useId();
   const utilizedBalance = creditLine.limit - creditLine.available;
   const safeAmount = Math.max(amount, 0);
-  // Keep these estimates visible until a signed quote is returned by the API.
-  const fee = safeAmount > 0 ? Math.round(safeAmount * 0.01 * 100) / 100 : 0;
-  const apr = 12.5;
-  const estimatedMonthlyInterest =
-    safeAmount > 0 ? Math.round(((safeAmount * apr) / 100 / 12) * 100) / 100 : 0;
+  const { fee, apr, estimatedMonthlyInterest, riskBand, termMonths } =
+    getDrawPricingQuote(creditLine, safeAmount);
   const newBalance = utilizedBalance + safeAmount + fee;
   const remainingAvailable = Math.max(creditLine.limit - newBalance, 0);
-  const newUtilization = Math.round(
-    (newBalance / creditLine.limit) * 100,
-  );
+  const newUtilization = Math.round((newBalance / creditLine.limit) * 100);
   const isDrawDisabled = !agreedToTerms || isLoading;
   const disabledHelperText = !agreedToTerms
     ? "Accept the authorization terms to enable the Draw button."
@@ -137,13 +135,74 @@ export function ConfirmationStep({
                 {creditLine.utilization}%
               </span>
             </div>
-            <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted font-medium">After draw</span>
-              <span
-                className={`font-semibold ${newUtilization > 80 ? "text-yellow-500" : "text-foreground"}`}
-              >
-                {newUtilization}%
-              </span>
+
+            <div className="rounded-lg border border-border bg-background/40">
+              <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex justify-between gap-4 text-sm sm:block">
+                  <span className="text-muted font-medium">Estimated APR</span>
+                  <p className="mt-1 font-semibold text-foreground sm:text-base">
+                    {apr.toFixed(2)}%
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-expanded={isAprDrawerOpen}
+                  aria-controls={aprDrawerId}
+                  onClick={() => setIsAprDrawerOpen((isOpen) => !isOpen)}
+                  className="inline-flex min-h-11 items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-semibold text-blue-300 transition-colors hover:text-blue-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 motion-reduce:transition-none"
+                >
+                  Why this APR?
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 ${isAprDrawerOpen ? "rotate-180" : "rotate-0"} motion-reduce:transition-none`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+
+              {isAprDrawerOpen && (
+                <section
+                  id={aprDrawerId}
+                  aria-label="APR explanation"
+                  className="border-t border-border px-4 py-3"
+                >
+                  <p className="text-sm text-muted">
+                    Your current estimated APR reflects the pricing inputs on
+                    this line today.
+                  </p>
+                  <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-border bg-surface px-3 py-3">
+                      <dt className="text-sm font-semibold text-foreground">
+                        Risk band
+                      </dt>
+                      <dd className="mt-1 text-sm text-muted">
+                        Current value: {riskBand}. This pricing band sets the
+                        base rate for your line before utilization and term
+                        adjustments.
+                      </dd>
+                    </div>
+                    <div className="rounded-lg border border-border bg-surface px-3 py-3">
+                      <dt className="text-sm font-semibold text-foreground">
+                        Utilization
+                      </dt>
+                      <dd className="mt-1 text-sm text-muted">
+                        Current value: {creditLine.utilization}%. Higher
+                        utilization can increase APR because it leaves less
+                        undrawn capacity on the line.
+                      </dd>
+                    </div>
+                    <div className="rounded-lg border border-border bg-surface px-3 py-3">
+                      <dt className="text-sm font-semibold text-foreground">
+                        Term
+                      </dt>
+                      <dd className="mt-1 text-sm text-muted">
+                        Current value: {termMonths} months. Longer terms usually
+                        carry a higher APR because the balance is expected to
+                        stay outstanding for longer.
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              )}
             </div>
           </div>
           {newUtilization > 80 && (
@@ -209,7 +268,9 @@ export function ConfirmationStep({
               pendingLabel="Processing draw..."
               disabled={isDrawDisabled}
               className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-describedby={isDrawDisabled ? "draw-disabled-helper" : undefined}
+              aria-describedby={
+                isDrawDisabled ? "draw-disabled-helper" : undefined
+              }
             >
               Draw
             </PendingButton>

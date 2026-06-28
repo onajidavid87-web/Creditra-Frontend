@@ -1,0 +1,6 @@
+/* src/styles/typography.css */
+
+/* Add tabular-nums to amount displays for stability */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

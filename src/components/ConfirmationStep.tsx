@@ -91,13 +91,13 @@ export function ConfirmationStep({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <p className="text-sm text-muted font-medium">Draw amount</p>
-              <p className="mt-1 text-3xl font-bold text-foreground">
+              <p className="mt-1 text-3xl font-bold text-foreground tabular-nums">
                 {formatMoney(safeAmount)}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-background/60 p-3">
               <p className="text-sm text-muted font-medium">Estimated fee</p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(fee)}
               </p>
             </div>
@@ -105,13 +105,13 @@ export function ConfirmationStep({
               <p className="text-sm text-muted font-medium">
                 Estimated monthly interest
               </p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(estimatedMonthlyInterest)}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-background/60 p-3">
               <p className="text-sm text-muted font-medium">New balance</p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(newBalance)}
               </p>
             </div>
@@ -119,7 +119,7 @@ export function ConfirmationStep({
               <p className="text-sm text-muted font-medium">
                 Available after draw
               </p>
-              <p className="mt-1 font-semibold text-foreground">
+              <p className="mt-1 font-semibold text-foreground tabular-nums">
                 {formatMoney(remainingAvailable)}
               </p>
             </div>
@@ -129,14 +129,14 @@ export function ConfirmationStep({
               <span className="text-muted font-medium">
                 Current utilization
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-foreground tabular-nums">
                 {creditLine.utilization}%
               </span>
             </div>
             <div className="flex justify-between gap-4 text-sm">
               <span className="text-muted font-medium">After draw</span>
               <span
-                className={`font-semibold ${newUtilization > 80 ? "text-yellow-500" : "text-foreground"}`}
+                className={`font-semibold tabular-nums ${newUtilization > 80 ? "text-yellow-500" : "text-foreground"}`}
               >
                 {newUtilization}%
               </span>

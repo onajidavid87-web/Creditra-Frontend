@@ -290,3 +290,22 @@ trigger on close, and the parent flow state stays mounted while the overlay is
 open. The dialog reuses the app modal hooks for focus trapping, body scroll lock,
 and inert background behavior, with reduced-motion users receiving the global
 motion-reduced animation behavior.
+
+---
+
+## 11. Microcopy glossary
+
+**Problem.** Risk-priced credit terminology (utilization, reserve, draw, APR
+vs. APY, attestation) appeared inconsistently across AmountInput, PreviewSection,
+and RepayModal. Different labels for the same concept eroded user confidence.
+
+**Chosen approach.** A single glossary at [`docs/MICROCOPY.md`](MICROCOPY.md)
+defines the canonical label and inline-gloss text for every credit term in the
+UI. The three target components were updated to use canonical phrasing; inline
+glosses use `AccessibleTooltip` so the definition is available on hover and
+focus without cluttering labels. The tone register is clear, neutral, and never
+alarming except on danger-state validation messages.
+
+**Trade-off.** The glossary is a documentation artefact that must be kept in
+sync with the code. We accept this because the alternative — inconsistent
+terminology appearing over time — is worse for users and contributors alike.

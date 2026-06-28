@@ -1,5 +1,15 @@
 # Testing
 
+## Transaction history CSV export
+
+`src/utils/csv.test.ts` verifies RFC-style escaping for commas, quotes,
+and newlines without adding a third-party CSV dependency.
+
+`src/pages/TransactionHistory.test.tsx` covers the disabled export state,
+the `aria-describedby` explanation, and the polite confirmation toast shown
+after a filtered export completes.
+
+
 Tests are how we make execution quality visible to reviewers. They also keep regressions
 out of the rendered surface where they would cost users money. This document is the
 testing strategy plus a snapshot of where we are today.

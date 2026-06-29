@@ -1,5 +1,7 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react";
+
+const ANNOUNCEMENT_DELAY_MS = 300;
 
 interface FormMessageProps {
   /** Optional stable id so callers can wire `aria-describedby`. */
@@ -33,13 +35,54 @@ interface FormMessageProps {
   className?: string;
 }
 
+function getPlainText(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") {
+    return "";
+  }
+
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(getPlainText).filter(Boolean).join(" ");
+  }
+
+  if (typeof node === "object" && "props" in node) {
+    const props = node.props as { children?: ReactNode };
+    return getPlainText(props.children);
+  }
+
+  return "";
+}
+
+function useDebouncedAnnouncement(text: string, delay: number) {
+  const [announcedText, setAnnouncedText] = useState("");
+
+  useEffect(() => {
+    if (!text) {
+      setAnnouncedText("");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAnnouncedText(text);
+    }, delay);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [delay, text]);
+
+  return announcedText;
+}
+
 /**
  * Tone-coded inline message for form fields and form-level alerts.
  *
- * The rendered element carries `role="alert"` and `aria-live="assertive"`
- * so screen readers announce the message as soon as it appears. This is
- * intentional — form errors are time-sensitive and shouldn't wait for the
- * user to navigate to them.
+ * The visual message is rendered immediately, but the live announcement is
+ * debounced for 300 ms so assistive technology hears the settled validation
+ * state instead of every intermediate keystroke.
  *
  * Use `reserveSpace` on the canonical version below an input to prevent
  * layout shift when a message toggles on or off.
@@ -56,6 +99,10 @@ export function FormMessage({
   className = "",
 }: FormMessageProps) {
   const hasContent = Boolean(title) || Boolean(message);
+  const announcement = useDebouncedAnnouncement(
+    [getPlainText(title), getPlainText(message)].filter(Boolean).join(" "),
+    ANNOUNCEMENT_DELAY_MS,
+  );
 
   if (!hasContent && !reserveSpace) {
     return null;
@@ -80,21 +127,26 @@ export function FormMessage({
       }}
     >
       {hasContent ? (
-        <div
-          id={id}
-          role="alert"
-          aria-live="assertive"
-          className={`form-message form-message--${type === 'error' ? 'danger' : type} form-message--${tone}`}
-        >
-          {type === 'success' && <CheckCircle className="form-message__icon" aria-hidden="true" />}
-          {(type === 'danger' || type === 'error') && <AlertCircle className="form-message__icon" aria-hidden="true" />}
-          {type === 'warning' && <AlertTriangle className="form-message__icon" aria-hidden="true" />}
-          {type === 'info' && <Info className="form-message__icon" aria-hidden="true" />}
-          <div className="form-message__content">
-            {title ? <strong className="form-message__title">{title}</strong> : null}
-            {message ? <p className="form-message__text">{message}</p> : null}
+        <>
+          <div
+            id={id}
+            className={`form-message form-message--${type === 'error' ? 'danger' : type} form-message--${tone}`}
+          >
+            {type === 'success' && <CheckCircle className="form-message__icon" aria-hidden="true" />}
+            {(type === 'danger' || type === 'error') && <AlertCircle className="form-message__icon" aria-hidden="true" />}
+            {type === 'warning' && <AlertTriangle className="form-message__icon" aria-hidden="true" />}
+            {type === 'info' && <Info className="form-message__icon" aria-hidden="true" />}
+            <div className="form-message__content">
+              {title ? <strong className="form-message__title">{title}</strong> : null}
+              {message ? <p className="form-message__text">{message}</p> : null}
+            </div>
           </div>
-        </div>
+          {announcement ? (
+            <div className="sr-only" role="alert" aria-live="assertive" aria-atomic="true">
+              {announcement}
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

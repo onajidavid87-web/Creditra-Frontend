@@ -50,7 +50,7 @@ describe('FormField', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true');
   });
 
-  test('debounces error announcement', () => {
+  test('shows the error visually immediately while delaying the alert announcement', () => {
     const { rerender } = render(
       <FormField
         id="test"
@@ -69,16 +69,45 @@ describe('FormField', () => {
       />
     );
 
-    // Before debounce delay
-    const errorElement = screen.getByText('First error');
-    expect(errorElement).toBeInTheDocument();
+    expect(screen.getByText('First error')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
-    // Fast-forward time
     act(() => {
-      vi.advanceTimersByTime(350);
+      vi.advanceTimersByTime(299);
     });
 
-    // Verify the error is still there (visual remains)
-    expect(screen.getByText('First error')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('First error');
+  });
+
+  test('announces the settled error after rapid validation changes', () => {
+    const { rerender } = render(
+      <FormField
+        id="test"
+        label="Test Field"
+        type="text"
+        error="First error"
+      />
+    );
+
+    rerender(
+      <FormField
+        id="test"
+        label="Test Field"
+        type="text"
+        error="Second error"
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Second error');
   });
 });

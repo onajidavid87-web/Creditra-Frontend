@@ -63,8 +63,9 @@ heading.
   programmatically wires `htmlFor` ↔ `id`, sets `aria-describedby` to a space-separated
   list of help + error IDs, sets `aria-invalid` on error, and emits `aria-required` when
   marked required.
-- Error messages are rendered through `<FormMessage>` with `role="alert"` so screen
-  readers announce them on appearance.
+- Error messages are rendered through `<FormMessage>`. The visible message updates
+  immediately, while the live alert announcement is debounced by 300 ms so assistive
+  technology hears the settled validation state instead of every intermediate keystroke.
 - Inline validation does not block typing; it transitions the message tone from `info` →
   `success`/`warning`/`danger` per `getDrawAmountValidation` in
   `src/utils/amountValidation.ts`.
@@ -92,7 +93,7 @@ heading.
 
 | Use | Politeness | Component |
 | --- | --- | --- |
-| Form field errors | `role="alert"` (assertive) | `FormMessage` |
+| Form field errors | `role="alert"` (assertive, debounced 300 ms) | `FormMessage` |
 | Copy-to-clipboard success | `aria-live="polite"` | `CopyToClipboard` |
 | Route changes | `role="status" aria-live="polite"` | `RouteAnnouncer` |
 | Post-action confirmation | `role="status" aria-live="polite"` | `SuccessState` |

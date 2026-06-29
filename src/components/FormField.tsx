@@ -1,6 +1,5 @@
 import { ReactNode, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { useDebounceValue } from '../hooks/useDebounceValue';
+import { FormMessage } from './FormMessage';
 
 interface BaseFormFieldProps {
   /** Stable id for the input. Also drives the label's `htmlFor` and the help/error `aria-describedby`. */
@@ -72,14 +71,13 @@ type FormFieldProps = InputFormFieldProps | TextareaFormFieldProps | CustomFormF
  */
 export function FormField(props: FormFieldProps) {
   const { id, label, required = false, helpText, error, className = '' } = props;
-  const debouncedErrorForAnnouncement = useDebounceValue(error, 350);
 
   const helpTextId = `${id}-help`;
   const errorId = `${id}-error`;
   
   const describedByParts: string[] = [];
   if (helpText) describedByParts.push(helpTextId);
-  if (debouncedErrorForAnnouncement) describedByParts.push(errorId);
+  if (error) describedByParts.push(errorId);
   const describedBy = describedByParts.length > 0 ? describedByParts.join(' ') : '';
 
   const sharedInputProps = {
@@ -124,17 +122,13 @@ export function FormField(props: FormFieldProps) {
       )}
 
       {error && (
-        <div id={errorId} className="form-field__error">
-          <AlertCircle className="form-field__error-icon" aria-hidden="true" />
-          {error === debouncedErrorForAnnouncement ? (
-            <span aria-live="polite">{error}</span>
-          ) : (
-            <>
-              <span aria-hidden="true">{error}</span>
-              <span className="sr-only" role="status" aria-live="polite">{debouncedErrorForAnnouncement}</span>
-            </>
-          )}
-        </div>
+        <FormMessage
+          id={errorId}
+          title={error}
+          type="danger"
+          tone="inline"
+          reserveSpace={false}
+        />
       )}
     </div>
   );

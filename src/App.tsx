@@ -24,6 +24,7 @@ import RepayPage from "./pages/RepayPage";
 import LandingPage from "./components/LandingPage";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
 import { LinkedAccounts } from "./pages/LinkedAccounts";
+import { NotificationPreferences } from "./pages/NotificationPreferences";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -156,6 +157,14 @@ function App() {
                   >
                     Dutch Auctions
                   </NavLink>
+                  <NavLink
+                    to="/notification-preferences"
+                    className={({ isActive }) =>
+                      isActive ? "header-nav-link active" : "header-nav-link"
+                    }
+                  >
+                    Notifications
+                  </NavLink>
                 </nav>
                 <button
                   ref={settingsTriggerRef}
@@ -206,6 +215,7 @@ function App() {
                 <Route path="/open-credit" element={<RequestEvaluation />} />
                 <Route path="/dutch-auctions" element={<DutchAuctions />} />
                 <Route path="/linked-accounts" element={<LinkedAccounts />} />
+                <Route path="/notification-preferences" element={<NotificationPreferences />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

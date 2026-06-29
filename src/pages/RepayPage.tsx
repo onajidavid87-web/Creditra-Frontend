@@ -3,7 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, AlertTriangle, CheckCircle, Info, ArrowLeft } from 'lucide-react';
 import { PayoffProjection } from '@/components/PayoffProjection';
 import { InlineHelpOverlay } from '@/components/InlineHelpOverlay';
-import { formatMoney, getRepayAmountValidation } from '@/utils/amountValidation';
+import { formatMoney, getRepayAmountValidation, requiresRepayConfirmation } from '@/utils/amountValidation';
+import {
+  TypedAmountConfirmField,
+  isTypedAmountMatch,
+} from '@/components/TypedAmountConfirm';
 import type { CreditLine } from '@/types/creditLine';
 import { MOCK_CREDIT_LINES } from '@/data/mockData';
 
@@ -44,6 +48,7 @@ export default function RepayPage() {
   const [step, setStep] = useState<RepayStep>('input');
   const [selectedId, setSelectedId] = useState<string>(preselectedId ?? '');
   const [amountStr, setAmountStr] = useState('');
+  const [confirmAmountStr, setConfirmAmountStr] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const helpTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -69,7 +74,8 @@ export default function RepayPage() {
 
   const amount = validation?.amount ?? 0;
   const isInvalid = !validation?.isValid;
-  const needsConfirm = amount >= 5000;
+  const needsConfirm = requiresRepayConfirmation(amount);
+  const isConfirmDisabled = needsConfirm && !isTypedAmountMatch(confirmAmountStr, amount);
 
   const activeTone = validation
     ? SEVERITY_CONFIG[validation.feedback.severity]
@@ -83,7 +89,10 @@ export default function RepayPage() {
   };
 
   const handleReview = () => {
-    if (!isInvalid && amount > 0) setStep('review');
+    if (!isInvalid && amount > 0) {
+      setConfirmAmountStr('');
+      setStep('review');
+    }
   };
 
   const handleConfirm = () => {
@@ -437,6 +446,15 @@ export default function RepayPage() {
               nextPaymentAmount={selectedLine.nextPaymentAmount}
             />
 
+            {needsConfirm && (
+              <TypedAmountConfirmField
+                amount={amount}
+                value={confirmAmountStr}
+                onChange={setConfirmAmountStr}
+                idPrefix="repay-page-confirm"
+              />
+            )}
+
             <div className="flex gap-3">
               <button
                 type="button"
@@ -448,7 +466,9 @@ export default function RepayPage() {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex-[2] rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-background transition-all hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                disabled={isConfirmDisabled}
+                aria-disabled={isConfirmDisabled || undefined}
+                className="flex-[2] rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-background transition-all hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Confirm Repayment
               </button>

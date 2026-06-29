@@ -1,0 +1,278 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NotFound > matches snapshot with history 1`] = `
+<DocumentFragment>
+  <main
+    aria-labelledby="notfound-title"
+    class="error-page"
+  >
+    <div
+      class="error-content"
+    >
+      <svg
+        aria-hidden="true"
+        class="error-illustration"
+        focusable="false"
+        viewBox="0 0 200 160"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <ellipse
+          cx="100"
+          cy="148"
+          fill="currentColor"
+          opacity="0.06"
+          rx="70"
+          ry="8"
+        />
+        <line
+          opacity="0.55"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="7"
+          x1="124"
+          x2="148"
+          y1="114"
+          y2="138"
+        />
+        <circle
+          cx="90"
+          cy="82"
+          fill="none"
+          opacity="0.6"
+          r="36"
+          stroke="currentColor"
+          stroke-width="7"
+        />
+        <circle
+          cx="90"
+          cy="82"
+          fill="currentColor"
+          opacity="0.04"
+          r="29"
+        />
+        <path
+          d="M 82 72 Q 82 62 90 62 Q 98 62 98 70 Q 98 78 90 81"
+          fill="none"
+          opacity="0.75"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="4"
+        />
+        <circle
+          cx="90"
+          cy="92"
+          fill="currentColor"
+          opacity="0.75"
+          r="3"
+        />
+        <g
+          class="notfound-stars"
+        >
+          <circle
+            cx="30"
+            cy="30"
+            fill="currentColor"
+            opacity="0.3"
+            r="2"
+          />
+          <circle
+            cx="165"
+            cy="22"
+            fill="currentColor"
+            opacity="0.3"
+            r="1.5"
+          />
+          <circle
+            cx="178"
+            cy="70"
+            fill="currentColor"
+            opacity="0.25"
+            r="1"
+          />
+          <circle
+            cx="20"
+            cy="100"
+            fill="currentColor"
+            opacity="0.2"
+            r="1.5"
+          />
+          <circle
+            cx="155"
+            cy="120"
+            fill="currentColor"
+            opacity="0.25"
+            r="1"
+          />
+        </g>
+      </svg>
+      <h1
+        class="error-title"
+        id="notfound-title"
+      >
+        Page not found
+      </h1>
+      <p
+        class="error-message"
+      >
+        The page you're looking for doesn't exist or has been moved.
+      </p>
+      <div
+        class="error-actions"
+      >
+        <button
+          aria-label="Go back to previous page"
+          class="error-btn error-btn-primary"
+        >
+          Go back
+        </button>
+        <a
+          aria-label="Contact support via email"
+          class="error-btn error-btn-secondary"
+          href="mailto:support@creditra.com"
+        >
+          Contact Support
+        </a>
+      </div>
+    </div>
+  </main>
+</DocumentFragment>
+`;
+
+exports[`NotFound > matches snapshot without history 1`] = `
+<DocumentFragment>
+  <main
+    aria-labelledby="notfound-title"
+    class="error-page"
+  >
+    <div
+      class="error-content"
+    >
+      <svg
+        aria-hidden="true"
+        class="error-illustration"
+        focusable="false"
+        viewBox="0 0 200 160"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <ellipse
+          cx="100"
+          cy="148"
+          fill="currentColor"
+          opacity="0.06"
+          rx="70"
+          ry="8"
+        />
+        <line
+          opacity="0.55"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="7"
+          x1="124"
+          x2="148"
+          y1="114"
+          y2="138"
+        />
+        <circle
+          cx="90"
+          cy="82"
+          fill="none"
+          opacity="0.6"
+          r="36"
+          stroke="currentColor"
+          stroke-width="7"
+        />
+        <circle
+          cx="90"
+          cy="82"
+          fill="currentColor"
+          opacity="0.04"
+          r="29"
+        />
+        <path
+          d="M 82 72 Q 82 62 90 62 Q 98 62 98 70 Q 98 78 90 81"
+          fill="none"
+          opacity="0.75"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="4"
+        />
+        <circle
+          cx="90"
+          cy="92"
+          fill="currentColor"
+          opacity="0.75"
+          r="3"
+        />
+        <g
+          class="notfound-stars"
+        >
+          <circle
+            cx="30"
+            cy="30"
+            fill="currentColor"
+            opacity="0.3"
+            r="2"
+          />
+          <circle
+            cx="165"
+            cy="22"
+            fill="currentColor"
+            opacity="0.3"
+            r="1.5"
+          />
+          <circle
+            cx="178"
+            cy="70"
+            fill="currentColor"
+            opacity="0.25"
+            r="1"
+          />
+          <circle
+            cx="20"
+            cy="100"
+            fill="currentColor"
+            opacity="0.2"
+            r="1.5"
+          />
+          <circle
+            cx="155"
+            cy="120"
+            fill="currentColor"
+            opacity="0.25"
+            r="1"
+          />
+        </g>
+      </svg>
+      <h1
+        class="error-title"
+        id="notfound-title"
+      >
+        Page not found
+      </h1>
+      <p
+        class="error-message"
+      >
+        The page you're looking for doesn't exist or has been moved.
+      </p>
+      <div
+        class="error-actions"
+      >
+        <a
+          aria-label="Go to Dashboard"
+          class="error-btn error-btn-primary"
+          href="/"
+        >
+          Go to Dashboard
+        </a>
+        <a
+          aria-label="Contact support via email"
+          class="error-btn error-btn-secondary"
+          href="mailto:support@creditra.com"
+        >
+          Contact Support
+        </a>
+      </div>
+    </div>
+  </main>
+</DocumentFragment>
+`;

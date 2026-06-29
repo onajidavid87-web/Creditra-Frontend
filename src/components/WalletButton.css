@@ -115,6 +115,42 @@
   transition: all 0.2s ease;
 }
 
+/*
+   Privacy control: "Forget remembered choice".
+   Visually distinct from .disconnect-btn so users do not confuse
+   "I don't want auto-connect on next visit" with "drop my session entirely".
+   Subdued text color and no destructive-color hover.
+*/
+.forget-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  min-height: 44px;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-align: center;
+  transition: color 200ms, border-color 200ms, background 200ms;
+}
+
+.forget-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.06);
+}
+
+.forget-btn:active {
+  transform: translateY(1px);
+}
+
+.forget-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .disconnect-btn:hover {
   background: rgba(248, 81, 73, 0.1);
   border-color: var(--error);

@@ -51,9 +51,11 @@ function WalletContextConsumer() {
     wallet,
     error,
     reconnectTimedOut,
+    isRemembered,
     dismissReconnectBanner,
     retryReconnect,
     disconnect,
+    forgetRememberedChoice,
     connect,
   } = useWallet();
 
@@ -63,6 +65,7 @@ function WalletContextConsumer() {
       <span data-testid="wallet">{wallet?.publicKey ?? 'null'}</span>
       <span data-testid="error">{error?.type ?? 'null'}</span>
       <span data-testid="reconnect-timed-out">{String(reconnectTimedOut)}</span>
+      <span data-testid="is-remembered">{String(isRemembered)}</span>
       <button data-testid="dismiss-btn" onClick={dismissReconnectBanner}>
         Dismiss
       </button>
@@ -72,11 +75,23 @@ function WalletContextConsumer() {
       <button data-testid="disconnect-btn" onClick={disconnect}>
         Disconnect
       </button>
+      <button data-testid="forget-btn" onClick={forgetRememberedChoice}>
+        Forget choice
+      </button>
+      <button data-testid="connect-btn" data-remember="false" onClick={() => connect('freighter')}>
+        Connect no-remember
+      </button>
       <button
-        data-testid="connect-btn"
-        onClick={() => connect('freighter')}
+        data-testid="connect-remember-btn"
+        onClick={() => connect('freighter', { remember: true })}
       >
-        Connect
+        Connect with remember
+      </button>
+      <button
+        data-testid="connect-bool-btn"
+        onClick={() => connect('albedo', { remember: false })}
+      >
+        Connect with remember=false
       </button>
     </div>
   );
@@ -98,6 +113,12 @@ beforeEach(() => {
   vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
   vi.spyOn(walletUtils, 'saveWalletPreference').mockImplementation(() => {});
   vi.spyOn(walletUtils, 'disconnectWallet').mockImplementation(() => {});
+  vi.spyOn(walletUtils, 'recordRecentWallet').mockImplementation(() => {});
+  vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+  vi.spyOn(walletUtils, 'setWalletRemembered').mockImplementation(() => {});
+  // Make sure legacy + new storage keys are clean so isRemembered defaults
+  // to false on every test.
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -106,6 +127,173 @@ afterEach(() => {
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe('WalletContext — auto-reconnect gating with remember flag', () => {
+  // Gating: when `creditra-wallet-remember` is missing/false we must NOT
+  // kick off a reconnect, even if `wallet_info` is present (legacy users).
+  it('does NOT auto-reconnect when remembered flag is false', async () => {
+    vi.spyOn(walletUtils, 'getStoredWallet').mockReturnValue(STORED_WALLET);
+    vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+
+    renderProvider();
+    await act(async () => { vi.runAllTimers(); });
+
+    expect(screen.getByTestId('status').textContent).toBe('disconnected');
+    expect(walletUtils.connectWallet).not.toHaveBeenCalled();
+  });
+
+  // When both flags are true we should reconnect normally.
+  it('auto-reconnects when both wallet_info AND remembered are present', async () => {
+    vi.spyOn(walletUtils, 'getStoredWallet').mockReturnValue(STORED_WALLET);
+    vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
+
+    renderProvider(500);
+    await act(async () => { vi.advanceTimersByTime(10); });
+
+    expect(screen.getByTestId('status').textContent).toBe('connected');
+    expect(screen.getByTestId('is-remembered').textContent).toBe('true');
+  });
+
+  // After auto-reconnect we consider the user to have opted-in (they did, last
+  // session), so isRemembered mirrors the persisted truth.
+  it('surfaces isRemembered=true after auto-reconnect', async () => {
+    vi.spyOn(walletUtils, 'getStoredWallet').mockReturnValue(STORED_WALLET);
+    vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
+
+    renderProvider(500);
+    await act(async () => { vi.advanceTimersByTime(10); });
+
+    expect(screen.getByTestId('is-remembered').textContent).toBe('true');
+  });
+});
+
+describe('WalletContext — opt-in connect', () => {
+  it('defaults to NOT remembering when options.remember is omitted', async () => {
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
+
+    renderProvider();
+    await act(async () => {
+      screen.getByTestId('connect-btn').click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status').textContent).toBe('connected');
+    });
+    expect(walletUtils.setWalletRemembered).toHaveBeenCalledWith(false);
+    expect(screen.getByTestId('is-remembered').textContent).toBe('false');
+    expect(walletUtils.recordRecentWallet).toHaveBeenCalledWith('freighter');
+  });
+
+  it('passes remember=true through to setWalletRemembered', async () => {
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
+
+    renderProvider();
+    await act(async () => {
+      screen.getByTestId('connect-remember-btn').click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status').textContent).toBe('connected');
+    });
+    expect(walletUtils.setWalletRemembered).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId('is-remembered').textContent).toBe('true');
+    expect(walletUtils.recordRecentWallet).toHaveBeenCalledWith('freighter');
+  });
+
+  it('treats remember=false explicitly as opting out', async () => {
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue({
+      ...STORED_WALLET,
+      type: 'albedo',
+      publicKey: 'GDEF',
+    });
+
+    renderProvider();
+    await act(async () => {
+      screen.getByTestId('connect-bool-btn').click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status').textContent).toBe('connected');
+    });
+    expect(walletUtils.setWalletRemembered).toHaveBeenCalledWith(false);
+    expect(walletUtils.recordRecentWallet).toHaveBeenCalledWith('albedo');
+  });
+
+  it('does not write persisted remember state on connection failure', async () => {
+    vi.spyOn(walletUtils, 'connectWallet').mockRejectedValue({
+      type: 'connection_failed',
+      message: 'fail',
+    });
+
+    renderProvider();
+    await act(async () => {
+      screen.getByTestId('connect-remember-btn').click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status').textContent).toBe('error');
+    });
+    // setWalletRemembered must never be called on a failed connect
+    expect(walletUtils.setWalletRemembered).not.toHaveBeenCalled();
+  });
+});
+
+describe('WalletContext — forgetRememberedChoice', () => {
+  it('clears the remember flag without changing connection status', async () => {
+    vi.spyOn(walletUtils, 'getStoredWallet').mockReturnValue(STORED_WALLET);
+    vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
+
+    renderProvider(500);
+    await act(async () => { vi.advanceTimersByTime(10); });
+    expect(screen.getByTestId('status').textContent).toBe('connected');
+
+    await act(async () => {
+      screen.getByTestId('forget-btn').click();
+    });
+
+    // Status stays connected (we do NOT disconnect).
+    expect(screen.getByTestId('status').textContent).toBe('connected');
+    expect(walletUtils.setWalletRemembered).toHaveBeenCalledWith(false);
+    expect(screen.getByTestId('is-remembered').textContent).toBe('false');
+  });
+
+  it('forgetRememberedChoice on a fresh provider is safe (no stored wallet)', async () => {
+    vi.spyOn(walletUtils, 'getStoredWallet').mockReturnValue(null);
+    vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+    renderProvider();
+    await act(async () => { vi.runAllTimers(); });
+
+    await act(async () => {
+      screen.getByTestId('forget-btn').click();
+    });
+
+    expect(walletUtils.setWalletRemembered).toHaveBeenCalledWith(false);
+    expect(screen.getByTestId('status').textContent).toBe('disconnected');
+  });
+});
+
+describe('WalletContext — disconnect clears remember state', () => {
+  it('clears the remember flag via disconnect', async () => {
+    vi.spyOn(walletUtils, 'getStoredWallet').mockReturnValue(STORED_WALLET);
+    vi.spyOn(walletUtils, 'isWalletRemembered').mockReturnValue(true);
+    vi.spyOn(walletUtils, 'connectWallet').mockResolvedValue(STORED_WALLET);
+
+    renderProvider(500);
+    await act(async () => { vi.advanceTimersByTime(10); });
+    expect(screen.getByTestId('is-remembered').textContent).toBe('true');
+
+    await act(async () => {
+      screen.getByTestId('disconnect-btn').click();
+    });
+
+    expect(screen.getByTestId('status').textContent).toBe('disconnected');
+    expect(screen.getByTestId('is-remembered').textContent).toBe('false');
+    expect(walletUtils.disconnectWallet).toHaveBeenCalled();
+  });
+});
 
 describe('WalletContext — auto-reconnect', () => {
   // 1

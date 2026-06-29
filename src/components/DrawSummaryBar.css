@@ -1,0 +1,202 @@
+/*
+ * draw-summary-bar.css — sticky bottom summary bar for the draw wizard.
+ *
+ * Design rationale
+ * ────────────────
+ * The bar is `position: fixed` to the viewport bottom so it persists
+ * across:
+ *   1. vertical scrolling inside any step card, and
+ *   2. transitions between wizard steps (rendered at the page root).
+ *
+ * Mobile safe area
+ * ────────────────
+ * `.draw-summary-bar` uses `padding-bottom: env(safe-area-inset-bottom)`
+ * so the bar's content sits *above* the iOS home indicator / Android
+ * gesture pill. Desktop browsers ignore the env() lookup and fall back
+ * to the `, 0px` default in the padding shorthand.
+ *
+ * Theme awareness
+ * ────────────────
+ * Every visible value references a CSS custom property declared in
+ * `src/index.css`. The high-contrast override (`[data-contrast="high"]`)
+ * also lives in that stylesheet, so this file does not duplicate colour
+ * values and inherits higher-contrast variants automatically.
+ *
+ * Layout
+ * ──────
+ * - Mobile (< 480 px): three tiles stacked as a 2-column grid where the
+ *   "Amount" tile spans the full width (it is the headline figure).
+ * - ≥ 480 px: three tiles side-by-side in one row.
+ * - ≥ 768 px (sm+): tighter spacing, larger tile value font.
+ *
+ * Focus
+ * ─────
+ * The bar itself is not interactive, but every numeric value is wrapped
+ * in `<dd>` enclosed inside the `<dt>`-led definition list so screen
+ * readers navigate it via the landmark. Visible focus rings live with
+ * the parent wizard and are intentionally not added to the bar because
+ * it does not steal focus.
+ */
+
+/* ── Tokens (scoped to the bar so it stays self-contained) ─────────── */
+
+.draw-summary-bar {
+  /* Layout */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40; /* above local sticky bars (z-10) but below modals (z-50+) */
+
+  /* Visual */
+  background: var(--surface-overlay, rgba(13, 17, 23, 0.92));
+  border-top: 1px solid var(--border, #30363d);
+  color: var(--text, #e6edf3);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+
+  /* Mobile safe area — pad inward so the gesture indicator never covers
+     the value text on iOS Safari or Chrome on Android. The `, 0px`
+     fallback is required so non-mobile browsers still see valid CSS. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Animation — fade up when the bar mounts to soften layout shifts */
+  animation: draw-summary-bar-mount 0.18s ease-out both;
+
+  /* Allow backdrop-filter so the page content behind is subtly tinted;
+     wrap in @supports so unsupported browsers gracefully degrade. */
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .draw-summary-bar {
+    -webkit-backdrop-filter: blur(8px) saturate(160%);
+    backdrop-filter: blur(8px) saturate(160%);
+  }
+}
+
+@keyframes draw-summary-bar-mount {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.draw-summary-bar__inner {
+  max-width: 64rem; /* mirror the wizard's max-w-4xl so widths agree */
+  margin: 0 auto;
+  padding: 0.75rem 1rem 0.75rem;
+}
+
+/* ── Tile grid ─────────────────────────────────────────────────────── */
+
+.draw-summary-bar__tiles {
+  display: grid;
+  gap: 0.5rem;
+  /* Mobile-first: Amount spans the row, APR + Total cost sit beside it */
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+  padding: 0;
+}
+
+.draw-summary-bar__tile[data-tile="amount"] {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 480px) {
+  .draw-summary-bar__tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .draw-summary-bar__tile[data-tile="amount"] {
+    grid-column: auto;
+  }
+}
+
+.draw-summary-bar__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md, 6px);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  min-width: 0; /* allow tiles to shrink without overflowing the grid */
+}
+
+@media (min-width: 640px) {
+  .draw-summary-bar__tile {
+    padding: 0.625rem 0.875rem;
+  }
+}
+
+.draw-summary-bar__caption {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #8b949e);
+}
+
+.draw-summary-bar__value {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text, #e6edf3);
+  /* Prevent long numbers from blowing out the tile; combined with the
+     min-width: 0 on the tile parent this truncates with an ellipsis. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .draw-summary-bar__value {
+    font-size: 1.125rem;
+  }
+}
+
+.draw-summary-bar__tile[data-tile="total"] .draw-summary-bar__value {
+  color: var(--accent, #58a6ff);
+}
+
+/* ── High-contrast override (WCAG AAA fallback ringfence) ──────────── */
+/*
+ * The tokens already remap to AAA-compliant values under
+ * `[data-contrast="high"]` in src/index.css, so most styling follows
+ * automatically. We reinforce here by widening the value contrast on
+ * the "Total cost" tile and pinning an opaque background so the
+ * backdrop-filter override does not bleed through in unsupported stacks.
+ */
+[data-contrast="high"] .draw-summary-bar {
+  background: var(--surface, #0a0a0a);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-top-color: var(--border, #ffffff);
+}
+
+[data-contrast="high"] .draw-summary-bar__tile {
+  background: transparent;
+  border-color: var(--border, #ffffff);
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────── */
+/*
+ * The mount animation is purely decorative; under reduced-motion prefs
+ * we suppress it so vestibular-sensitive users see no slide-in.
+ * (Broad reduced-motion override for the whole app already lives in
+ * src/index.css — this scoped rule ensures the bar is covered even if
+ * a future refactor removes that global rule.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  .draw-summary-bar {
+    animation: none;
+  }
+}
+
+[data-motion="reduced"] .draw-summary-bar {
+  animation: none;
+}

@@ -24,6 +24,7 @@ import RepayPage from "./pages/RepayPage";
 import LandingPage from "./components/LandingPage";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
 import { LinkedAccounts } from "./pages/LinkedAccounts";
+import { SessionTimeoutBanner } from "./components/SessionTimeoutBanner";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -191,6 +192,9 @@ function App() {
             {/* Wallet auto-reconnect timeout banner — self-dismissing,
                 non-blocking; only visible when reconnect takes > 8 s. */}
             <WalletReconnectBanner />
+            {/* Session-timeout warning banner — visible 60 s before
+                the wallet extension silently disconnects (#227). */}
+            <SessionTimeoutBanner />
             <main className="main">
               <NetworkMismatchBanner />
               <Routes>

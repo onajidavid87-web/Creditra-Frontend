@@ -1,0 +1,305 @@
+.date-picker {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  position: relative;
+}
+
+.date-picker--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.date-picker__label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: var(--lh-small);
+}
+
+.date-picker__required {
+  color: var(--error);
+  margin-left: var(--space-xs);
+  font-weight: 600;
+}
+
+.date-picker__help {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: var(--lh-small);
+  margin: 0;
+}
+
+.date-picker__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.date-picker__input {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 0.75rem;
+  font-size: 0.9rem;
+  line-height: var(--lh-body);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+  min-height: 44px;
+}
+
+.date-picker__input::placeholder {
+  color: var(--muted);
+}
+
+.date-picker__input:hover {
+  border-color: var(--accent);
+}
+
+.date-picker__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+}
+
+.date-picker--error .date-picker__input {
+  border-color: var(--error);
+}
+
+.date-picker--error .date-picker__input:focus {
+  box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.1);
+}
+
+.date-picker__icon {
+  position: absolute;
+  right: 0.75rem;
+  pointer-events: none;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.date-picker__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-size: 0.85rem;
+  color: var(--error);
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 6px;
+  line-height: var(--lh-small);
+  margin: 0;
+}
+
+.date-picker__calendar {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  width: 280px;
+  outline: none;
+}
+
+.date-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.date-picker__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.date-picker__nav:hover {
+  background: var(--surface-raised);
+  border-color: var(--border);
+}
+
+.date-picker__nav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.date-picker__month-year {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 140px;
+  text-align: center;
+}
+
+.date-picker__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  margin-bottom: 0.25rem;
+}
+
+.date-picker__weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 0.25rem 0;
+  text-align: center;
+  min-height: 28px;
+}
+
+.date-picker__days {
+  display: block;
+}
+
+.date-picker__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.date-picker__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+  font-family: inherit;
+}
+
+.date-picker__cell:hover:not(.date-picker__cell--disabled):not(.date-picker__cell--selected) {
+  background: var(--surface-raised);
+  border-color: var(--border);
+}
+
+.date-picker__cell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.date-picker__cell--today:not(.date-picker__cell--selected) {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.date-picker__cell--selected {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.date-picker__cell--selected:hover {
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+.date-picker__cell--disabled {
+  color: var(--muted);
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.date-picker__cell--focused:not(.date-picker__cell--selected):not(.date-picker__cell--disabled) {
+  background: var(--surface-raised);
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.date-picker__cell--empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.date-picker__footer {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.date-picker__today-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  min-height: 28px;
+}
+
+.date-picker__today-btn:hover {
+  background: rgba(88, 166, 255, 0.1);
+  border-color: rgba(88, 166, 255, 0.3);
+}
+
+.date-picker__today-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .date-picker__calendar {
+    width: calc(100vw - 2rem);
+    max-width: 280px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .date-picker__cell {
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .date-picker__nav {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-picker__input,
+  .date-picker__cell,
+  .date-picker__nav,
+  .date-picker__today-btn {
+    transition: none;
+  }
+}

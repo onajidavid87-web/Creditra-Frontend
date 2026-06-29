@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId } from 'react';
+import { DatePicker } from './DatePicker';
 import './DateRangeChips.css';
 
 export const DATE_PRESET_OPTIONS = [
@@ -29,11 +30,10 @@ export function DateRangeChips({
   onCustomEndDateChange,
 }: DateRangeChipsProps) {
   const labelId = useId();
-  const startInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (selectedPreset === 'custom') {
-      startInputRef.current?.focus();
+      document.getElementById('custom-start-date')?.focus();
     }
   }, [selectedPreset]);
 
@@ -58,25 +58,20 @@ export function DateRangeChips({
 
       {selectedPreset === 'custom' && (
         <div className="date-range-custom-fields">
-          <label className="date-range-custom-field">
-            <span>Start date</span>
-            <input
-              ref={startInputRef}
-              type="date"
-              value={customStartDate}
-              onChange={(event) => onCustomStartDateChange(event.target.value)}
-              max={customEndDate || undefined}
-            />
-          </label>
-          <label className="date-range-custom-field">
-            <span>End date</span>
-            <input
-              type="date"
-              value={customEndDate}
-              onChange={(event) => onCustomEndDateChange(event.target.value)}
-              min={customStartDate || undefined}
-            />
-          </label>
+          <DatePicker
+            id="custom-start-date"
+            label="Start date"
+            value={customStartDate}
+            onChange={onCustomStartDateChange}
+            max={customEndDate || undefined}
+          />
+          <DatePicker
+            id="custom-end-date"
+            label="End date"
+            value={customEndDate}
+            onChange={onCustomEndDateChange}
+            min={customStartDate || undefined}
+          />
         </div>
       )}
     </div>

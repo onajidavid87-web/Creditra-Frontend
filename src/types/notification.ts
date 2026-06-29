@@ -75,3 +75,36 @@ export interface NotificationPreferences {
   rate_change: boolean;
   system: boolean;
 }
+
+/**
+ * Delivery channel.  Each category group can independently enable or
+ * disable email, SMS, and push delivery.
+ */
+export type NotificationChannel = 'email' | 'sms' | 'push';
+
+/**
+ * Category group key for the notification-preferences page.
+ * These map to user-facing notification scenarios rather than internal
+ * event classifications.
+ */
+export type NotificationPreferenceCategory =
+  | 'repayment_due'
+  | 'default_risk'
+  | 'attestation';
+
+/** Per-channel booleans for a single category group. */
+export interface NotificationChannelSettings {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+}
+
+/**
+ * Channel-level notification preferences persisted independently of
+ * the existing `NotificationPreferences` (which govern in-app toast
+ * delivery).  Stored in localStorage under `creditra_channel_prefs`.
+ */
+export type NotificationChannelPreferences = Record<
+  NotificationPreferenceCategory,
+  NotificationChannelSettings
+>;

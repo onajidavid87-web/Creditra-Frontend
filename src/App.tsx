@@ -125,6 +125,7 @@ function App() {
                 <Route path="/open-credit" element={<RequestEvaluation />} />
                 <Route path="/dutch-auctions" element={<DutchAuctions />} />
                 <Route path="/linked-accounts" element={<LinkedAccounts />} />
+                <Route path="/notification-preferences" element={<NotificationPreferences />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

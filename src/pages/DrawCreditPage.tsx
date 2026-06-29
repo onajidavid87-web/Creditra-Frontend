@@ -164,13 +164,22 @@ export default function DrawCreditPage() {
         {step === "amount" && selectedCreditLine && (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start">
             <section className="card" style={{ margin: 0 }}>
-              <AmountInput
-                creditLine={selectedCreditLine}
-                onAmountChange={setAmount}
-                onNext={handleAmountNext}
-                onBack={handleBack}
-              />
-            </section>
+  <AmountInput
+    creditLine={selectedCreditLine}
+    onAmountChange={setAmount}
+    onNext={handleAmountNext}
+    onBack={handleBack}
+  />
+  {/* Drawing limit indicator */}
+  {selectedCreditLine && (
+    <div className="mt-6 border-t border-border pt-6">
+      <DrawingLimit
+        drawnAmount={selectedCreditLine.drawnAmount}
+        totalLimit={selectedCreditLine.limit}
+      />
+    </div>
+  )}
+</section>
             <aside className="card lg:sticky lg:top-6" style={{ margin: 0 }}>
               <PreviewSection creditLine={selectedCreditLine} amount={amount} />
             </aside>

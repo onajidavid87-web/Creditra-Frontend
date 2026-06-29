@@ -42,6 +42,22 @@
  *   retryReconnect(): void
  *     Re-runs the auto-reconnect flow using the stored wallet preference.
  *     No-op if no preference is stored.
+ *
+ * Session-timeout banner (#227)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   SESSION_TIMEOUT_MS
+ *     Total wallet session lifetime (default 30 min). After this window the
+ *     wallet extension silently drops the connection.
+ *
+ *   sessionTimeoutWarning: boolean
+ *     Becomes true SESSION_WARN_BEFORE_MS (60 s) before the session expires.
+ *     Consumed by SessionTimeoutBanner to show the pre-disconnect warning.
+ *     Resets to false when stayConnected() succeeds or when disconnect() is called.
+ *
+ *   stayConnected(): Promise<void>
+ *     Re-pings the wallet to verify liveness and resets the session clock.
+ *     On success: sessionTimeoutWarning → false, full session timer restarts.
+ *     On failure: transitions to 'error' state (same as a failed connect).
  */
 
 import {
@@ -74,6 +90,19 @@ import {
  * Exposed so tests can override it without patching timers globally.
  */
 export const RECONNECT_TIMEOUT_MS = 8_000;
+
+/**
+ * Total wallet session lifetime in ms (default 30 min).
+ * After this window elapses the wallet extension silently disconnects.
+ * Exposed so tests can pass a short override via `sessionTimeoutMs` prop.
+ */
+export const SESSION_TIMEOUT_MS = 30 * 60 * 1_000;
+
+/**
+ * How far before session expiry (ms) to show the pre-disconnect warning banner.
+ * Fixed at 60 s per the issue spec.
+ */
+export const SESSION_WARN_BEFORE_MS = 60_000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -152,6 +181,12 @@ interface WalletContextType {
    * a fresh timeout window.
    */
   retryReconnect: () => void;
+  /**
+   * Re-ping the wallet to verify liveness and reset the session clock.
+   * On success: `sessionTimeoutWarning` clears and the full session timer restarts.
+   * On failure: status transitions to `'error'`.
+   */
+  stayConnected: () => Promise<void>;
   refreshBalance: () => Promise<void>;
   setDropdownOpen: (open: boolean) => void;
   balances: BalanceInfo[] | null;
@@ -175,10 +210,13 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 export const WalletProvider = ({
   children,
   timeoutMs = RECONNECT_TIMEOUT_MS,
+  sessionTimeoutMs = SESSION_TIMEOUT_MS,
 }: {
   children: ReactNode;
   /** Override the reconnect timeout duration (ms). Defaults to RECONNECT_TIMEOUT_MS. */
   timeoutMs?: number;
+  /** Override the session lifetime (ms). Defaults to SESSION_TIMEOUT_MS. */
+  sessionTimeoutMs?: number;
 }) => {
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -190,6 +228,9 @@ export const WalletProvider = ({
 
   // Ref so the timeout cleanup in `runReconnect` closes over a stable reference.
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Session-timeout refs: warn timer fires 60 s before expiry; expire timer fires at expiry.
+  const sessionWarnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionExpireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Clear any pending reconnect timeout timer.
@@ -201,6 +242,44 @@ export const WalletProvider = ({
       reconnectTimeoutRef.current = null;
     }
   }, []);
+
+  /** Cancel both session-timeout timers. Safe to call when none are active. */
+  const clearSessionTimers = useCallback(() => {
+    if (sessionWarnTimerRef.current !== null) {
+      clearTimeout(sessionWarnTimerRef.current);
+      sessionWarnTimerRef.current = null;
+    }
+    if (sessionExpireTimerRef.current !== null) {
+      clearTimeout(sessionExpireTimerRef.current);
+      sessionExpireTimerRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Start (or restart) the session-lifetime timers.
+   * - At (sessionTimeoutMs - SESSION_WARN_BEFORE_MS): set sessionTimeoutWarning = true.
+   * - At sessionTimeoutMs: auto-disconnect (wallet silently gone).
+   */
+  const startSessionTimers = useCallback(() => {
+    clearSessionTimers();
+    setSessionTimeoutWarning(false);
+
+    const warnDelay = sessionTimeoutMs - SESSION_WARN_BEFORE_MS;
+    if (warnDelay > 0) {
+      sessionWarnTimerRef.current = setTimeout(() => {
+        setSessionTimeoutWarning(true);
+      }, warnDelay);
+    } else {
+      // Session shorter than warning window — warn immediately.
+      setSessionTimeoutWarning(true);
+    }
+
+    sessionExpireTimerRef.current = setTimeout(() => {
+      setSessionTimeoutWarning(false);
+      setWallet(null);
+      setStatus('disconnected');
+    }, sessionTimeoutMs);
+  }, [clearSessionTimers, sessionTimeoutMs]);
 
   /**
    * Core reconnect logic.
@@ -241,12 +320,13 @@ export const WalletProvider = ({
       } catch (err) {
         clearReconnectTimeout();
         setReconnectTimedOut(false);
+        clearSessionTimers();
         setError(err as WalletError);
         setStatus('error');
         setWallet(null);
       }
     },
-    [clearReconnectTimeout, timeoutMs],
+    [clearReconnectTimeout, timeoutMs, startSessionTimers, clearSessionTimers],
   );
 
   // ── Auto-reconnect on mount ─────────────────────────────────────────────────
@@ -340,6 +420,34 @@ export const WalletProvider = ({
     runReconnect(stored.type);
   }, [runReconnect]);
 
+  /**
+   * Re-ping the wallet to verify liveness and restart the session clock.
+   *
+   * Uses the current wallet type from the stored preference.  On success
+   * `sessionTimeoutWarning` clears and the full session timer restarts.
+   * On failure the context transitions to `'error'`, matching the behaviour
+   * of a failed manual connect.
+   *
+   * No-op when no wallet is currently connected.
+   */
+  const stayConnected = useCallback(async () => {
+    const stored = getStoredWallet();
+    if (!stored || !wallet) return;
+    try {
+      const walletInfo = await connectWallet(stored.type);
+      setWallet(walletInfo);
+      setStatus('connected');
+      saveWalletPreference(walletInfo);
+      startSessionTimers(); // full timer restart
+    } catch (err) {
+      clearSessionTimers();
+      setSessionTimeoutWarning(false);
+      setError(err as WalletError);
+      setStatus('error');
+      setWallet(null);
+    }
+  }, [wallet, startSessionTimers, clearSessionTimers]);
+
   // ── Misc ───────────────────────────────────────────────────────────────────
 
   const clearError = () => setError(null);
@@ -387,8 +495,9 @@ export const WalletProvider = ({
   useEffect(() => {
     return () => {
       if (pollInterval.current) clearInterval(pollInterval.current);
+      clearSessionTimers();
     };
-  }, []);
+  }, [clearSessionTimers]);
 
   return (
     <WalletContext.Provider
@@ -404,6 +513,7 @@ export const WalletProvider = ({
         clearError,
         dismissReconnectBanner,
         retryReconnect,
+        stayConnected,
         balances,
         lastUpdated,
         refreshBalance,

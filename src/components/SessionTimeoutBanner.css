@@ -1,0 +1,79 @@
+/* SessionTimeoutBanner.css
+ *
+ * All colours reference CSS custom properties from :root (src/index.css)
+ * so the banner adapts to [data-contrast="high"] automatically.
+ * No hardcoded hex values.
+ */
+
+.session-timeout-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  background: var(--warning-bg, #fefce8);
+  border-bottom: 2px solid var(--warning, #eab308);
+  color: var(--warning-text, #713f12);
+  font-size: var(--text-sm, 0.875rem);
+  /* Fade in when the banner mounts */
+  animation: stb-fade-in 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-timeout-banner {
+    animation: none;
+  }
+}
+
+@keyframes stb-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.stb-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.stb-message {
+  flex: 1;
+}
+
+/* Buttons share base style; variants differ by background */
+.stb-btn {
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-1, 0.25rem) var(--space-3, 0.75rem);
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  transition: opacity 150ms ease;
+}
+
+.stb-btn:hover {
+  opacity: 0.85;
+}
+
+.stb-btn--stay {
+  background: var(--warning, #eab308);
+  color: var(--warning-text, #713f12);
+}
+
+.stb-btn--dismiss {
+  background: transparent;
+  color: var(--warning-text, #713f12);
+  font-size: 1.1rem;
+}
+
+/* Visually hidden but accessible live region */
+.stb-live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -110,6 +110,9 @@ function App() {
             {/* Wallet auto-reconnect timeout banner — self-dismissing,
                 non-blocking; only visible when reconnect takes > 8 s. */}
             <WalletReconnectBanner />
+            {/* Session-timeout warning banner — visible 60 s before
+                the wallet extension silently disconnects (#227). */}
+            <SessionTimeoutBanner />
             <main className="main">
               <NetworkMismatchBanner />
               <Routes>

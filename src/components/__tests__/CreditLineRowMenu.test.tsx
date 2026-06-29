@@ -1,0 +1,91 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { CreditLineRowMenu } from '../CreditLineRowMenu';
+import { MemoryRouter } from 'react-router-dom';
+import { expect, test, vi } from 'vitest';
+
+describe('CreditLineRowMenu', () => {
+  const defaultProps = {
+    lineId: 'line-123',
+    lineName: 'Test Credit Line',
+    onRepay: vi.fn(),
+    onSchedule: vi.fn(),
+    onDetails: vi.fn(),
+  };
+
+  test('renders the menu button', () => {
+    render(
+      <MemoryRouter>
+        <CreditLineRowMenu {...defaultProps} />
+      </MemoryRouter>
+    );
+    expect(screen.getByLabelText(/Menu for Test Credit Line/i)).toBeInTheDocument();
+  });
+
+  test('opens the menu when the button is clicked', () => {
+    render(
+      <MemoryRouter>
+        <CreditLineRowMenu {...defaultProps} />
+      </MemoryRouter>
+    );
+    const button = screen.getByLabelText(/Menu for Test Credit Line/i);
+    fireEvent.click(button);
+
+    expect(screen.getByRole('menuitem', { name: /Repay/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Draw/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Schedule/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Details/i })).toBeInTheDocument();
+  });
+
+  test('closes the menu when clicking outside', async () => {
+    render(
+      <MemoryRouter>
+        <CreditLineRowMenu {...defaultProps} />
+      </MemoryRouter>
+    );
+    const button = screen.getByLabelText(/Menu for Test Credit Line/i);
+    fireEvent.click(button);
+    expect(screen.getByRole('menuitem', { name: /Repay/i })).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+    
+    // Use a small delay to allow the effect to run
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByRole('menuitem', { name: /Repay/i })).not.toBeInTheDocument();
+  });
+
+  test('calls onRepay when Repay is clicked', () => {
+    render(
+      <MemoryRouter>
+        <CreditLineRowMenu {...defaultProps} />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByLabelText(/Menu for Test Credit Line/i));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Repay/i }));
+
+    expect(defaultProps.onRepay).toHaveBeenCalledTimes(1);
+  });
+
+  test('calls onSchedule when Schedule is clicked', () => {
+    render(
+      <MemoryRouter>
+        <CreditLineRowMenu {...defaultProps} />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByLabelText(/Menu for Test Credit Line/i));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Schedule/i }));
+
+    expect(defaultProps.onSchedule).toHaveBeenCalledWith('line-123');
+  });
+
+  test('calls onDetails when Details is clicked', () => {
+    render(
+      <MemoryRouter>
+        <CreditLineRowMenu {...defaultProps} />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByLabelText(/Menu for Test Credit Line/i));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Details/i }));
+
+    expect(defaultProps.onDetails).toHaveBeenCalledWith('line-123');
+  });
+});

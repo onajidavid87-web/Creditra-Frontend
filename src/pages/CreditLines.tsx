@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
+import { CreditLineRowMenu } from "../components/CreditLineRowMenu";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   CreditLineStatus,
@@ -34,6 +35,9 @@ function CreditLineCard({
   isSelected,
   onToggle,
   onSwapCollateral,
+  onRepay,
+  onSchedule,
+  onDetails,
 }: {
   line: (typeof MOCK_CREDIT_LINES)[0];
   isSelected: boolean;
@@ -42,6 +46,9 @@ function CreditLineCard({
     line: (typeof MOCK_CREDIT_LINES)[0],
     triggerRef: React.RefObject<HTMLButtonElement | null>,
   ) => void;
+  onRepay?: () => void;
+  onSchedule?: (lineId: string) => void;
+  onDetails?: (lineId: string) => void;
 }) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
@@ -54,24 +61,33 @@ function CreditLineCard({
       className={`cl-card${isDefaulted ? ' cl-row--defaulted' : ''}`}
       aria-label={isDefaulted ? `Credit line ${line.id} is defaulted` : undefined}
     >
-      <div className="cl-card-header">
-        <div className="cl-card-title-row">
-          <label className="cl-row-select">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={onToggle}
-              aria-label={`Select ${line.name} for comparison`}
-            />
-            <span>Compare</span>
-          </label>
-          <div>
-            <h3 className="cl-name">{line.name}</h3>
-            <p className="cl-id">{line.id}</p>
-          </div>
-        </div>
-        <StatusBadge status={line.status} />
-      </div>
+       <div className="cl-card-header">
+         <div className="cl-card-title-row">
+           <label className="cl-row-select">
+             <input
+               type="checkbox"
+               checked={isSelected}
+               onChange={onToggle}
+               aria-label={`Select ${line.name} for comparison`}
+             />
+             <span>Compare</span>
+           </label>
+           <div>
+             <h3 className="cl-name">{line.name}</h3>
+             <p className="cl-id">{line.id}</p>
+           </div>
+         </div>
+         <div className="flex items-center gap-2">
+           <StatusBadge status={line.status} />
+           <CreditLineRowMenu
+             lineId={line.id}
+             lineName={line.name}
+             onRepay={onRepay}
+             onSchedule={onSchedule}
+             onDetails={onDetails}
+           />
+         </div>
+       </div>
 
       <div className="cl-card-body">
         <div className="cl-metrics">
@@ -138,31 +154,8 @@ function CreditLineCard({
         </div>
       </div>
 
-      <div className="cl-card-footer">
-        {line.status === "Active" && line.limit > line.utilized && (
-          <Link
-            to={`/draw-credit?line=${line.id}`}
-            className="cl-action-btn draw"
-          >
-            ↗ Draw
-          </Link>
-        )}
-        {line.utilized > 0 && (
-          <button className="cl-action-btn repay">↙ Repay</button>
-        )}
-        {line.status === 'Active' && onSwapCollateral && (
-          <button
-            ref={swapTriggerRef}
-            type="button"
-            className="cl-action-btn"
-            style={{ color: COLOR.accent, borderColor: 'rgba(88,166,255,0.3)', background: 'rgba(88,166,255,0.08)' }}
-            onClick={() => onSwapCollateral(line, swapTriggerRef)}
-            aria-label={`Swap collateral for ${line.name}`}
-          >
-            ⇄ Swap Collateral
-          </button>
-        )}
-      </div>
+       <div className="cl-card-footer">
+       </div>
     </div>
   );
 }
@@ -170,6 +163,7 @@ function CreditLineCard({
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function CreditLines() {
+  const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>("updatedAt");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
   const [statusFilter, setStatusFilter] = useState<CreditLineStatus | "all">(
@@ -200,6 +194,18 @@ export default function CreditLines() {
       currentAsset: "ETH",
       triggerRef,
     });
+  };
+
+  const handleRepay = (lineId: string) => {
+    navigate(`/repay?line=${lineId}`);
+  };
+
+  const handleSchedule = (lineId: string) => {
+    console.log(`Schedule requested for ${lineId}`);
+  };
+
+  const handleDetails = (lineId: string) => {
+    console.log(`Details requested for ${lineId}`);
   };
 
   const filteredAndSorted = useMemo(() => {
@@ -408,6 +414,9 @@ export default function CreditLines() {
               isSelected={selectedLines.includes(line.id)}
               onToggle={() => toggleSelection(line.id)}
               onSwapCollateral={handleSwapCollateral}
+              onRepay={() => handleRepay(line.id)}
+              onSchedule={() => handleSchedule(line.id)}
+              onDetails={() => handleDetails(line.id)}
             />
           ))}
         </div>

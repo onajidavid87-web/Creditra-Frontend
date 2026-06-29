@@ -7,8 +7,6 @@ import {
   formatPayoffDate,
 } from '@/utils/payoffProjection';
 import { formatMoney } from '@/utils/amountValidation';
-import { ProgressBar } from './ProgressBar';
-import type { ProgressBarVariant } from './ProgressBar';
 
 interface PayoffProjectionProps {
   currentDebt: number;
@@ -45,11 +43,19 @@ export function PayoffProjection({
   const currentDate = formatPayoffDate(projection.currentMonths, false);
   const newDate = formatPayoffDate(projection.newMonths, projection.isFullPayoff);
 
-  function utilizationVariant(pct: number): ProgressBarVariant {
-    if (pct > 80) return 'danger';
-    if (pct > 50) return 'warning';
-    return 'success';
-  }
+  const utilizationColor =
+    projection.currentUtilizationPct > 80
+      ? 'bg-red-500'
+      : projection.currentUtilizationPct > 50
+        ? 'bg-yellow-500'
+        : 'bg-green-500';
+
+  const newUtilizationColor =
+    projection.newUtilizationPct > 80
+      ? 'bg-red-500'
+      : projection.newUtilizationPct > 50
+        ? 'bg-yellow-500'
+        : 'bg-green-500';
 
   return (
     <section
@@ -164,18 +170,28 @@ export function PayoffProjection({
                 {projection.currentUtilizationPct}% → {projection.newUtilizationPct}%
               </span>
             </div>
-            <ProgressBar
-              value={projection.currentUtilizationPct}
-              variant={utilizationVariant(projection.currentUtilizationPct)}
-              label="Current utilization"
-              size="md"
-            />
-            <ProgressBar
-              value={projection.newUtilizationPct}
-              variant={utilizationVariant(projection.newUtilizationPct)}
-              label="New utilization after repayment"
-              size="md"
-            />
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-border">
+              <div
+                className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${utilizationColor}`}
+                style={{ width: `${projection.currentUtilizationPct}%` }}
+                role="progressbar"
+                aria-valuenow={projection.currentUtilizationPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Current utilization"
+              />
+            </div>
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-border">
+              <div
+                className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${newUtilizationColor}`}
+                style={{ width: `${projection.newUtilizationPct}%` }}
+                role="progressbar"
+                aria-valuenow={projection.newUtilizationPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="New utilization after repayment"
+              />
+            </div>
           </div>
         </div>
       )}

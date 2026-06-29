@@ -3,19 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, AlertTriangle, CheckCircle, Info, ArrowLeft } from 'lucide-react';
 import { PayoffProjection } from '@/components/PayoffProjection';
 import { InlineHelpOverlay } from '@/components/InlineHelpOverlay';
-import { ProgressBar } from '@/components/ProgressBar';
-import type { ProgressBarVariant } from '@/components/ProgressBar';
 import { formatMoney, getRepayAmountValidation } from '@/utils/amountValidation';
 import type { CreditLine } from '@/types/creditLine';
 import { MOCK_CREDIT_LINES } from '@/data/mockData';
 
 type RepayStep = 'input' | 'review' | 'success';
-
-function utilizationVariant(pct: number): ProgressBarVariant {
-  if (pct > 80) return 'danger';
-  if (pct > 50) return 'warning';
-  return 'success';
-}
 
 const SEVERITY_CONFIG = {
   info: {
@@ -154,12 +146,18 @@ export default function RepayPage() {
                     <p className="text-sm text-muted">{utilization}% utilized</p>
                   </div>
                 </div>
-                <ProgressBar
-                  value={utilization}
-                  variant={utilizationVariant(utilization)}
-                  label={`${cl.name} utilization percentage`}
-                  size="md"
-                />
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-border">
+                  <div
+                    className={`h-full rounded-full ${
+                      utilization > 80
+                        ? 'bg-red-500'
+                        : utilization > 50
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
+                    }`}
+                    style={{ width: `${utilization}%` }}
+                  />
+                </div>
               </button>
             );
           })}
@@ -217,12 +215,18 @@ export default function RepayPage() {
               <p className="mt-1 text-3xl font-bold text-foreground">
                 {formatMoney(selectedLine.utilized)}
               </p>
-              <ProgressBar
-                value={oldPct}
-                variant={utilizationVariant(oldPct)}
-                label={`Current utilization: ${oldPct}%`}
-                size="md"
-              />
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-border">
+                <div
+                  className={`h-full rounded-full ${
+                    oldPct > 80
+                      ? 'bg-red-500'
+                      : oldPct > 50
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
+                  }`}
+                  style={{ width: `${oldPct}%` }}
+                />
+              </div>
               <p className="mt-1 text-xs text-muted">
                 {oldPct}% of {formatMoney(selectedLine.limit)} limit
               </p>
@@ -343,12 +347,14 @@ export default function RepayPage() {
                         style={{ width: `${oldPct}%` }}
                       />
                     </div>
-                    <ProgressBar
-                      value={newPct}
-                      variant={remainingDebt === 0 ? 'success' : 'warning'}
-                      label={`New utilization after repayment: ${newPct}%`}
-                      size="md"
-                    />
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-border">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          remainingDebt === 0 ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}
+                        style={{ width: `${newPct}%` }}
+                      />
+                    </div>
                   </div>
 
                   <button

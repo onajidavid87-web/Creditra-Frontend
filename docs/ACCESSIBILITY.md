@@ -137,7 +137,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `WalletButton` | Tab/Enter/Esc; trigger has `aria-haspopup`/`aria-expanded` | `aria-label` on icon-only states | AA | n/a | OK |
 | `WalletConnectionModal` | Focus trap + return; Escape closes | `role="dialog"`, `aria-modal`, `aria-labelledby` | AA | reduced-motion gated | OK |
 | `ShortcutHelpOverlay` | Global `?` trigger outside text inputs; Escape closes; focus returns | `role="dialog"`, `aria-modal`, grouped shortcut lists | AA | reduced-motion gated | OK |
-| `OnboardingFlow` | Arrow keys advance steps (planned), Esc skips | Stepper labelled via `aria-label` | AA | `useReducedMotion()` | OK |
+| `OnboardingFlow` | Arrow keys advance/back; Esc skips | Stepper labelled via `aria-label` | AA | `useReducedMotion()` | OK |
 | `FormField` | Native input semantics | Auto `htmlFor`, `aria-describedby`, `aria-invalid`, `aria-required` | AA | n/a | OK |
 | `FormMessage` | n/a (text only) | `role="alert"` on error | AA | reduced-motion gated | OK |
 | `AmountInput` | Native input + preset buttons; Tab in order | `aria-describedby` aggregates helper/constraint/status/error | AA | n/a | OK |

@@ -59,6 +59,9 @@ import {
   disconnectWallet,
   saveWalletPreference,
   getStoredWallet,
+  recordRecentWallet,
+  isWalletRemembered,
+  setWalletRemembered,
 } from '../utils/wallet';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -79,6 +82,19 @@ interface BalanceInfo {
   balance: string;
 }
 
+/** Optional second-arg bag for `connect()`. */
+export interface ConnectOptions {
+  /**
+   * When `true`, mark this wallet as the user's "remembered" one.  The
+   * provider will auto-reconnect to it on subsequent page loads and the
+   * wallet dropdown exposes a "Forget choice" affordance so the user
+   * can revoke that decision.  Defaults to `false` to keep the behaviour
+   * opt-in: a passive click that does not pass this flag will connect
+   * just for the current session, with no persisted preference.
+   */
+  remember?: boolean;
+}
+
 interface WalletContextType {
   /** The currently connected wallet, or `null` when disconnected. */
   wallet: WalletInfo | null;
@@ -96,14 +112,33 @@ interface WalletContextType {
    */
   reconnectTimedOut: boolean;
   /**
+   * Mirror of the opt-in "remember my choice" flag in `localStorage`.
+   * `true` only when the user has explicitly opted in on their most
+   * recent connection.  Drives the `WalletConnectionModal` and the
+   * `Forget` affordance in the wallet dropdown.
+   */
+  isRemembered: boolean;
+  /**
    * Open a connection to the given wallet. Updates `status` to
    * `connecting`, then either `connected` (on success) or `error`.
-   * Successful connections are persisted to `localStorage` so the same
-   * wallet is rehydrated on next visit.
+   *
+   * Successful connections are added to the MRU list so the modal can
+   * order wallets by recency.  Passing `{ remember: true }` additionally
+   * persists an opt-in flag that drives next-visit auto-reconnect.  The
+   * flag defaults to `false` because acceptance criteria require the
+   * preference to be opt-in, not pre-checked.
    */
-  connect: (type: WalletType) => Promise<void>;
+  connect: (type: WalletType, options?: ConnectOptions) => Promise<void>;
   /** Forget the current wallet, clear preference, return to disconnected state. */
   disconnect: () => void;
+  /**
+   * Clear only the "remember my choice" flag without disconnecting the
+   * wallet for the current session.  Useful when the user wants to stay
+   * signed in *now* but stop the app from auto-connecting next time.
+   * After this call, `isRemembered` becomes `false` and `isWalletRemembered()`
+   * returns `false`.
+   */
+  forgetRememberedChoice: () => void;
   /** Clear an error without changing status — used by retry affordances. */
   clearError: () => void;
   /**
@@ -149,6 +184,9 @@ export const WalletProvider = ({
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<WalletError | null>(null);
   const [reconnectTimedOut, setReconnectTimedOut] = useState(false);
+  // Initialised from `localStorage` via the safe wrapper so the very first
+  // render reflects whether the user opted in on a previous session.
+  const [isRemembered, setIsRemembered] = useState<boolean>(() => isWalletRemembered());
 
   // Ref so the timeout cleanup in `runReconnect` closes over a stable reference.
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -195,6 +233,11 @@ export const WalletProvider = ({
         setStatus('connected');
         setReconnectTimedOut(false);
         saveWalletPreference(walletInfo);
+        // Auto-reconnect path is not gated by the user opt-in: the user
+        // already opted in on the previous session, which is precisely why
+        // we are running this reconnect.
+        recordRecentWallet(type);
+        setIsRemembered(true);
       } catch (err) {
         clearReconnectTimeout();
         setReconnectTimedOut(false);
@@ -209,8 +252,13 @@ export const WalletProvider = ({
   // ── Auto-reconnect on mount ─────────────────────────────────────────────────
 
   useEffect(() => {
+    // Auto-reconnect is now an explicit opt-in.  Without the
+    // `creditra-wallet-remember` flag we leave the user on the connect
+    // screen (matching the privacy-first design: the app must never
+    // silently re-establish a wallet session).
     const stored = getStoredWallet();
-    if (!stored) return; // No prior session — nothing to reconnect.
+    const remembered = isWalletRemembered();
+    if (!stored || !remembered) return; // No prior agreed reconnect.
 
     runReconnect(stored.type);
 
@@ -222,21 +270,31 @@ export const WalletProvider = ({
 
   // ── User-initiated connection ───────────────────────────────────────────────
 
-  const connect = async (type: WalletType) => {
+  const connect = async (type: WalletType, options?: ConnectOptions) => {
     clearReconnectTimeout();
     setStatus('connecting');
     setError(null);
     setReconnectTimedOut(false);
+
+    // Default to NOT remembering — the choice must be opt-in.
+    const shouldRemember = options?.remember === true;
 
     try {
       const walletInfo = await connectWallet(type);
       setWallet(walletInfo);
       setStatus('connected');
       saveWalletPreference(walletInfo);
+      // Always promote the wallet to the front of MRU so the modal can
+      // surface it first, regardless of the remember-flag decision.
+      recordRecentWallet(type);
+      setWalletRemembered(shouldRemember);
+      setIsRemembered(shouldRemember);
     } catch (err) {
       setError(err as WalletError);
       setStatus('error');
       setWallet(null);
+      // Don't write any remembered state on failure: leaving stale
+      // persistence around has confused earlier releases.
     }
   };
 
@@ -244,12 +302,31 @@ export const WalletProvider = ({
 
   const disconnect = () => {
     clearReconnectTimeout();
+    // `disconnectWallet()` is intentionally aggressive: it clears the
+    // session AND the opt-in flag AND the MRU list.  This means a
+    // deliberate disconnect is also a complete privacy reset, so the
+    // next visit will not auto-connect and will not pre-order the
+    // modal for the user.
     disconnectWallet();
     setWallet(null);
     setStatus('disconnected');
     setError(null);
     setReconnectTimedOut(false);
+    setIsRemembered(false);
   };
+
+  // ── "Forget remembered choice" (privacy control, not disconnect) ───────────
+
+  /**
+   * Revoke the opt-in to auto-reconnect next time without disconnecting the
+   * current session.  After this call the wallet stays connected, the MRU
+   * list is left intact so the modal ordering still reflects past use, but
+   * `isWalletRemembered()` will return `false` until the user opts in again.
+   */
+  const forgetRememberedChoice = useCallback(() => {
+    setWalletRemembered(false);
+    setIsRemembered(false);
+  }, []);
 
   // ── Banner controls ────────────────────────────────────────────────────────
 
@@ -320,8 +397,10 @@ export const WalletProvider = ({
         status,
         error,
         reconnectTimedOut,
+        isRemembered,
         connect,
         disconnect,
+        forgetRememberedChoice,
         clearError,
         dismissReconnectBanner,
         retryReconnect,

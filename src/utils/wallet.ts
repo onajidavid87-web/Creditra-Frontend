@@ -1,4 +1,36 @@
 import { WalletType, WalletInfo, WalletError } from '../types/wallet';
+import { readJson, writeJson, removeKey } from './storage';
+
+// ─── Storage keys ──────────────────────────────────────────────────────────────
+//
+// We namespace wallet-related state under `creditra-wallet-*` to avoid clashes
+// with other apps sharing the same origin.  All values are JSON-encodable so
+// they can flow through the safe wrappers in `./storage` (private-mode safe,
+// quota-safe).
+//
+//   creditra-wallet-info        — full `WalletInfo` of the active session
+//                                   (unchanged, kept for backward compat).
+//   creditra-wallet-recent      — `WalletType[]` ordered MRU list.
+//   creditra-wallet-remember    — `boolean` opt-in flag for auto-reconnect.
+//
+// Only wallet **type** strings are ever persisted — never addresses, keys, or
+// signatures.  This keeps the surface area limited to non-PII data.
+const STORAGE_KEY_INFO = 'creditra-wallet-info';
+const STORAGE_KEY_RECENT = 'creditra-wallet-recent';
+const STORAGE_KEY_REMEMBER = 'creditra-wallet-remember';
+const STORAGE_KEY_PREFERENCE_LEGACY = 'wallet_preference';
+const STORAGE_KEY_INFO_LEGACY = 'wallet_info';
+
+// Hard cap on MRU length — covers every supported wallet and then some, so the
+// array stays small and the rewrite cost is trivial.
+const MRU_MAX_LENGTH = 8;
+
+const SUPPORTED_WALLET_TYPES: ReadonlySet<WalletType> = new Set([
+  'freighter',
+  'albedo',
+  'xbull',
+  'rabet',
+]);
 
 declare global {
   interface Window {
@@ -99,20 +131,128 @@ export const connectWallet = async (type: WalletType): Promise<WalletInfo> => {
   }
 };
 
+// ─── Connection lifecycle helpers ────────────────────────────────────────────
+
+/**
+ * Drop the active session from localStorage.  Also clears the opt-in
+ * "remember my choice" flag so a future return visit will not auto-connect.
+ *
+ * IMPORTANT: this call does **not** clear the MRU list (`creditra-wallet-recent`).
+ * The MRU ordering reflects the user's activity history, which we want to keep
+ * so the modal still surfaces preferred wallets in their natural order after a
+ * full disconnect.  MRU entries are only dropped implicitly when the active
+ * session no longer makes sense — clearMRU() is the explicit-only escape hatch.
+ *
+ * Safe to call when nothing is stored (no-ops silently).
+ */
 export const disconnectWallet = () => {
-  localStorage.removeItem('wallet_info');
-  localStorage.removeItem('wallet_preference');
+  removeKey(STORAGE_KEY_INFO);
+  removeKey(STORAGE_KEY_INFO_LEGACY);
+  removeKey(STORAGE_KEY_PREFERENCE_LEGACY);
+  removeKey(STORAGE_KEY_REMEMBER);
 };
 
+/**
+ * Explicitly wipe the MRU list.  Not currently called by any user-facing
+ * control — exposed so future integrity tools or test helpers can reset
+ * recency state without affecting the active session.
+ */
+export const clearMRU = (): void => {
+  removeKey(STORAGE_KEY_RECENT);
+};
+
+/**
+ * Persist the connected wallet's full session record.  Only the wallet type —
+ * never addresses, secrets, or signatures — ever leaves this module.
+ */
 export const saveWalletPreference = (walletInfo: WalletInfo) => {
-  localStorage.setItem('wallet_info', JSON.stringify(walletInfo));
-  localStorage.setItem('wallet_preference', walletInfo.type);
+  writeJson(STORAGE_KEY_INFO, walletInfo);
+  // Mirror to the legacy key so anything still reading `wallet_info` keeps
+  // working through the upgrade window.  Will be removed in a later release.
+  writeJson(STORAGE_KEY_INFO_LEGACY, walletInfo);
 };
 
+/**
+ * Read the active session.  Falls back to the legacy `wallet_info` key for
+ * users who installed the application before `creditra-wallet-info` shipped.
+ */
 export const getStoredWallet = (): WalletInfo | null => {
-  const stored = localStorage.getItem('wallet_info');
-  return stored ? JSON.parse(stored) : null;
+  const fromNew = readJson<WalletInfo | null>(STORAGE_KEY_INFO, null);
+  if (fromNew) return fromNew;
+  const fromLegacy = readJson<WalletInfo | null>(STORAGE_KEY_INFO_LEGACY, null);
+  return fromLegacy;
 };
+
+// ─── MRU (most-recently-used) bookkeeping ────────────────────────────────────
+
+/**
+ * Validate a single entry of a (possibly corrupt) stored MRU list.
+ * Drops anything that doesn't match a supported wallet type.  This is
+ * important because `readJson` will happily surface any JSON we wrote
+ * historically, including out-of-date values when the wallet set changes.
+ */
+function sanitizeMru(value: unknown): WalletType[] {
+  if (!Array.isArray(value)) return [];
+  const result: WalletType[] = [];
+  // Preserve insertion order (the array already encodes recency).
+  for (const entry of value) {
+    if (
+      typeof entry === 'string' &&
+      SUPPORTED_WALLET_TYPES.has(entry as WalletType) &&
+      !result.includes(entry as WalletType)
+    ) {
+      result.push(entry as WalletType);
+    }
+    if (result.length >= MRU_MAX_LENGTH) break;
+  }
+  return result;
+}
+
+/**
+ * Read the MRU list.  Last entry is the most-recently-used.
+ * Returns `[]` when nothing is stored or the stored value is malformed.
+ */
+export const getRecentWalletOrder = (): WalletType[] => {
+  return sanitizeMru(readJson<unknown>(STORAGE_KEY_RECENT, []));
+};
+
+/**
+ * Promote `type` to the end (most-recent) of the MRU list.
+ * - Removes any prior occurrence so the wallet never appears twice.
+ * - Caps the list at `MRU_MAX_LENGTH` entries.
+ * - Silent no-op on storage failure (uses the safe wrappers).
+ */
+export const recordRecentWallet = (type: WalletType): void => {
+  if (!SUPPORTED_WALLET_TYPES.has(type)) return;
+  const current = getRecentWalletOrder().filter((t) => t !== type);
+  current.push(type);
+  const trimmed = current.slice(-MRU_MAX_LENGTH);
+  writeJson(STORAGE_KEY_RECENT, trimmed);
+};
+
+// ─── "Remember my choice" opt-in flag ────────────────────────────────────────
+
+/**
+ * `true` when the user explicitly opted in to next-visit auto-connect for
+ * their most-recently used wallet.  Defaults to `false` so storage absence
+ * is indistinguishable from a fresh "no".
+ */
+export const isWalletRemembered = (): boolean => {
+  return readJson<boolean>(STORAGE_KEY_REMEMBER, false) === true;
+};
+
+/**
+ * Persist (or clear) the opt-in flag.  When `false`, the key is removed so we
+ * do not pollute localStorage with a redundant "false".
+ */
+export const setWalletRemembered = (remember: boolean): void => {
+  if (remember) {
+    writeJson(STORAGE_KEY_REMEMBER, true);
+  } else {
+    removeKey(STORAGE_KEY_REMEMBER);
+  }
+};
+
 
 export const EXPECTED_NETWORK = 'TESTNET';
 

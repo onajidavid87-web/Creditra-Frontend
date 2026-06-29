@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { WalletConnectionModal } from './WalletConnectionModal';
 import { OnboardingFlow } from './OnboardingFlow';
@@ -9,7 +9,18 @@ import { NetworkMismatchBanner } from './NetworkMismatchBanner';
 import './WalletButton.css';
 
 export const WalletButton = () => {
-  const { wallet, status, connect, disconnect, hasNetworkMismatch, switchNetwork } = useWallet();
+  // Pull `isRemembered` and `forgetRememberedChoice` so we can render the
+  // "Forget choice" affordance inside the connected-wallet dropdown.
+  const {
+    wallet,
+    status,
+    connect,
+    disconnect,
+    hasNetworkMismatch,
+    switchNetwork,
+    isRemembered,
+    forgetRememberedChoice,
+  } = useWallet();
   const [showModal, setShowModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -26,8 +37,11 @@ export const WalletButton = () => {
     }
   };
 
-  const handleWalletConnect = async (provider: Parameters<typeof connect>[0]) => {
-    await connect(provider);
+  const handleWalletConnect = async (
+    provider: Parameters<typeof connect>[0],
+    options?: Parameters<typeof connect>[1]
+  ) => {
+    await connect(provider, options);
     handleSuccess();
   };
 
@@ -43,6 +57,36 @@ export const WalletButton = () => {
     setShowDropdown(false);
     setShowQr(false);
   };
+
+  // "Forget remembered choice" — distinct from Disconnect: it does NOT
+  // close the session, only revokes the opt-in for next-visit auto-reconnect.
+  // A short status message is announced to assistive tech so the change is
+  // not silent.
+  const [forgetAnnouncement, setForgetAnnouncement] = useState('');
+  // Hold the dismissal timer so it can be cleared on unmount or on the next
+  // announcement — no stale setState-after-unmount warnings.
+  const forgetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleForgetChoice = useCallback(() => {
+    forgetRememberedChoice();
+    setForgetAnnouncement(
+      'Saved wallet preference cleared. You will not be auto-connected next visit.',
+    );
+    if (forgetTimeoutRef.current !== null) {
+      clearTimeout(forgetTimeoutRef.current);
+    }
+    forgetTimeoutRef.current = setTimeout(() => {
+      setForgetAnnouncement('');
+      forgetTimeoutRef.current = null;
+    }, 3000);
+  }, [forgetRememberedChoice]);
+  useEffect(() => {
+    return () => {
+      if (forgetTimeoutRef.current !== null) {
+        clearTimeout(forgetTimeoutRef.current);
+        forgetTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -88,8 +132,8 @@ export const WalletButton = () => {
           walletType={wallet.type}
           onSwitchNetwork={switchNetwork}
         />
-        <button 
-          className="wallet-address-btn" 
+        <button
+          className="wallet-address-btn"
           onClick={handleToggleDropdown}
           aria-haspopup="true"
           aria-expanded={showDropdown}
@@ -131,6 +175,24 @@ export const WalletButton = () => {
               </div>
             )}
             <span className="sr-only" role="status" aria-live="polite">{announceMsg}</span>
+            {/* Privacy control: only shown when the user opted-in to remember.
+                Keeps the dropdown tidy for users who never opted in. */}
+            {isRemembered && (
+              <button
+                type="button"
+                className="forget-btn"
+                role="menuitem"
+                onClick={handleForgetChoice}
+                aria-label="Forget remembered wallet choice for next visit"
+              >
+                Forget remembered choice
+              </button>
+            )}
+            {forgetAnnouncement && (
+              <span className="sr-only" role="status" aria-live="polite">
+                {forgetAnnouncement}
+              </span>
+            )}
             <button className="disconnect-btn" onClick={handleDisconnect}>
               Disconnect
             </button>

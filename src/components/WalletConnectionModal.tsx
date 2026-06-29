@@ -9,21 +9,32 @@
  * - Body scroll locked while open
  * - Mobile bottom sheet with safe-area insets
  * - Visual differentiation of detected vs undetected wallets
+ * - Most-recently-used ordering (MRU) of wallet options
+ * - Opt-in "Remember my choice" checkbox (NOT pre-checked)
+ * - "Continue with X" one-click affordance for the most-recent wallet
+ * - "Switch wallet" affordance to surface the full list when collapsed
  * - ARIA: role="dialog", aria-modal="true", aria-labelledby
  *
  * WCAG 2.1 AA: 2.1.2 (No Keyboard Trap), 2.4.3 (Focus Order),
- *              4.1.2 (Name, Role, Value), 1.4.1 (Use of Color)
+ *              4.1.2 (Name, Role, Value), 1.4.1 (Use of Color),
+ *              1.4.11 (Non-text Contrast), 2.5.5 (Target Size)
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useInertBackdrop } from '@/hooks/useInertBackdrop';
+import {
+  getRecentWalletOrder,
+  getStoredWallet,
+  type WalletType,
+} from '@/utils/wallet';
+import type { WalletInfo } from '@/types/wallet';
 import './WalletConnectionModal.css';
 
 // Wallet provider definitions
-export type WalletProvider = 'freighter' | 'albedo' | 'xbull' | 'rabet';
+export type WalletProvider = WalletType;
 
 interface WalletOption {
   id: WalletProvider;
@@ -33,7 +44,11 @@ interface WalletOption {
   installUrl: string;
 }
 
-const WALLET_OPTIONS: WalletOption[] = [
+/**
+ * Canonical display order when no recency information exists.  Defined as a
+ * single source of truth so the modal, the MRU merge, and the tests line up.
+ */
+const DEFAULT_WALLET_ORDER: WalletOption[] = [
   {
     id: 'freighter',
     name: 'Freighter',
@@ -64,13 +79,40 @@ const WALLET_OPTIONS: WalletOption[] = [
   },
 ];
 
+/**
+ * Stable lookup so MRU reordering can find display metadata for any
+ * stored wallet type.
+ */
+const WALLET_OPTIONS_BY_ID: Record<WalletProvider, WalletOption> =
+  DEFAULT_WALLET_ORDER.reduce(
+    (acc, opt) => {
+      acc[opt.id] = opt;
+      return acc;
+    },
+    {} as Record<WalletProvider, WalletOption>,
+  );
+
+/** Options accepted by `onConnect`.  All opt-in for privacy. */
+export interface WalletConnectOptions {
+  /**
+   * Persist the user's opt-in to auto-reconnect on next visit.  Defaults
+   * to `false` everywhere in the modal — the checkbox is the only way to
+   * pass `true`, and it must be clicked deliberately.
+   */
+  remember?: boolean;
+}
+
 interface WalletConnectionModalProps {
   /** Whether the modal is visible */
   isOpen: boolean;
   /** Callback to close the modal */
   onClose: () => void;
-  /** Callback when a wallet is selected */
-  onConnect: (provider: WalletProvider) => void;
+  /**
+   * Callback when a wallet is selected.  Implementers should respect the
+   * `options.remember` flag and persist it via the safe wrappers in
+   * `src/utils/storage.ts`.
+   */
+  onConnect: (provider: WalletProvider, options?: WalletConnectOptions) => void;
   /** Ref to the trigger button that opened the modal (for return focus) */
   triggerRef?: React.RefObject<HTMLElement | null>;
   /** Currently detected/available wallets */
@@ -82,6 +124,18 @@ interface WalletConnectionModalProps {
  *
  * Primary entry point for wallet selection. Implemented as a fully accessible
  * dialog with focus trapping, inert backdrop, and mobile-safe bottom sheet layout.
+ *
+ * MRU ordering + "remember my choice" flow
+ * ─────────────────────────────────────────────────────────────────────────────
+ *   1. On mount we read `getRecentWalletOrder()` and (for legacy users)
+ *      `getStoredWallet()` to honour past activity.
+ *   2. The most-recent wallet is pulled out and shown as a one-click
+ *      "Continue with X" affordance.  Everything else is collapsed behind a
+ *      "Switch wallet" toggle.  This is the new zero-friction path for
+ *      returning users who explicitly opted in.
+ *   3. A checkbox labelled "Remember my choice" defaults to unchecked so
+ *      the behaviour stays opt-in.  The flag is forwarded to `onConnect`
+ *      so that the consumer can persist accordingly.
  */
 export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
   isOpen,
@@ -92,7 +146,74 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
 }) => {
   const [connectingId, setConnectingId] = useState<WalletProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Opt-in checkbox — MUST default to `false` per acceptance criteria.
+  const [rememberChoice, setRememberChoice] = useState<boolean>(false);
+  // Whether the wallet list is collapsed behind "Switch wallet".
+  // When we have a most-recent wallet we collapse by default; otherwise
+  // we show the full list so first-time users see all options at once.
+  const [showFullList, setShowFullList] = useState<boolean>(false);
   const modalId = 'wallet-connection-modal';
+  const rememberCheckboxId = useId();
+
+  // ── MRU-aware ordering ─────────────────────────────────────────────────────
+  //
+  // Compute the display order once per render.  We honour any persisted
+  // recency list (`getRecentWalletOrder`); if that is empty we fall back to
+  // the `wallet_info` legacy entry so users who already connected once
+  // are not served the default ordering on their first post-upgrade visit.
+
+  const { primaryWallet, orderedWallets } = useMemo(() => {
+    const recent = getRecentWalletOrder();
+    const legacy: WalletInfo | null = recent.length === 0 ? getStoredWallet() : null;
+
+    // We only treat a primary wallet as "most recently used" when we have an
+    // *actual* recency signal — either a non-empty MRU list or a legacy
+    // `wallet_info` entry from before the MRU feature shipped.  When neither
+    // is present, fall through to the full catalogue so first-time visitors
+    // see every option at a glance instead of an arbitrary "Continue with"
+    // prompt.
+    const hasRecency = recent.length > 0 || legacy !== null;
+
+    // Build a unified recency ordering.  Legacy entry is treated as if it
+    // were the only MRU entry (most recent by definition).
+    const recencyOrder: WalletProvider[] =
+      recent.length > 0
+        ? recent
+        : legacy
+        ? [legacy.type]
+        : [];
+
+    // Anything in the recency list that we don't ship metadata for
+    // (e.g., a previously supported wallet that we removed) is dropped
+    // silently — the modal can't render it anyway.
+    const resolvedOrder: WalletOption[] = recencyOrder
+      .map((id) => WALLET_OPTIONS_BY_ID[id])
+      .filter((opt): opt is WalletOption => Boolean(opt));
+
+    // Append the default-order wallets, excluding anything already in the
+    // recency list, so users always see the complete catalogue.
+    for (const opt of DEFAULT_WALLET_ORDER) {
+      if (!resolvedOrder.some((o) => o.id === opt.id)) {
+        resolvedOrder.push(opt);
+      }
+    }
+
+    return {
+      // Distinguish "no recency hint at all" from "first default wallet".
+      // `primaryWallet === null` drives whether the Continue block is shown.
+      primaryWallet: hasRecency ? resolvedOrder[0] ?? null : null,
+      orderedWallets: resolvedOrder,
+    };
+  }, [isOpen]); // Re-read ordering each time the modal opens.
+
+  // When the modal opens we want to start in the collapsed "Continue with
+  // X" view if there is a primary wallet, or expanded if there is not.
+  // We do this in a layout effect so we don't show stale state mid-render.
+  useEffect(() => {
+    if (!isOpen) return;
+    setShowFullList(primaryWallet === null);
+    setRememberChoice(false);
+  }, [isOpen, primaryWallet]);
 
   // Close handler with error reset
   const handleClose = useCallback(() => {
@@ -101,14 +222,14 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
     onClose();
   }, [onClose]);
 
-  // Wallet selection handler
+  // Wallet selection handler — forwards the opt-in flag to the consumer.
   const handleWalletSelect = useCallback(
     async (provider: WalletProvider) => {
       setError(null);
       setConnectingId(provider);
 
       try {
-        await onConnect(provider);
+        await onConnect(provider, { remember: rememberChoice });
         handleClose();
       } catch (err) {
         setError(
@@ -119,13 +240,21 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         setConnectingId(null);
       }
     },
-    [onConnect, handleClose]
+    [onConnect, handleClose, rememberChoice],
   );
 
   // Install handler for undetected wallets
   const handleInstall = useCallback((wallet: WalletOption) => {
     window.open(wallet.installUrl, '_blank', 'noopener,noreferrer');
   }, []);
+
+  // Handlers dedicated to the "Continue with recent" affordance so the
+  // primary wallet can be picked up with a single click — no toggling,
+  // no checkbox drama.
+  const handleContinueWithPrimary = useCallback(async () => {
+    if (!primaryWallet) return;
+    await handleWalletSelect(primaryWallet.id);
+  }, [primaryWallet, handleWalletSelect]);
 
   // Accessibility hooks
   const containerRef = useFocusTrap({
@@ -204,9 +333,94 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
           </div>
         )}
 
+        {/* "Continue with most-recent" affordance — surfaces the user's
+            most recently used wallet as a one-click option when we have
+            enough information to recommend one.  Collapsed by default
+            behind the "Switch wallet" toggle. */}
+        {primaryWallet && !showFullList && (
+          <div className="wallet-modal-continue">
+            <button
+              type="button"
+              className="wallet-continue-btn"
+              onClick={handleContinueWithPrimary}
+              disabled={connectingId !== null}
+              aria-label={`Continue with ${primaryWallet.name} (last used)`}
+              data-testid="wallet-continue-btn"
+            >
+              <img
+                src={primaryWallet.icon}
+                alt=""
+                width="32"
+                height="32"
+                aria-hidden="true"
+              />
+              <span className="wallet-continue-label">
+                <span className="wallet-continue-eyebrow">
+                  Last used
+                </span>
+                <span className="wallet-continue-name">
+                  Continue with {primaryWallet.name}
+                </span>
+              </span>
+              <span className="wallet-continue-action" aria-hidden="true">
+                {connectingId === primaryWallet.id ? (
+                  <span className="wallet-option-spinner" />
+                ) : (
+                  '→'
+                )}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="wallet-switch-link"
+              onClick={() => setShowFullList(true)}
+              aria-expanded={showFullList}
+              aria-controls="wallet-modal-list"
+            >
+              Switch wallet
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        )}
+
+        {/* Remember-my-choice opt-in checkbox.  Appears in both the
+            collapsed and expanded layouts so the user can opt-in regardless
+            of which path they take through the modal.  Defaults unchecked
+            per the acceptance criteria. */}
+        <label
+          className="wallet-remember-choice"
+          htmlFor={rememberCheckboxId}
+        >
+          <input
+            id={rememberCheckboxId}
+            type="checkbox"
+            checked={rememberChoice}
+            onChange={(e) => setRememberChoice(e.target.checked)}
+            aria-describedby="wallet-remember-help"
+            data-testid="wallet-remember-checkbox"
+          />
+          <span className="wallet-remember-label">
+            Remember my choice for next time
+          </span>
+        </label>
+        <p
+          id="wallet-remember-help"
+          className="wallet-remember-help"
+        >
+          We'll keep you signed in next visit. You can clear this any time
+          from the wallet menu.
+        </p>
+
         {/* Wallet options list */}
-        <ul className="wallet-modal-list" role="listbox" aria-label="Available wallet providers">
-          {WALLET_OPTIONS.map((wallet) => {
+        <ul
+          id="wallet-modal-list"
+          className="wallet-modal-list"
+          role="listbox"
+          aria-label="Available wallet providers"
+          hidden={primaryWallet !== null && !showFullList}
+          data-testid="wallet-modal-list"
+        >
+          {orderedWallets.map((wallet) => {
             const isDetected = detectedWallets.includes(wallet.id);
             const isConnecting = connectingId === wallet.id;
             const isDisabled = connectingId !== null;
@@ -278,6 +492,21 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             );
           })}
         </ul>
+
+        {/* When collapsed, we keep the "Show all wallets" affordance right
+            under the list to make the path back obvious. */}
+        {primaryWallet && showFullList && (
+          <button
+            type="button"
+            className="wallet-switch-link wallet-switch-link--inline"
+            onClick={() => setShowFullList(false)}
+            aria-expanded={true}
+            aria-controls="wallet-modal-list"
+          >
+            Hide full list
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
 
         {/* Footer note */}
         <div className="wallet-modal-footer">

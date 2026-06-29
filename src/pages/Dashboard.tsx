@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import ActivityFeed from "../components/ActivityFeed";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { StatusBadge } from "../components/StatusBadge";
 import { useWallet } from "../context/WalletContext";
 import { RiskBandsPanel } from "../components/RiskBandsPanel";
+import { WhatsChangedPanel } from "../components/WhatsChangedPanel";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type { Transaction } from "../types/creditLine";
 import {
@@ -11,7 +13,6 @@ import {
   UTIL_COLOR,
   fmt,
   fmtDate,
-  getUtilizationLvl,
   utilizationPct,
   RISK_COLOR,
 } from "../utils/tokens";
@@ -564,6 +565,8 @@ export function Dashboard() {
           </>
         )}
       </div>
+
+      {!loading && <ActivityFeed />}
 
       <div className="dashboard-grid">
         <div>

@@ -34,8 +34,24 @@ Object.defineProperty(globalThis, "localStorage", {
   configurable: true,
 });
 
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(window, "ResizeObserver", {
+  value: ResizeObserverMock,
+  configurable: true,
+});
+
 beforeEach(() => {
   window.localStorage.clear();
+  // Ensure ResizeObserver polyfill is in place per test
+  Object.defineProperty(window, "ResizeObserver", {
+    value: ResizeObserverMock,
+    configurable: true,
+  });
 });
 
 // JSDOM does not implement window.matchMedia — provide a stub that always

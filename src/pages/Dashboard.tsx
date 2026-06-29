@@ -442,9 +442,8 @@ export function Dashboard() {
         )}
       </div>
 
-      <WhatsChangedPanel />
-
-      <div className="summary-cards" aria-busy={loading}>
+      {/* Summary Cards */}
+      <div className="summary-cards" data-tour-target="summaryCards" aria-busy={loading}>
         {loading ? (
           <>
             <div className="summary-card skeleton-card">
@@ -597,114 +596,33 @@ export function Dashboard() {
             </div>
           </div>
 
-           <div className="card" style={{ animationDelay: "0.15s" }} aria-busy={loading}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-               <h2 style={{ margin: 0 }}><span className="icon">🛡️</span> Risk Score</h2>
-               {!loading && (
-                 <button 
-                   ref={explainTriggerRef}
-                   onClick={() => setIsExplainOpen(true)}
-                   style={{ 
-                     background: "transparent", 
-                     border: `1px solid ${COLOR.border}`, 
-                     color: COLOR.text, 
-                     fontSize: "0.75rem", 
-                     padding: "0.25rem 0.5rem", 
-                     borderRadius: 4, 
-                     cursor: "pointer",
-                     fontWeight: 500
-                   }}
-                 >
-                   Explain
-                 </button>
-               )}
-             </div>
-             {loading ? (
-               <div className="risk-gauge-container">
-                 <div
-                   style={{
-                     display: "flex",
-                     justifyContent: "center",
-                     alignItems: "center",
-                     height: "100px",
-                     width: "160px",
-                     marginBottom: "0.75rem",
-                   }}
-                 >
-                   <Skeleton
-                     style={{
-                       width: "80px",
-                       height: "80px",
-                       borderRadius: "50%",
-                     }}
-                   />
-                 </div>
-                 <div className="risk-meta" style={{ width: "100%" }}>
-                   <div
-                     className="risk-meta-item"
-                     style={{
-                       flex: 1,
-                       display: "flex",
-                       flexDirection: "column",
-                       alignItems: "center",
-                     }}
-                   >
-                     <Skeleton
-                       style={{
-                         width: "40px",
-                         height: "10px",
-                         marginBottom: "6px",
-                         borderRadius: "2px",
-                       }}
-                     />
-                     <Skeleton
-                       style={{
-                         width: "60px",
-                         height: "14px",
-                         borderRadius: "2px",
-                       }}
-                     />
-                   </div>
-                   <div
-                     className="risk-meta-item"
-                     style={{
-                       flex: 1,
-                       display: "flex",
-                       flexDirection: "column",
-                       alignItems: "center",
-                     }}
-                   >
-                     <Skeleton
-                       style={{
-                         width: "60px",
-                         height: "10px",
-                         marginBottom: "6px",
-                         borderRadius: "2px",
-                       }}
-                     />
-                     <Skeleton
-                       style={{
-                         width: "50px",
-                         height: "14px",
-                         borderRadius: "2px",
-                       }}
-                     />
-                   </div>
-                 </div>
-               </div>
-             ) : (
-               <>
-                 <RiskGauge
-                   score={avgRiskScore}
-                   trend="improving"
-                   lastUpdated={
-                     activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()
-                   }
-                 />
-                 <RiskExplainer score={avgRiskScore} address={wallet?.publicKey} />
-               </>
-             )}
-           </div>
+          {/* Risk Score */}
+          <div className="card" data-tour-target="riskGauge" style={{ animationDelay: '0.15s' }} aria-busy={loading}>
+            <h2><span className="icon">🛡️</span> Risk Score</h2>
+            {loading ? (
+              <div className="risk-gauge-container">
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px', width: '160px', marginBottom: '0.75rem' }}>
+                  <Skeleton style={{ width: '80px', height: '80px', borderRadius: '50%' }} />
+                </div>
+                <div className="risk-meta" style={{ width: '100%' }}>
+                  <div className="risk-meta-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Skeleton style={{ width: '40px', height: '10px', marginBottom: '6px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '60px', height: '14px', borderRadius: '2px' }} />
+                  </div>
+                  <div className="risk-meta-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Skeleton style={{ width: '60px', height: '10px', marginBottom: '6px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '50px', height: '14px', borderRadius: '2px' }} />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <RiskGauge
+                score={avgRiskScore}
+                trend="improving"
+                lastUpdated={activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()}
+              />
+            )}
+          </div>
 
            <div
              className="card"
@@ -1129,11 +1047,154 @@ export function Dashboard() {
          </div>
        </div>
 
-       <RiskBandsPanel 
-         isOpen={isExplainOpen} 
-         onClose={() => setIsExplainOpen(false)} 
-         triggerRef={explainTriggerRef}
-       />
-     </div>
-   );
+        {/* Right Column */}
+        <div>
+          {/* Quick Actions */}
+          <div className="card" style={{ animationDelay: '0.12s' }}>
+            <h2><span className="icon">⚡</span> Quick Actions</h2>
+            <div className="quick-actions-grid">
+              {!hasLines && (
+                <button
+                  className="qa-btn"
+                  data-tour-target="requestEvaluation"
+                  style={{ borderColor: 'rgba(88,166,255,0.3)' }}
+                >
+                  <div className="qa-icon" style={{ background: 'rgba(88,166,255,0.12)', color: COLOR.accent }}>🆕</div>
+                  <div>
+                    <div className="qa-label" style={{ color: COLOR.accent }}>Open Credit Line</div>
+                    <div className="qa-desc" style={{ color: COLOR.muted }}>Get started with your first line</div>
+                  </div>
+                  <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                </button>
+              )}
+              {hasLines && activeLinesOnly.length > 0 && (
+                <button
+                  className="qa-btn"
+                  data-tour-target="requestEvaluation"
+                  style={{ borderColor: 'rgba(88,166,255,0.3)' }}
+                >
+                  <div className="qa-icon" style={{ background: 'rgba(88,166,255,0.12)', color: COLOR.accent }}>↗</div>
+                  <div>
+                    <div className="qa-label" style={{ color: COLOR.accent }}>Draw Credit</div>
+                    <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalAvailable)} available</div>
+                  </div>
+                  <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                </button>
+              )}
+              {hasUtilized && (
+                <button
+                  className="qa-btn"
+                  style={{ borderColor: 'rgba(63,185,80,0.3)' }}
+                >
+                  <div className="qa-icon" style={{ background: 'rgba(63,185,80,0.12)', color: COLOR.success }}>↙</div>
+                  <div>
+                    <div className="qa-label" style={{ color: COLOR.success }}>Repay Credit</div>
+                    <div className="qa-desc" style={{ color: COLOR.muted }}>{fmt(totalUtilized)} outstanding</div>
+                  </div>
+                  <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+                </button>
+              )}
+              <Link
+                to="/credit-lines"
+                className="qa-btn"
+                style={{ borderColor: 'transparent', textDecoration: 'none' }}
+              >
+                <div className="qa-icon" style={{ background: 'rgba(139,148,158,0.12)', color: COLOR.muted }}>📋</div>
+                <div>
+                  <div className="qa-label" style={{ color: COLOR.text }}>View Credit Lines</div>
+                  <div className="qa-desc" style={{ color: COLOR.muted }}>Manage all your credit lines</div>
+                </div>
+                <span className="qa-arrow" style={{ color: COLOR.muted }}>→</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="card" style={{ animationDelay: '0.18s' }} aria-busy={loading}>
+            <h2><span className="icon">📝</span> Recent Activity</h2>
+
+            {loading ? (
+              <>
+                <div className="activity-item">
+                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
+                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '120px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '180px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <Skeleton style={{ width: '60px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
+                </div>
+                <div className="activity-item">
+                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
+                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '100px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '150px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <Skeleton style={{ width: '50px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
+                </div>
+                <div className="activity-item">
+                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
+                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '140px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '160px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <Skeleton style={{ width: '70px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
+                </div>
+              </>
+            ) : recentActivity.length === 0 ? (
+              <p style={{ color: COLOR.muted, fontSize: '0.8rem', textAlign: 'center', padding: '1.5rem 0' }}>
+                No transactions yet
+              </p>
+            ) : (
+              recentActivity.map((tx, i) => (
+                <div key={`${tx.id}-${i}`} className="activity-item">
+                  <div
+                    className="activity-icon"
+                    style={{
+                      background: `${TX_COLOR[tx.type]}15`,
+                      color: TX_COLOR[tx.type],
+                    }}
+                  >
+                    {TX_ICON[tx.type]}
+                  </div>
+                  <div className="activity-content">
+                    <div className="activity-title">{tx.note || tx.type}</div>
+                    <div className="activity-sub">{tx.lineName} · {relativeTime(tx.date)}</div>
+                  </div>
+                  <div className="activity-amount" style={{ color: TX_COLOR[tx.type] }}>
+                    {tx.type === 'Repay' ? '+' : '-'}{fmt(tx.amount)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Notifications */}
+          {notifications.length > 0 && (
+            <div className="card" style={{ animationDelay: '0.22s' }}>
+              <h2><span className="icon">🔔</span> Alerts</h2>
+
+              {notifications.map((note, i) => (
+                <div 
+                  key={i} 
+                  className={`notification-item notification-item--${note.type}`}
+                  role={note.type === 'danger' ? 'alert' : 'status'}
+                >
+                  <span className="notification-icon" aria-hidden="true">{note.icon}</span>
+                  <div>
+                    <div className="notification-text">
+                      {note.content}
+                    </div>
+                    {note.time && (
+                      <div className="notification-time">{relativeTime(note.time)}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <DashboardTour />
+    </div>
+  );
 }

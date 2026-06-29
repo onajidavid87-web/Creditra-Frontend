@@ -1,0 +1,167 @@
+/*
+ * DashboardTour.css
+ * Design-token-only, no hex literals. Tokens mirrored from src/index.css.
+ */
+
+/* ── Overlay backdrop ──────────────────────────────────────────────────────── */
+
+.dt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+}
+
+/* ── Highlight ring around the active anchor element ──────────────────────── */
+
+.dt-highlight-ring {
+  position: fixed;
+  z-index: 901;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Callout bubble ───────────────────────────────────────────────────────── */
+
+.dt-callout {
+  position: fixed;
+  z-index: 902;
+  width: 300px;
+  pointer-events: auto;
+}
+
+/* ── Arrow (rotated square) ──────────────────────────────────────────────── */
+
+.dt-callout-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  z-index: 2;
+}
+
+/* ── Inner card ───────────────────────────────────────────────────────────── */
+
+.dt-callout-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+
+.dt-step-label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dt-callout-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text);
+  line-height: var(--lh-body);
+}
+
+/* ── Footer row ───────────────────────────────────────────────────────────── */
+
+.dt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.dt-step-counter {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.dt-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+
+.dt-skip-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  min-height: 32px;
+}
+
+.dt-skip-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.dt-skip-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dt-next-btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.875rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  min-height: 32px;
+}
+
+.dt-next-btn:hover {
+  background: color-mix(in srgb, var(--accent) 75%, black);
+}
+
+.dt-next-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Focus ring on callout container ─────────────────────────────────────── */
+
+.dt-callout:focus-visible {
+  outline: none;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-overlay,
+  .dt-highlight-ring,
+  .dt-callout,
+  .dt-callout-arrow,
+  .dt-callout-inner,
+  .dt-skip-btn,
+  .dt-next-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

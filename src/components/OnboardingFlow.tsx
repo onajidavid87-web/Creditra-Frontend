@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import './OnboardingFlow.css';
 
 interface Props {
@@ -41,6 +41,7 @@ const steps = [
 
 export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const shouldReduceMotion = useReducedMotion();
 
   if (!isOpen) return null;
 
@@ -84,10 +85,10 @@ export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
             <motion.div
               key={currentStep}
               className="onboarding-step"
-              initial={{ opacity: 0, x: 20 }}
+              initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
             >
               <div className="step-icon">{step.icon}</div>
               <h2>{step.title}</h2>

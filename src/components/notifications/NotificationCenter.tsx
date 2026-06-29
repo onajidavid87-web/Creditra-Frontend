@@ -1,32 +1,14 @@
 /**
- * NotificationCenter
- *
- * Desktop: right-side slide-in panel (380 px wide).
- * Mobile (≤ 640 px): full-height bottom sheet with drag handle.
- *
- * The layout variant is driven purely by CSS — the same React tree renders
- * both modes. The drag handle `<div>` is always in the DOM; CSS shows it
- * only on narrow viewports.
- *
- * Accessibility:
- *   role="dialog", aria-modal, aria-label
- *   useFocusTrap    — Tab/Shift+Tab cycle, Escape, return focus to bell
- *   useBodyScrollLock — prevents background scroll while panel is open
- *   useInertBackdrop  — marks background content inert for screen readers
- *   WCAG 2.1 AA: 2.1.1, 2.4.3, 4.1.2
+ * NotificationCenter - 6-second undo toast support for mark-all-read and clear-all
  */
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useInertBackdrop } from '../../hooks/useInertBackdrop';
-import type { NotificationCategory } from '../../types/notification';
+import type { Notification, NotificationCategory } from '../../types/notification';
 import { CATEGORY_ICON, TYPE_COLOR, TYPE_ICON } from './notificationIcons';
-import { UndoToast } from './UndoToast';
 import './NotificationCenter.css';
-
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const PANEL_ID = 'notification-center';
 
@@ -39,8 +21,6 @@ const CATEGORIES: { value: NotificationCategory | 'all'; label: string }[] = [
   { value: 'system',      label: 'System' },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const relativeTime = (iso: string): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -51,13 +31,7 @@ const relativeTime = (iso: string): string => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 interface NotificationCenterProps {
-  /**
-   * Ref to the bell button that opened the panel.
-   * Passed to useFocusTrap so focus returns correctly on close.
-   */
   triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
@@ -69,17 +43,19 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
     unreadCount,
     markAsRead,
     markAllAsRead,
+    undoRead,
     clearAll,
+    restoreNotifications,
     filterByCategory,
     preferences,
     updatePreferences,
+    addToast,
+    dismissToast,
   } = useNotifications();
 
   const [activeFilter, setActiveFilter] = useState<NotificationCategory | 'all'>('all');
-  const [showPrefs, setShowPrefs]       = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
 
-  // ── Accessibility hooks ──────────────────────────────────────────────────
-  // All three are no-ops when isActive / isLocked / isInert is false.
   const panelRef = useFocusTrap({
     isActive: isPanelOpen,
     triggerRef,
@@ -90,13 +66,8 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
   useInertBackdrop({ isInert: isPanelOpen, modalId: PANEL_ID });
 
   const filtered = filterByCategory(activeFilter);
-
-  // ── Drag handle (touch/mouse, mobile only) ───────────────────────────────
-  // We use a simple pointer-down-and-move approach. When the user drags
-  // downward > 80 px from the handle, we close the panel. This complements
-  // the tap-to-dismiss backdrop and does not replace keyboard/button dismiss.
-  const dragStartY     = useRef<number | null>(null);
-  const panelElRef     = useRef<HTMLDivElement | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const panelElRef = useRef<HTMLDivElement | null>(null);
 
   const handleDragStart = (e: React.PointerEvent) => {
     dragStartY.current = e.clientY;
@@ -106,8 +77,7 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
   const handleDragMove = (e: React.PointerEvent) => {
     if (dragStartY.current === null) return;
     const delta = e.clientY - dragStartY.current;
-    if (delta < 0) return; // don't allow dragging upward
-    // Apply a visual translation while dragging
+    if (delta < 0) return;
     if (panelElRef.current) {
       panelElRef.current.style.transform = `translateY(${delta}px)`;
     }
@@ -117,77 +87,56 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
     if (dragStartY.current === null) return;
     const delta = e.clientY - dragStartY.current;
     dragStartY.current = null;
-
     if (panelElRef.current) {
       panelElRef.current.style.transform = '';
     }
-
-    // Dismiss if dragged > 80 px downward
     if (delta > 80) {
       closePanel();
     }
   };
 
-  // Merge the focus-trap ref with our local panelElRef
   const setRefs = (el: HTMLDivElement | null) => {
     panelElRef.current = el;
-    // panelRef from useFocusTrap is a RefObject<HTMLDivElement>
     (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
   };
 
-  const getSnapHeightPx = useCallback(
-    (snap: SheetSnapPoint) => window.innerHeight * SHEET_SNAP_RATIOS[snap],
-    [],
-  );
+  const handleMarkAllAsRead = useCallback(() => {
+    const prior = [...notifications];
+    const toastId = addToast({
+      type: 'success',
+      title: 'Marked all as read',
+      message: `${unreadCount} notification${unreadCount !== 1 ? 's' : ''}`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          undoRead(prior.map(n => n.id));
+          dismissToast(toastId);
+        },
+      },
+      duration: 6000,
+      saveToHistory: false,
+    });
+    markAllAsRead();
+  }, [notifications, unreadCount, addToast, dismissToast, undoRead, markAllAsRead]);
 
-  const handleDragPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isMobileSheet || !isPanelOpen) return;
-
-    if (typeof event.currentTarget.setPointerCapture === 'function') {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-    dragStartY.current = event.clientY;
-    dragStartHeight.current =
-      dragHeightPx ?? getSnapHeightPx(snapPoint);
-    setIsDragging(true);
-  };
-
-  const handleDragPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || !isMobileSheet) return;
-
-    const deltaY = dragStartY.current - event.clientY;
-    const maxHeight = window.innerHeight * SHEET_SNAP_RATIOS.full;
-    const minHeight = window.innerHeight * 0.25;
-    const nextHeight = Math.min(maxHeight, Math.max(minHeight, dragStartHeight.current + deltaY));
-    setDragHeightPx(nextHeight);
-  };
-
-  const finishDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || !isMobileSheet) return;
-
-    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    const currentHeight = dragHeightPx ?? getSnapHeightPx(snapPoint);
-    const ratio = currentHeight / window.innerHeight;
-    const resolved = resolveSheetSnapFromRatio(ratio);
-
-    setIsDragging(false);
-    setDragHeightPx(null);
-
-    if (resolved === 'dismiss') {
-      closePanel();
-      return;
-    }
-
-    setSnapPoint(resolved);
-  };
-
-  const panelStyle =
-    isMobileSheet && dragHeightPx != null
-      ? { height: `${dragHeightPx}px` }
-      : undefined;
+  const handleClearAll = useCallback(() => {
+    const prior = [...notifications];
+    const toastId = addToast({
+      type: 'success',
+      title: 'Cleared all notifications',
+      message: `${notifications.length} notification${notifications.length !== 1 ? 's' : ''}`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          restoreNotifications(prior);
+          dismissToast(toastId);
+        },
+      },
+      duration: 6000,
+      saveToHistory: false,
+    });
+    clearAll();
+  }, [notifications, addToast, dismissToast, restoreNotifications, clearAll]);
 
   return (
     <>
@@ -199,7 +148,6 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
         />
       )}
 
-      {/* Slide-in panel (desktop) / bottom sheet (mobile) */}
       <div
         ref={setRefs}
         id={PANEL_ID}
@@ -208,16 +156,8 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
         aria-modal={isPanelOpen}
         aria-label="Notification center"
         aria-hidden={!isPanelOpen}
-        // Escape is already handled by useFocusTrap; the onKeyDown here is a
-        // defence-in-depth fallback for the jsdom test environment where the
-        // hook's document listener may not fire on the element directly.
         onKeyDown={e => { if (e.key === 'Escape') closePanel(); }}
       >
-        {/*
-          Drag handle — visible only on mobile (≤ 640 px via CSS).
-          role="button" so keyboard users can activate it as a dismiss gesture;
-          they already have the × button and Escape, so this is a convenience.
-        */}
         <div
           className="nc-drag-handle-area"
           onPointerDown={handleDragStart}
@@ -229,7 +169,6 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
           <div className="nc-drag-handle" />
         </div>
 
-        {/* Header */}
         <div className="nc-header">
           <div className="nc-header-left">
             <span className="nc-title">Notifications</span>
@@ -260,7 +199,7 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
             {notifications.length > 0 && (
               <button
                 className="nc-text-btn nc-text-btn-danger"
-                onClick={clearAll}
+                onClick={handleClearAll}
                 aria-label="Clear all notifications"
               >
                 Clear all
@@ -276,7 +215,6 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
           </div>
         </div>
 
-        {/* Preferences panel */}
         <div
           id="nc-prefs-panel"
           className={`nc-prefs ${showPrefs ? 'nc-prefs-open' : ''}`}
@@ -300,7 +238,6 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
           ))}
         </div>
 
-        {/* Filter tabs */}
         <div className="nc-filters" role="tablist" aria-label="Filter notifications by category">
           {CATEGORIES.map(cat => (
             <button
@@ -315,7 +252,6 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
           ))}
         </div>
 
-        {/* Notification list */}
         <div
           className="nc-list"
           role="feed"
@@ -375,28 +311,7 @@ export function NotificationCenter({ triggerRef }: NotificationCenterProps = {})
             })
           )}
         </div>
-
-        {/* Screen reader announcement for mark all as read action */}
-        {markAllAnnouncement && (
-          <div
-            className="sr-only"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {markAllAnnouncement}
-          </div>
-        )}
       </div>
-
-      {undoToasts.map(t => (
-        <UndoToast
-          key={t.key}
-          message={t.message}
-          ids={t.ids}
-          onClose={() => setUndoToasts(prev => prev.filter(x => x.key !== t.key))}
-        />
-      ))}
     </>
   );
 }

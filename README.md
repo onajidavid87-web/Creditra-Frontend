@@ -113,6 +113,7 @@ Every entry below is grounded in a real file in `src/`.
 | `/` | `pages/Dashboard.tsx` | Risk gauge, credit summary, recent transactions, wallet chip |
 | `/credit-lines` | `pages/CreditLines.tsx` | Credit-line list with sort by status/limit/utilization/APR/risk |
 | `/transactions` | `pages/TransactionHistory.tsx` | Filterable transaction ledger with sortable headers |
+| `/repay` | `pages/RepayPage.tsx` | Repay flow with Smart Pay suggested amount, percent presets, review step |
 | `/draw-credit` | `pages/DrawCreditPage.tsx` | 4-step wizard: select → amount → confirm → status |
 | `/open-credit` | `pages/RequestEvaluation.tsx` | Onboarding evaluation form |
 | `*` | `pages/NotFound.tsx` | 404 with semantic landmarks |
@@ -148,7 +149,7 @@ public `LandingPage` exist as components, ready to be wired into the route tree.
 ### Utilities ([`src/utils/`](src/utils/))
 
 `amountValidation`, `classnames`, `clipboard`, `currency`, `dates`, `format-address`,
-`password-strength`, `storage`, `tokens`, `wallet` — all unit-tested.
+`password-strength`, `storage`, `suggestRepay`, `tokens`, `wallet` — all unit-tested.
 
 ---
 

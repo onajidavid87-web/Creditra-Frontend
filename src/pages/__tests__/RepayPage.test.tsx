@@ -90,4 +90,32 @@ describe('RepayPage', () => {
     renderPage(['/repay?line=CL-2024-001']);
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
+
+  it('renders Smart Pay button when a credit line is selected', () => {
+    renderPage(['/repay?line=CL-2024-001']);
+    expect(screen.getByRole('button', { name: /smart pay/i })).toBeInTheDocument();
+  });
+
+  it('Smart Pay button has correct aria-label with suggested amount', () => {
+    renderPage(['/repay?line=CL-2024-001']);
+    const button = screen.getByRole('button', { name: /smart pay/i });
+    expect(button).toHaveAttribute('aria-label', 'Smart Pay suggested repayment of $3,200.00');
+  });
+
+  it('clicking Smart Pay fills the amount input with the suggested value', () => {
+    renderPage(['/repay?line=CL-2024-001']);
+    const smartPayBtn = screen.getByRole('button', { name: /smart pay/i });
+    fireEvent.click(smartPayBtn);
+    const input = screen.getByRole('spinbutton', { name: /amount to repay/i });
+    expect(input).toHaveValue(3200);
+  });
+
+  it('Smart Pay enables Review Repayment when clicked', () => {
+    renderPage(['/repay?line=CL-2024-001']);
+    const reviewBtn = screen.getByText('Review Repayment');
+    expect(reviewBtn).toBeDisabled();
+    const smartPayBtn = screen.getByRole('button', { name: /smart pay/i });
+    fireEvent.click(smartPayBtn);
+    expect(reviewBtn).not.toBeDisabled();
+  });
 });

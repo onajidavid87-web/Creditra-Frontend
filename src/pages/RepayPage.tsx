@@ -5,6 +5,7 @@ import { PayoffProjection } from '@/components/PayoffProjection';
 import { RepaymentVisualizer } from '@/components/RepaymentVisualizer';
 import { InlineHelpOverlay } from '@/components/InlineHelpOverlay';
 import { formatMoney, getRepayAmountValidation, requiresRepayConfirmation } from '@/utils/amountValidation';
+import { suggestRepayAmount } from '@/utils/suggestRepay';
 import {
   TypedAmountConfirmField,
   isTypedAmountMatch,
@@ -73,6 +74,20 @@ export default function RepayPage() {
     [amountStr, selectedLine, walletBalance],
   );
 
+  const suggestedAmount = useMemo(
+    () =>
+      selectedLine
+        ? suggestRepayAmount(
+            selectedLine.utilized,
+            selectedLine.limit,
+            walletBalance,
+            selectedLine.apr,
+            selectedLine.nextPaymentAmount,
+          )
+        : 0,
+    [selectedLine, walletBalance],
+  );
+
   const amount = validation?.amount ?? 0;
   const isInvalid = !validation?.isValid;
   const needsConfirm = requiresRepayConfirmation(amount);
@@ -87,6 +102,11 @@ export default function RepayPage() {
     let target = (validation.maxRepayAmount * pct) / 100;
     if (target > walletBalance) target = walletBalance;
     setAmountStr(target.toFixed(2));
+  };
+
+  const handleSmartPay = () => {
+    if (!selectedLine) return;
+    setAmountStr(suggestedAmount.toFixed(2));
   };
 
   const handleReview = () => {
@@ -269,6 +289,14 @@ export default function RepayPage() {
                         {pct === 100 ? 'MAX' : `${pct}%`}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={handleSmartPay}
+                      className="flex-1 rounded-md border border-success/30 px-2 py-1.5 text-xs font-medium text-success transition-colors hover:bg-success/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success"
+                      aria-label={`Smart Pay suggested repayment of ${formatMoney(suggestedAmount)}`}
+                    >
+                      Smart Pay
+                    </button>
                   </div>
 
                   <div className="relative mt-3">

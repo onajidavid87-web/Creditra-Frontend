@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, AlertTriangle, CheckCircle, Info, ArrowLeft } from 'lucide-react';
 import { PayoffProjection } from '@/components/PayoffProjection';
 import { InlineHelpOverlay } from '@/components/InlineHelpOverlay';
+import { AffordabilityCalc } from '@/components/AffordabilityCalc';
 import { formatMoney, getRepayAmountValidation } from '@/utils/amountValidation';
 import type { CreditLine } from '@/types/creditLine';
 import { MOCK_CREDIT_LINES } from '@/data/mockData';
@@ -378,6 +379,9 @@ export default function RepayPage() {
                 />
               </aside>
             </div>
+
+            {/* Affordability calculator — helps the user estimate a comfortable repayment */}
+            <AffordabilityCalc onApply={(max) => setAmountStr(max.toFixed(2))} />
 
             <div className="flex items-center justify-between">
               <button

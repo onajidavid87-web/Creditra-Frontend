@@ -157,18 +157,6 @@ function App() {
                     Dutch Auctions
                   </NavLink>
                 </nav>
-                <button
-                  ref={settingsTriggerRef}
-                  type="button"
-                  className="header-nav-link"
-                  onClick={() => {
-                    setOpenedFromSettingsLink(true);
-                    setIsShortcutHelpOpen(true);
-                  }}
-                >
-                  Dutch Auctions
-                </NavLink>
-              </nav>
               <button
                 ref={settingsTriggerRef}
                 type="button"
@@ -228,7 +216,7 @@ function App() {
            </div>
          </BrowserRouter>
 
-        </ReducedMotionProvider>
+        </NotificationProvider>
         </KycProvider>
       </WalletProvider>
     </ErrorBoundary>

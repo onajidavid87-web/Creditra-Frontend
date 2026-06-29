@@ -1,19 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './SuccessState.css';
+import { RepaySuccessShareCard } from './RepaySuccessShareCard';
 
 interface SuccessStateProps {
+  /**
+   * Which flow just completed. Drives the copy: a draw confirms a
+   * disbursement, a repay confirms a balance restore, an evaluation
+   * confirms the request was queued.
+   */
   type: 'draw' | 'repay' | 'evaluation';
+  /** When supplied, surfaced so the user can copy a reference for support. */
   transactionId?: string;
+  /** When repay flow, amount repaid */
+  amount?: number;
+  /** When repay flow, credit line name */
+  creditLineName?: string;
+  /** Dismiss the success state and return to the dashboard. */
   onClose: () => void;
+  /**
+   * Optional handler for "view in history". When omitted the link is
+   * not rendered. The evaluation flow omits it because no transaction
+   * record exists yet at that point.
+   */
   onViewHistory?: () => void;
 }
 
-const SuccessState: React.FC<SuccessStateProps> = ({ 
-  type, 
-  transactionId, 
+/**
+ * Post-action confirmation surface shown after a draw, repay, or
+ * evaluation submission.
+ *
+ * The container carries `role="status" aria-live="polite"` so screen
+ * readers announce the success without preempting the user's next
+ * keystroke. The visual is a single accent checkmark with two paragraphs
+ * (what happened + what comes next) and an action pair.
+ *
+ * Purely presentational. The parent flow owns navigation and side
+ * effects; this component only renders the chosen copy and forwards the
+ * close/view-history callbacks.
+ */
+const SuccessState: React.FC<SuccessStateProps> = ({
+  type,
+  transactionId,
+  amount,
+  creditLineName,
   onClose,
-  onViewHistory 
+  onViewHistory
 }) => {
+  const [showShareCard, setShowShareCard] = useState(false);
+
   const getContent = () => {
     switch (type) {
       case 'draw':
@@ -42,6 +76,20 @@ const SuccessState: React.FC<SuccessStateProps> = ({
 
   const content = getContent();
 
+  if (showShareCard && type === 'repay' && amount && creditLineName && transactionId) {
+    return (
+      <div className="success-state-container" role="status" aria-live="polite">
+        <RepaySuccessShareCard
+          amount={amount}
+          creditLineName={creditLineName}
+          transactionId={transactionId}
+          timestamp={new Date()}
+          onClose={() => setShowShareCard(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="success-state-container" role="status" aria-live="polite">
       <div className="success-icon-wrapper">
@@ -69,6 +117,14 @@ const SuccessState: React.FC<SuccessStateProps> = ({
             onClick={onViewHistory || (() => window.location.hash = '#/history')}
           >
             View Transaction History
+          </button>
+        )}
+        {type === 'repay' && (
+          <button 
+            className="btn-secondary" 
+            onClick={() => setShowShareCard(true)}
+          >
+            Share Summary
           </button>
         )}
         <button className="btn-primary" onClick={onClose}>

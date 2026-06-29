@@ -106,13 +106,22 @@
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
+  padding: 0.5rem 0;
+  min-height: 44px;
   margin-bottom: 0.625rem;
+  display: inline-flex;
+  align-items: center;
   transition: opacity 0.15s;
 }
 
 .toast-action:hover {
   opacity: 0.8;
+}
+
+.toast-action:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .toast-progress-track {

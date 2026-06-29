@@ -3,10 +3,28 @@ import { DollarSign, TrendingUp } from "lucide-react";
 import { formatMoney } from "@/utils/amountValidation";
 
 interface PreviewSectionProps {
+  /** The credit line the draw is from. */
   creditLine: CreditLine;
+  /** Draw amount the user entered in step 2 (whole number, in USD). */
   amount: number;
 }
 
+/**
+ * Step 3 of the draw-credit wizard: a preview of the projected outcome.
+ *
+ * Shows four numbers side by side: draw amount, fee, post-draw balance,
+ * and the new utilization percentage. The fee, APR, and projected monthly
+ * interest are mocked here (1 % flat fee, 12.5 % APR) so the UX is
+ * exercised before the backend exposes a real quote endpoint. Replace
+ * the constants with a fetched quote when the API lands.
+ *
+ * The component is purely presentational — it does not mutate the
+ * wizard's amount or selected line.
+ *
+ * Why this exists as a dedicated step: see UX_RATIONALE.md "Show APR
+ * and total cost, not just APR". A user about to confirm an irreversible
+ * action should see what they will actually pay, not just the rate.
+ */
 export function PreviewSection({ creditLine, amount }: PreviewSectionProps) {
   const utilizedBalance = creditLine.limit - creditLine.available;
   const safeAmount = Math.max(amount, 0);

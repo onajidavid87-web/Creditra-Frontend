@@ -15,6 +15,15 @@ interface UseInertBackdropOptions {
   modalId: string;
 }
 
+/**
+ * Make everything outside a given modal container unreachable to both
+ * pointer input and assistive technology while the modal is open.
+ *
+ * Prefers the native `inert` attribute when supported; falls back to
+ * `aria-hidden` plus `pointer-events: none` for older browsers. Original
+ * attribute values are restored on cleanup so this hook is safe to
+ * compose with manually managed `aria-hidden` regions.
+ */
 export function useInertBackdrop({ isInert, modalId }: UseInertBackdropOptions) {
   useEffect(() => {
     if (!isInert) return;
@@ -22,52 +31,53 @@ export function useInertBackdrop({ isInert, modalId }: UseInertBackdropOptions) 
     const modal = document.getElementById(modalId);
     if (!modal) return;
 
-    // Find all sibling elements that should be made inert
-    // Strategy: make all direct children of body inert except the modal container
-    const body = document.body;
-    const elementsToInert: Element[] = [];
-    const originalStates: { element: Element; inert: boolean | null; ariaHidden: string | null }[] = [];
+    const elementsToInert = new Set<Element>();
+    const originalStates: Array<{
+      element: Element;
+      inert: boolean | null;
+      ariaHidden: string | null;
+      pointerEvents: string;
+    }> = [];
 
-    // Walk through siblings and ancestors
-    const walker = document.createTreeWalker(body, NodeFilter.SHOW_ELEMENT, null);
-    let currentNode = walker.nextNode() as Element | null;
+    // Inert only siblings outside the modal subtree so we never disable an
+    // ancestor that still contains the active dialog.
+    let current: Element | null = modal;
+    while (current && current !== document.body) {
+      const parent = current.parentElement;
+      if (!parent) break;
 
-    while (currentNode) {
-      // Skip the modal itself and its descendants
-      if (modal.contains(currentNode) || currentNode === modal) {
-        currentNode = walker.nextNode() as Element | null;
-        continue;
-      }
+      Array.from(parent.children).forEach((sibling) => {
+        if (sibling === current) return;
 
-      // Skip script, style, link, meta tags
-      const tagName = currentNode.tagName.toLowerCase();
-      if (['script', 'style', 'link', 'meta', 'noscript'].includes(tagName)) {
-        currentNode = walker.nextNode() as Element | null;
-        continue;
-      }
+        const tagName = sibling.tagName.toLowerCase();
+        if (['script', 'style', 'link', 'meta', 'noscript'].includes(tagName)) {
+          return;
+        }
 
-      elementsToInert.push(currentNode);
-      originalStates.push({
-        element: currentNode,
-        inert: currentNode.hasAttribute('inert') ? true : null,
-        ariaHidden: currentNode.getAttribute('aria-hidden'),
+        elementsToInert.add(sibling);
       });
 
-      // Apply inert
-      if ('inert' in HTMLElement.prototype) {
-        (currentNode as HTMLElement).inert = true;
-      } else {
-        // Fallback for older browsers: aria-hidden + pointer-events
-        currentNode.setAttribute('aria-hidden', 'true');
-        (currentNode as HTMLElement).style.pointerEvents = 'none';
-      }
-
-      currentNode = walker.nextNode() as Element | null;
+      current = parent;
     }
 
+    elementsToInert.forEach((element) => {
+      originalStates.push({
+        element,
+        inert: element.hasAttribute('inert') ? true : null,
+        ariaHidden: element.getAttribute('aria-hidden'),
+        pointerEvents: (element as HTMLElement).style.pointerEvents,
+      });
+
+      if ('inert' in HTMLElement.prototype) {
+        (element as HTMLElement).inert = true;
+      } else {
+        element.setAttribute('aria-hidden', 'true');
+        (element as HTMLElement).style.pointerEvents = 'none';
+      }
+    });
+
     return () => {
-      // Restore original states
-      originalStates.forEach(({ element, inert, ariaHidden }) => {
+      originalStates.forEach(({ element, inert, ariaHidden, pointerEvents }) => {
         if ('inert' in HTMLElement.prototype) {
           if (inert === null) {
             (element as HTMLElement).removeAttribute('inert');
@@ -80,7 +90,7 @@ export function useInertBackdrop({ isInert, modalId }: UseInertBackdropOptions) 
           } else {
             element.setAttribute('aria-hidden', ariaHidden);
           }
-          (element as HTMLElement).style.pointerEvents = '';
+          (element as HTMLElement).style.pointerEvents = pointerEvents;
         }
       });
     };

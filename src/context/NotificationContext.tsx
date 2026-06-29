@@ -45,6 +45,7 @@ interface NotificationContextValue {
   unreadCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  undoRead: (ids: string[]) => void;
   clearAll: () => void;
   filterByCategory: (category: NotificationCategory | 'all') => Notification[];
 
@@ -75,6 +76,22 @@ const PREFS_KEY = 'creditra_notification_prefs';
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
+/**
+ * App-wide notification provider.
+ *
+ * Owns three queues:
+ * - `toasts` — transient, auto-dismissed after `duration` ms unless
+ *   `persistent` is set
+ * - `banners` — page-level alerts that persist until dismissed
+ * - `notifications` — durable inbox, persisted to `localStorage` and
+ *   capped at 100 entries to bound storage growth
+ *
+ * Per-category mute preferences are also persisted; a muted category
+ * causes `addToast` to return early with an empty id so callers can
+ * fire-and-forget without conditionals.
+ *
+ * Mount this once, after `WalletProvider`, near the top of the tree.
+ */
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [banners, setBanners] = useState<BannerAlert[]>([]);
@@ -187,6 +204,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   }, []);
 
+  const undoRead = useCallback((ids: string[]) => {
+    setNotifications(prev =>
+      prev.map(n => (ids.includes(n.id) ? { ...n, read: false } : n))
+    );
+  }, []);
+
   const clearAll = useCallback(() => {
     setNotifications([]);
   }, []);
@@ -216,6 +239,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         unreadCount,
         markAsRead,
         markAllAsRead,
+        undoRead,
         clearAll,
         filterByCategory,
         preferences,
@@ -230,6 +254,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   );
 }
 
+/**
+ * Read the notification context inside a `NotificationProvider`
+ * subtree.
+ *
+ * Throws on misuse rather than returning a possibly-undefined value, so
+ * a misplaced consumer surfaces at the call site instead of leaking a
+ * confusing "cannot read property of undefined" downstream.
+ */
 export function useNotifications() {
   const ctx = useContext(NotificationContext);
   if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');

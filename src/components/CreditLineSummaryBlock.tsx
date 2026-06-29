@@ -2,10 +2,27 @@ import { CreditLine } from "@/types/draw-credit.types";
 import { formatMoney } from "@/utils/amountValidation";
 
 interface CreditLineSummaryBlockProps {
+  /** Credit line being summarised. */
   creditLine: CreditLine;
+  /**
+   * Optional pending draw amount. When supplied, the summary highlights
+   * the projected utilised/available balances *after* the draw so the
+   * user can compare before-vs-after at a glance. Defaults to 0.
+   */
   amount?: number;
 }
 
+/**
+ * Compact, reusable summary card for a single credit line.
+ *
+ * Used inside the draw wizard's confirmation step and in the credit-line
+ * dashboard tiles. Surfaces three numbers — limit, utilised, available —
+ * plus the projected post-draw values when `amount > 0`. All values are
+ * formatted through `formatMoney` so locale and currency are consistent
+ * with the rest of the app.
+ *
+ * Purely presentational. No side effects, no state.
+ */
 export function CreditLineSummaryBlock({
   creditLine,
   amount = 0,

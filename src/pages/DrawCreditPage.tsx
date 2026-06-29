@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CreditLineSelector } from "@/components/CreditLineSelector";
 import { AmountInput } from "@/components/AmountInput";
 import { PreviewSection } from "@/components/PreviewSection";
 import { ConfirmationStep } from "@/components/ConfirmationStep";
 import { TransactionStatus } from "@/components/TransactionStatus";
+import { InlineHelpOverlay } from "@/components/InlineHelpOverlay";
 import { CreditLine, DrawStep, Transaction } from "@/types/draw-credit.types";
 import { mockCreditLines } from "@/lib/draw-credit-mock-data";
+import { WhyApr } from "@/components/WhyApr";
 
 const drawSteps = [
   { id: "select", label: "Select line" },
@@ -30,6 +32,10 @@ export default function DrawCreditPage() {
     useState<CreditLine | null>(null);
   const [amount, setAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const helpTriggerRef = useRef<HTMLButtonElement>(null);
+  const [isWhyAprOpen, setIsWhyAprOpen] = useState(false);
+  const whyAprTriggerRef = useRef<HTMLButtonElement>(null);
   const [transaction, setTransaction] = useState<Transaction | null>(
     routeTransaction ?? null,
   );
@@ -216,7 +222,26 @@ export default function DrawCreditPage() {
 
         {step !== "status" && (
           <div className="flex flex-col gap-2 text-center text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:text-left">
-            <p>Need help? Contact support at 1-800-CREDIT-1</p>
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <button
+                ref={helpTriggerRef}
+                type="button"
+                onClick={() => setIsHelpOpen(true)}
+                className="inline-flex min-h-11 items-center justify-center rounded-md px-3 font-semibold text-blue-300 underline-offset-4 transition-colors hover:text-blue-200 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:justify-start"
+              >
+                I need help
+              </button>
+              {(step === "amount" || step === "confirm") && (
+                <button
+                  ref={whyAprTriggerRef}
+                  type="button"
+                  onClick={() => setIsWhyAprOpen(true)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-md px-3 font-semibold text-blue-300 underline-offset-4 transition-colors hover:text-blue-200 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:justify-start"
+                >
+                  Why this APR?
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleCancel}
@@ -227,6 +252,16 @@ export default function DrawCreditPage() {
           </div>
         )}
       </div>
+      <InlineHelpOverlay
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        triggerRef={helpTriggerRef}
+      />
+      <WhyApr
+        isOpen={isWhyAprOpen}
+        onClose={() => setIsWhyAprOpen(false)}
+        triggerRef={whyAprTriggerRef}
+      />
     </main>
   );
 }

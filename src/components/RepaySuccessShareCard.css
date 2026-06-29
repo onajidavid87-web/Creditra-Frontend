@@ -1,0 +1,139 @@
+.repay-share-card {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+/* Default theme */
+.repay-share-card--default {
+  --card-bg: var(--surface);
+  --card-border: var(--border);
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
+  --accent: var(--accent);
+  --success: var(--success);
+}
+
+/* High contrast theme */
+.repay-share-card--high-contrast {
+  --card-bg: var(--surface);
+  --card-border: var(--border);
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
+  --accent: var(--accent);
+  --success: var(--success);
+}
+
+.repay-share-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.repay-check-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--success);
+  margin-bottom: 1rem;
+}
+
+.repay-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.repay-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.repay-share-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.repay-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.repay-label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.repay-value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.repay-share-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.repay-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  min-height: 44px;
+}
+
+.repay-btn--secondary {
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-primary);
+}
+
+.repay-btn--secondary:hover {
+  background: rgba(139, 148, 158, 0.2);
+}
+
+.repay-btn--primary {
+  background: var(--accent);
+  color: white;
+}
+
+.repay-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.repay-close-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  min-height: 44px;
+}
+
+.repay-close-btn:hover {
+  color: var(--text-primary);
+}

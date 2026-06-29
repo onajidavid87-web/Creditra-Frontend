@@ -1,0 +1,70 @@
+
+import React, { useState } from 'react';
+import { DutchAuctionCard } from '../components/DutchAuctionCard';
+import { MOCK_DUTCH_AUCTIONS } from '../data/mockDutchAuctions';
+import { COLOR } from '../utils/tokens';
+
+export const DutchAuctions: React.FC = () => {
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+
+  const filteredAuctions = MOCK_DUTCH_AUCTIONS.filter(auction => {
+    if (filter === 'active') return auction.status === 'Active';
+    if (filter === 'completed') return auction.status === 'Completed' || auction.status === 'Cancelled';
+    return true;
+  });
+
+  const handlePurchase = (auctionId: string, price: number) => {
+    alert(`Purchased auction ${auctionId} for ${price} USD!`);
+  };
+
+  return (
+    <div style={{ padding: '1rem' }}>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ margin: 0, color: COLOR.text, marginBottom: '0.5rem' }}>
+          Dutch Auctions
+        </h1>
+        <p style={{ margin: 0, color: COLOR.muted, fontSize: '0.9rem' }}>
+          Price decreases linearly until it hits the floor or sells out
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        {['all', 'active', 'completed'].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f as any)}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: `1px solid ${COLOR.border}`,
+              background: filter === f ? COLOR.accent : COLOR.surface,
+              color: filter === f ? COLOR.bg : COLOR.text,
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+            }}
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        )))}
+      </div>
+
+      <div>
+        {filteredAuctions.length === 0 ? (
+          <p style={{ color: COLOR.muted, textAlign: 'center', padding: '2rem' }}>
+            No auctions found
+          </p>
+        ) : (
+          filteredAuctions.map(auction => (
+            <DutchAuctionCard
+              key={auction.id}
+              auction={auction}
+              onPurchase={handlePurchase}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+

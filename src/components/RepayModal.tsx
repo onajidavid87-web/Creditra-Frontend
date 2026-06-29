@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { formatMoney, getRepayAmountValidation } from '../utils/amountValidation';
+import { formatMoney, getRepayAmountValidation, requiresRepayConfirmation } from '../utils/amountValidation';
+import { InlineHelpOverlay } from './InlineHelpOverlay';
 import { PendingButton } from './PendingButton';
 
 interface RepaymentCreditLine {
@@ -19,6 +20,8 @@ interface RepayModalProps {
   walletBalance: number;
   onClose: () => void;
   onSuccess: (amount: number) => void;
+  /** Ref to the element that triggered the modal; focus returns here on close. */
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 const COLOR = {
@@ -84,10 +87,24 @@ export function RepayModal({
   walletBalance,
   onClose,
   onSuccess,
+  triggerRef,
 }: RepayModalProps) {
   const [step, setStep] = useState<ModalStep>('input');
-  const modalRef = useFocusTrap(true);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const helpTriggerRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useFocusTrap({
+    isActive: !isHelpOpen,
+    triggerRef,
+    onEscape: step !== 'pending' ? onClose : undefined,
+  });
   const [amountStr, setAmountStr] = useState('');
+  const [confirmAmountStr, setConfirmAmountStr] = useState('');
+
+  useEffect(() => {
+    if (step === 'review') {
+      setConfirmAmountStr('');
+    }
+  }, [step]);
 
   const totalDue = creditLine.utilized;
   const accruedInterestEstimate = (creditLine.utilized * (creditLine.apr / 100)) / 12;
@@ -110,6 +127,11 @@ export function RepayModal({
     danger: { color: COLOR.danger, bg: 'rgba(248,81,73,0.08)', border: 'rgba(248,81,73,0.25)', icon: <AlertCircle size={16} aria-hidden="true" /> },
   } as const;
   const activeTone = toneMeta[validation.feedback.severity];
+
+  const needsConfirm = requiresRepayConfirmation(amount);
+  const confirmParse = (s: string) => Number.parseFloat(s) || 0;
+  const isConfirmMatch = needsConfirm ? confirmParse(confirmAmountStr) === amount : true;
+  const isConfirmDisabled = needsConfirm && !isConfirmMatch;
 
   const handlePercent = (pct: number) => {
     let target = (validation.maxRepayAmount * pct) / 100;
@@ -182,7 +204,7 @@ export function RepayModal({
                   letterSpacing: '0.05em',
                 }}
               >
-                Current Debt
+                Outstanding debt
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <p style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLOR.danger, lineHeight: 1 }}>
@@ -201,11 +223,11 @@ export function RepayModal({
 
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <label htmlFor="repay-amount-input" style={{ fontSize: '0.9rem', color: COLOR.text, fontWeight: 500 }}>Amount to Repay</label>
+                <label htmlFor="repay-amount-input" style={{ fontSize: '0.9rem', color: COLOR.text, fontWeight: 500 }}>Repayment amount</label>
                 <span style={{ fontSize: '0.8rem', color: validation.feedback.severity === 'danger' ? COLOR.danger : COLOR.muted }}>Wallet: {fmt(walletBalance)}</span>
               </div>
               <p id={repayAmountHintId} style={{ margin: '0 0 0.75rem', fontSize: '0.82rem', color: COLOR.muted }}>
-                Enter a repayment amount and we will show the minimum, safe maximum, and reserve guidance inline.
+                Enter the dollar amount you wish to repay. We'll show minimum and maximum guidance.
               </p>
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {[25, 50, 75, 100].map(pct => (
@@ -228,6 +250,7 @@ export function RepayModal({
                   placeholder="0.00"
                   aria-invalid={validation.feedback.severity === 'danger'}
                   aria-describedby={describedBy}
+                  className="repay-modal-input"
                   style={{
                     width: '100%',
                     background: COLOR.bg,
@@ -237,7 +260,6 @@ export function RepayModal({
                     color: COLOR.text,
                     fontSize: '1.25rem',
                     fontWeight: 500,
-                    outline: 'none',
                     boxShadow: amount > 0 && validation.feedback.severity !== 'danger' ? '0 0 0 2px rgba(88,166,255,0.1)' : 'none',
                     transition: 'all 0.2s',
                   }}
@@ -245,15 +267,15 @@ export function RepayModal({
               </div>
               <div id={repayAmountConstraintsId} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <div style={{ background: COLOR.bg, border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.65rem 0.75rem' }}>
-                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Minimum</p>
+                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Minimum repayment</p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: COLOR.text, fontWeight: 600 }}>{formatMoney(validation.minAmount)}</p>
                 </div>
                 <div style={{ background: COLOR.bg, border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.65rem 0.75rem' }}>
-                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Safe maximum</p>
+                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Maximum repayment</p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: COLOR.text, fontWeight: 600 }}>{formatMoney(validation.maxRepayAmount)}</p>
                 </div>
                 <div style={{ background: COLOR.bg, border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.65rem 0.75rem' }}>
-                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reserve target</p>
+                  <p style={{ margin: '0 0 0.2rem', fontSize: '0.68rem', color: COLOR.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wallet reserve</p>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: COLOR.text, fontWeight: 600 }}>{formatMoney(validation.recommendedWalletReserve)}</p>
                 </div>
               </div>
@@ -290,11 +312,11 @@ export function RepayModal({
                   letterSpacing: '0.05em',
                 }}
               >
-                Preview
+                Repayment preview
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.9rem', color: COLOR.muted }}>Remaining Debt</span>
+                <span style={{ fontSize: '0.9rem', color: COLOR.muted }}>Remaining debt</span>
                 <span
                   style={{
                     fontSize: '0.9rem',
@@ -307,7 +329,7 @@ export function RepayModal({
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '0.8rem', color: COLOR.muted }}>New Utilization</span>
+                <span style={{ fontSize: '0.8rem', color: COLOR.muted }}>Utilization after repayment</span>
                 <span style={{ fontSize: '0.8rem', color: amount > 0 ? COLOR.success : COLOR.text }}>
                   {newPct}%{' '}
                   <span style={{ textDecoration: 'line-through', color: COLOR.muted, marginLeft: 4 }}>
@@ -329,18 +351,35 @@ export function RepayModal({
               </div>
             </div>
 
-            <button
-              onClick={handleReview}
-              disabled={isInvalid}
-              style={{
-                ...btn.primary,
-                width: '100%',
-                opacity: isInvalid ? 0.5 : 1,
-                cursor: isInvalid ? 'not-allowed' : 'pointer',
-              }}
-            >
-              Review Repayment
-            </button>
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <button
+                onClick={handleReview}
+                disabled={isInvalid}
+                style={{
+                  ...btn.primary,
+                  width: '100%',
+                  opacity: isInvalid ? 0.5 : 1,
+                  cursor: isInvalid ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Review Repayment
+              </button>
+              <button
+                ref={helpTriggerRef}
+                type="button"
+                onClick={() => setIsHelpOpen(true)}
+                style={{
+                  ...btn.ghost,
+                  minHeight: 44,
+                  width: '100%',
+                  color: COLOR.accent,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 4,
+                }}
+              >
+                I need help
+              </button>
+            </div>
           </div>
         )}
 
@@ -379,7 +418,7 @@ export function RepayModal({
                   borderBottom: `1px solid ${COLOR.border}`,
                 }}
               >
-                <span style={{ color: COLOR.muted, fontSize: '0.9rem' }}>Remaining Debt After</span>
+                <span style={{ color: COLOR.muted, fontSize: '0.9rem' }}>Remaining debt after repayment</span>
                 <span style={{ fontWeight: 600, color: remainingDebt === 0 ? COLOR.success : COLOR.text }}>
                   {fmt(remainingDebt)}
                 </span>
@@ -419,19 +458,90 @@ export function RepayModal({
               </div>
             </div>
 
+            {needsConfirm && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="confirm-repay-amount" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: COLOR.text, fontWeight: 500 }}>
+                  Type the amount to confirm
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1.25rem', color: COLOR.muted }} aria-hidden="true">$</span>
+                  <input
+                    id="confirm-repay-amount"
+                    type="number"
+                    value={confirmAmountStr}
+                    onChange={(e) => setConfirmAmountStr(e.target.value)}
+                    placeholder={fmt(amount)}
+                    aria-describedby="confirm-repay-description"
+                    aria-label="Type the repayment amount to confirm"
+                    autoComplete="off"
+                    className="repay-modal-input"
+                    style={{
+                      width: '100%',
+                      background: COLOR.bg,
+                      border: `1px solid ${!isConfirmMatch && confirmAmountStr !== '' ? COLOR.danger : isConfirmMatch && confirmAmountStr !== '' ? COLOR.success : COLOR.border}`,
+                      borderRadius: 8,
+                      padding: '0.75rem 1rem 0.75rem 2rem',
+                      color: COLOR.text,
+                      fontSize: '1.25rem',
+                      fontWeight: 500,
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                </div>
+                <p id="confirm-repay-description" style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: COLOR.muted }}>
+                  Type the repayment amount ({fmt(amount)}) to enable the Confirm Repayment button.
+                </p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button onClick={() => setStep('input')} style={{ ...btn.outline, flex: 1 }}>
                 Back
               </button>
-              <PendingButton
-                onClick={handleConfirm}
-                pending={false}
-                pendingLabel="Processing..."
-                style={{ ...btn.primary, flex: 2 }}
-              >
-                Confirm Repayment
-              </PendingButton>
+              <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <PendingButton
+                  onClick={handleConfirm}
+                  pending={false}
+                  pendingLabel="Processing..."
+                  disabled={isConfirmDisabled}
+                  aria-disabled={isConfirmDisabled || undefined}
+                  aria-describedby={isConfirmDisabled ? 'confirm-repay-disabled-helper' : undefined}
+                  style={{
+                    ...btn.primary,
+                    width: '100%',
+                    opacity: isConfirmDisabled ? 0.5 : 1,
+                    cursor: isConfirmDisabled ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Confirm Repayment
+                </PendingButton>
+                {isConfirmDisabled && (
+                  <p
+                    id="confirm-repay-disabled-helper"
+                    style={{ margin: 0, fontSize: '0.8rem', color: COLOR.muted, textAlign: 'center' }}
+                    role="status"
+                  >
+                    Type the amount above to enable confirmation.
+                  </p>
+                )}
+              </div>
             </div>
+            <button
+              ref={helpTriggerRef}
+              type="button"
+              onClick={() => setIsHelpOpen(true)}
+              style={{
+                ...btn.ghost,
+                minHeight: 44,
+                width: '100%',
+                marginTop: '0.75rem',
+                color: COLOR.accent,
+                textDecoration: 'underline',
+                textUnderlineOffset: 4,
+              }}
+            >
+              I need help
+            </button>
           </div>
         )}
 
@@ -449,7 +559,7 @@ export function RepayModal({
               }}
             />
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', color: COLOR.text }}>
-              Processing Repayment
+              Processing repayment
             </h3>
             <p style={{ margin: 0, fontSize: '0.9rem', color: COLOR.muted }}>
               Confirming transaction on network...
@@ -494,7 +604,7 @@ export function RepayModal({
                   justifyContent: 'space-between',
                 }}
               >
-                <span style={{ color: COLOR.muted }}>Remaining Debt:</span>
+                <span style={{ color: COLOR.muted }}>Remaining debt:</span>
                 <span style={{ fontWeight: 600 }}>{fmt(remainingDebt)}</span>
               </p>
               <p
@@ -506,7 +616,7 @@ export function RepayModal({
                   justifyContent: 'space-between',
                 }}
               >
-                <span>Credit Line Utilization:</span>
+                <span>Credit utilization:</span>
                 <span style={{ color: remainingDebt === 0 ? COLOR.success : COLOR.text }}>
                   Reduced to {newPct}%
                 </span>
@@ -525,7 +635,15 @@ export function RepayModal({
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes scaleIn { 0% { transform: scale(0); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        /* Suppress default outline for pointer users; show a visible ring for keyboard users (WCAG 2.4.7). */
+        .repay-modal-input { outline: none; }
+        .repay-modal-input:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
       `}</style>
+      <InlineHelpOverlay
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        triggerRef={helpTriggerRef}
+      />
     </div>
   );
 }

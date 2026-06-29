@@ -1,0 +1,299 @@
+/*
+  RiskGauge styles
+  ────────────────────────────────────────────────────────────────────────────
+  All colours use semantic tokens (var(--*)) — no hardcoded hex.
+  The animated fill arc uses a CSS @keyframes that drives stroke-dashoffset
+  from the full circumference (empty gauge) to the computed target offset.
+
+  Animation is suppressed entirely for users who prefer reduced motion:
+  - The @keyframes rule is wrapped in a `not prefers-reduced-motion` query.
+  - The JS component also reads matchMedia to initialise dashoffset at the
+    final value, preventing any flash-of-empty-arc.
+
+  Focus rings
+  ────────────────────────────────────────────────────────────────────────────
+  WCAG 2.4.11 (AA) requires a visible focus indicator with an area of at
+  least the perimeter of the component × 2 CSS pixels.
+
+  Two kinds of focus ring are provided:
+
+  1. Whole-gauge ring (.risk-gauge-svg:focus-visible)
+     Rendered via box-shadow because CSS `outline` has inconsistent cross-
+     browser support on SVG elements.  The double-shadow approach
+     (inner = background colour, outer = ring colour) ensures the ring is
+     visible against any background.
+
+  2. Per-sector ring (.risk-gauge-sector:focus-visible .risk-gauge-sector-focus-rect)
+     An SVG <rect> that is normally invisible becomes visible when the
+     sector <g> receives :focus-visible.  This avoids the need for a
+     synthetic outline on an SVG group element.
+
+  Both rings use --focus-ring-color (defaulting to --accent) so they
+  automatically adapt to [data-contrast="high"] without extra rules.
+*/
+
+/* Import shared focus-ring tokens */
+@import '../styles/focus.css';
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.risk-gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0 1rem;
+}
+
+.risk-gauge-svg {
+  width: 160px;
+  height: 100px;
+  margin-bottom: 0.75rem;
+  /*
+    overflow: visible is required so that:
+    a) the box-shadow focus ring is not clipped at the SVG viewport edge.
+    b) active-sector dots that sit on the arc edge are not cropped.
+  */
+  overflow: visible;
+  /*
+    Remove the default browser outline — we supply our own via box-shadow.
+    Do NOT use `outline: none` without providing a replacement (WCAG 2.4.11).
+  */
+  outline: none;
+  /*
+    cursor: default keeps the pointer from switching to a text cursor when
+    the user tabs onto the SVG.
+  */
+  cursor: default;
+  /* Smooth transition for the focus-ring box-shadow appearing/disappearing */
+  transition: box-shadow 0.15s ease;
+}
+
+/* ── Whole-gauge focus ring ──────────────────────────────────────────────── */
+
+/*
+  :focus-visible ensures the ring only appears on keyboard navigation,
+  not on mouse click (which would be distracting).
+
+  Double box-shadow:
+    Layer 1 (2px, --bg)          → gap between element edge and ring
+    Layer 2 (5px, --focus-ring-color) → the visible ring
+
+  This is equivalent to outline + outline-offset but works reliably on SVG.
+
+  Contrast: --accent (#58a6ff) on --bg (#0d1117) = 5.9:1 → WCAG AA ✓
+            [data-contrast="high"] override → #ffffff on #000000 = 21:1 ✓
+*/
+.risk-gauge-svg:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--bg, #0d1117),
+    0 0 0 5px var(--focus-ring-color, var(--accent, #58a6ff));
+  border-radius: 8px;
+}
+
+/* ── Track (background arc) ──────────────────────────────────────────────── */
+
+.risk-gauge-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+/* ── Fill arc ────────────────────────────────────────────────────────────── */
+
+.risk-gauge-fill {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+
+  /*
+    --gauge-circumference and --gauge-target-offset are set inline by the
+    React component so the keyframe can reference them as custom properties.
+    Fall back to 0 so the gauge renders correctly in environments that don't
+    run the animation (e.g. jsdom).
+  */
+  --gauge-circumference: 172.79;
+  --gauge-target-offset: 0;
+}
+
+/* ── Arc sweep animation ─────────────────────────────────────────────────── */
+/*
+  Only applied when the user has NOT requested reduced motion.
+  The keyframe sweeps dashoffset from circumference (empty) → target offset.
+  Duration: 900ms — long enough to be legible, short enough not to feel slow.
+  Easing: cubic-bezier(0.25, 0.46, 0.45, 0.94) — ease-out feel (fast start,
+  gentle deceleration), matching the util-bar-fill transition in Dashboard.css.
+*/
+
+@media (prefers-reduced-motion: no-preference) {
+  .risk-gauge-fill {
+    animation: gauge-sweep 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  }
+}
+
+@keyframes gauge-sweep {
+  from {
+    stroke-dashoffset: var(--gauge-circumference);
+  }
+  to {
+    stroke-dashoffset: var(--gauge-target-offset);
+  }
+}
+
+/* ── Reduced-motion explicit reset ──────────────────────────────────────── */
+/*
+  Belt-and-suspenders: even if the animation somehow fires, kill it instantly
+  and jump to the final state.
+  IMPORTANT: focus ring styles are NOT suppressed here — the ring must remain
+  visible regardless of prefers-reduced-motion (WCAG 2.4.11).
+*/
+
+@media (prefers-reduced-motion: reduce) {
+  .risk-gauge-fill {
+    animation: none;
+    transition: none;
+    /* stroke-dashoffset is set to the final value by the JS component */
+  }
+}
+
+/* ── Interactive sector bands ────────────────────────────────────────────── */
+
+/*
+  .risk-gauge-sector is the <g> wrapper for each risk band.
+  It must be interactive-looking but must not distract in the resting state
+  (sectors are visible only when focused or active).
+*/
+.risk-gauge-sector {
+  cursor: pointer;
+  /* Sectors inherit pointer-events from the SVG; no extra rules needed */
+}
+
+/* Sector arc bands — low opacity at rest, brighter on hover / active */
+.risk-gauge-sector-arc {
+  fill: none;
+  stroke-width: 12;        /* Slightly wider than fill arc (10) so band is visible beneath */
+  stroke-linecap: round;
+  opacity: 0.15;           /* Subtle at rest so they don't compete with the fill arc */
+  transition: opacity 0.15s ease;
+}
+
+.risk-gauge-sector:hover .risk-gauge-sector-arc,
+.risk-gauge-sector:focus .risk-gauge-sector-arc {
+  opacity: 0.35;
+}
+
+/* ── Per-sector focus ring (SVG <rect> overlay) ──────────────────────────── */
+
+/*
+  The focus rect is rendered as an SVG <rect> behind the sector arc.
+  Normally it is invisible; it becomes visible via fill/stroke when the
+  parent <g> receives :focus-visible.
+
+  Using fill="none" + stroke keeps the ring as an outline rather than
+  a filled overlay, matching the expected visual pattern.
+*/
+.risk-gauge-sector-focus-rect {
+  fill: none;
+  stroke: none;             /* Hidden at rest */
+  stroke-width: 2;
+  transition: stroke 0.1s ease;
+  pointer-events: none;     /* Hit-testing goes to the arc, not the rect */
+}
+
+/*
+  Show the rect stroke only on keyboard focus (:focus-visible on parent <g>).
+  CSS :focus-visible is currently supported on SVG <g> elements in:
+    Chrome 86+, Firefox 85+, Safari 15.4+.
+  For older browsers the ring gracefully degrades to invisible (no worse
+  than the pre-existing state).
+*/
+.risk-gauge-sector:focus-visible .risk-gauge-sector-focus-rect {
+  stroke: var(--focus-ring-color, var(--accent, #58a6ff));
+  /* A second, wider shadow-like stroke gives the "glow" appearance */
+  filter: drop-shadow(0 0 3px var(--focus-ring-color, var(--accent, #58a6ff)));
+}
+
+/* Suppress the default browser focus outline on the <g> — we paint our own. */
+.risk-gauge-sector:focus {
+  outline: none;
+}
+
+/* ── Active-score indicator dot ──────────────────────────────────────────── */
+
+.risk-gauge-sector-dot {
+  /* Dot pulses gently when not in reduced-motion mode */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .risk-gauge-sector-dot {
+    animation: sector-dot-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes sector-dot-pulse {
+  0%, 100% { opacity: 1; r: 4; }
+  50%       { opacity: 0.6; r: 5; }
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+
+.risk-gauge-score {
+  font-size: 2rem;
+  font-weight: 700;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.risk-gauge-label {
+  font-size: 0.65rem;
+  fill: var(--muted);
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Meta row (Trend / Last Updated) ────────────────────────────────────── */
+
+.risk-meta {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.risk-meta-item {
+  text-align: center;
+}
+
+.risk-meta-item .rm-label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs, 0.25rem);
+  line-height: var(--lh-small, 1.5);
+}
+
+.risk-meta-item .rm-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: var(--lh-body, 1.6);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .risk-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .risk-gauge-fill {
+    animation: none;
+    transition: none;
+    /* stroke-dashoffset is set to the final value by the JS component */
+  }
+

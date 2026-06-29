@@ -1,3 +1,16 @@
+/**
+ * Design tokens consumed at the JS layer.
+ *
+ * Most components style themselves with CSS custom properties declared
+ * in `src/index.css`. This file exists for the cases where a component
+ * needs a token value in JavaScript — typically because the style is
+ * applied as an inline `React.CSSProperties` (e.g. SVG fill on the risk
+ * gauge, the dynamic badge palettes) rather than via a class name.
+ *
+ * Every value here must mirror the equivalent CSS custom property. If
+ * you change one, change the other. See `docs/DESIGN_SYSTEM.md` for the
+ * canonical catalogue.
+ */
 import type { CreditLineStatus, UtilizationLevel } from '../types/creditLine';
 import type React from 'react';
 
@@ -34,6 +47,10 @@ export const STATUS_COLOR: Record<CreditLineStatus, { bg: string; color: string;
   Closed: { bg: 'rgba(139,148,158,0.16)', color: '#c4ccd6', border: 'rgba(139,148,158,0.42)' },
 };
 
+/**
+ * Map a numeric risk score (0–850, FICO-style scale) to a semantic color.
+ * Mirrors the credit-score badge thresholds used on the dashboard.
+ */
 export const RISK_COLOR = (score: number) =>
   score >= 700 ? COLOR.success : score >= 600 ? COLOR.warning : COLOR.danger;
 
@@ -83,6 +100,17 @@ export const fmtDateTime = (iso: string) =>
     month: 'short', day: 'numeric', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+
+export const relativeTime = (iso: string): string => {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return fmtDate(iso);
+};
 
 // ─── Utilization helpers ──────────────────────────────────────────────────────
 

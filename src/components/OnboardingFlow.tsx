@@ -3,8 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import './OnboardingFlow.css';
 
 interface Props {
+  /** Whether the onboarding modal is visible. */
   isOpen: boolean;
+  /**
+   * Invoked after the final step. The component writes
+   * `localStorage.onboarding_completed = 'true'` before calling this so
+   * returning users skip the flow on subsequent connects.
+   */
   onComplete: () => void;
+  /**
+   * Invoked when the user opts out via the Skip affordance. Skipping
+   * does NOT mark onboarding as complete — the next session will see
+   * the flow again, which is intentional. The trade-off is documented
+   * in `docs/UX_RATIONALE.md` "Single onboarding stepper, not separate
+   * modals".
+   */
   onSkip: () => void;
 }
 

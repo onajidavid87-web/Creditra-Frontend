@@ -1,0 +1,113 @@
+.accessible-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.accessible-tooltip--inline {
+  margin-left: 0;
+  vertical-align: baseline;
+}
+
+.accessible-tooltip__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(88, 166, 255, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.accessible-tooltip__trigger--text {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.accessible-tooltip__label {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.18em;
+}
+
+.accessible-tooltip__trigger:hover,
+.accessible-tooltip__trigger:focus-visible {
+  background: rgba(88, 166, 255, 0.12);
+  border-color: var(--accent);
+}
+
+.accessible-tooltip__trigger--text:hover,
+.accessible-tooltip__trigger--text:focus-visible {
+  background: transparent;
+  border-color: transparent;
+}
+
+.accessible-tooltip__content {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  width: min(260px, calc(100vw - 2rem));
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: var(--lh-small);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.accessible-tooltip__content::after {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  content: "";
+  transform: translate(-50%, -4px) rotate(45deg);
+}
+
+.accessible-tooltip:hover .accessible-tooltip__content,
+.accessible-tooltip:focus-within .accessible-tooltip__content {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (forced-colors: active) {
+  .accessible-tooltip__label {
+    text-decoration-color: LinkText;
+  }
+
+  .accessible-tooltip__content {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}

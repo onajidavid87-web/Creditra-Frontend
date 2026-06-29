@@ -118,3 +118,10 @@
     transition: none;
   }
 }
+
+/* Reduced Motion Override */
+[data-motion="reduced"] .form-field__input,
+[data-motion="reduced"] .form-field__textarea {
+    transition: none;
+  }
+

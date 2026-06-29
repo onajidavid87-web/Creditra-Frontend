@@ -9,6 +9,13 @@ declare global {
   }
 }
 
+/**
+ * Detects whether a given Stellar wallet browser extension is currently
+ * installed and exposed on the window object.
+ *
+ * This is a synchronous, side-effect-free probe — it does not request user
+ * permission or trigger any UI from the wallet.
+ */
 export const isWalletInstalled = (type: WalletType): boolean => {
   if (type === 'freighter') return !!window.freighter;
   if (type === 'albedo') return !!window.albedo;
@@ -17,6 +24,14 @@ export const isWalletInstalled = (type: WalletType): boolean => {
   return false;
 };
 
+/**
+ * Opens a connection to the requested Stellar wallet and returns the
+ * public key plus the network the wallet is reporting.
+ *
+ * Each supported wallet exposes a slightly different surface area, so this
+ * function normalises them into a single `WalletInfo` shape and throws a
+ * `WalletError` with a stable `type` discriminator on failure.
+ */
 export const connectWallet = async (type: WalletType): Promise<WalletInfo> => {
   if (!isWalletInstalled(type)) {
     const walletNames: Record<WalletType, string> = {
@@ -97,4 +112,19 @@ export const saveWalletPreference = (walletInfo: WalletInfo) => {
 export const getStoredWallet = (): WalletInfo | null => {
   const stored = localStorage.getItem('wallet_info');
   return stored ? JSON.parse(stored) : null;
+};
+
+export const EXPECTED_NETWORK = 'TESTNET';
+
+export const isSwitchSupported = (type: WalletType): boolean => {
+  if (type === 'freighter' && window.freighter?.switchNetwork) return true;
+  return false;
+};
+
+export const switchNetwork = async (type: WalletType, network: string): Promise<void> => {
+  if (type === 'freighter' && window.freighter?.switchNetwork) {
+    await window.freighter.switchNetwork(network);
+    return;
+  }
+  throw new Error(`Please open your ${type} wallet and switch to ${network}.`);
 };

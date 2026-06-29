@@ -1,0 +1,211 @@
+/* ── AutopaySchedule ──────────────────────────────────────────────────────── */
+
+.autopay-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Empty state */
+.autopay-schedule--empty {
+  min-height: 120px;
+  justify-content: center;
+  align-items: center;
+}
+
+.autopay-schedule__empty-msg {
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: var(--space-xl);
+  line-height: var(--lh-body);
+}
+
+/* Header row */
+.autopay-schedule__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.autopay-schedule__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.autopay-schedule__freq-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  background: rgba(88, 166, 255, 0.12);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Summary strip */
+.autopay-schedule__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+}
+
+@media (max-width: 480px) {
+  .autopay-schedule__summary {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.autopay-schedule__summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: var(--space-md) var(--space-md);
+  background: rgba(88, 166, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.autopay-schedule__summary-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.autopay-schedule__summary-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Table wrapper — horizontal scroll on small screens */
+.autopay-schedule__table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  /* Keyboard-scrollable for accessibility */
+  outline: none;
+}
+
+.autopay-schedule__table-wrapper:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Table */
+.autopay-schedule__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.autopay-schedule__th {
+  padding: 0.6rem var(--space-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.autopay-schedule__th--num {
+  width: 2.5rem;
+  text-align: center;
+}
+
+.autopay-schedule__th--right {
+  text-align: right;
+}
+
+.autopay-schedule__td {
+  padding: 0.625rem var(--space-md);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  line-height: var(--lh-small);
+}
+
+.autopay-schedule__td--num {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.autopay-schedule__td--right {
+  text-align: right;
+}
+
+.autopay-schedule__td--amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* Row states */
+.autopay-schedule__row:last-child .autopay-schedule__td {
+  border-bottom: none;
+}
+
+.autopay-schedule__row:hover .autopay-schedule__td {
+  background: rgba(88, 166, 255, 0.04);
+}
+
+.autopay-schedule__row--upcoming .autopay-schedule__td {
+  background: rgba(88, 166, 255, 0.07);
+}
+
+.autopay-schedule__row--past .autopay-schedule__td {
+  opacity: 0.55;
+}
+
+/* Status badges */
+.autopay-schedule__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.autopay-schedule__badge--scheduled {
+  background: rgba(139, 148, 158, 0.15);
+  color: var(--muted);
+  border: 1px solid rgba(139, 148, 158, 0.25);
+}
+
+.autopay-schedule__badge--upcoming {
+  background: rgba(88, 166, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(88, 166, 255, 0.35);
+}
+
+.autopay-schedule__badge--past {
+  background: rgba(63, 185, 80, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+/* Footnote */
+.autopay-schedule__footnote {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: var(--lh-small);
+  padding-top: var(--space-xs);
+  margin: 0;
+}

@@ -1,8 +1,18 @@
 import React from 'react';
 
 interface PendingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /**
+   * True while the parent's async action is in flight. Disables the
+   * button, sets `aria-busy="true"`, and swaps the label.
+   */
   pending: boolean;
+  /**
+   * Label shown while `pending` is true. Choose a verb form that names
+   * what is happening (e.g. `Submitting`, `Confirming`) so screen
+   * readers announce a meaningful state change.
+   */
   pendingLabel: string;
+  /** Idle-state label (i.e. the normal button label). */
   children: React.ReactNode;
 }
 

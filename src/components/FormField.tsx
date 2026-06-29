@@ -1,12 +1,27 @@
 import { ReactNode, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { useDebounceValue } from '../hooks/useDebounceValue';
 
 interface BaseFormFieldProps {
+  /** Stable id for the input. Also drives the label's `htmlFor` and the help/error `aria-describedby`. */
   id: string;
+  /** Visible label text. Required by spec — there is no label-less variant. */
   label: string;
+  /**
+   * When true, a "required" indicator is rendered and `aria-required` is
+   * set on the input. The visible marker is paired with screen-reader text
+   * so the requirement is announced.
+   */
   required?: boolean;
+  /** Optional helper text shown under the input; wired up via `aria-describedby`. */
   helpText?: string;
+  /**
+   * Optional error message. When present, `aria-invalid` is set on the
+   * input and the error text is wired up via `aria-describedby` so screen
+   * readers announce both help and error together.
+   */
   error?: string;
+  /** Pass-through class name on the field wrapper. */
   className?: string;
 }
 
@@ -57,13 +72,14 @@ type FormFieldProps = InputFormFieldProps | TextareaFormFieldProps | CustomFormF
  */
 export function FormField(props: FormFieldProps) {
   const { id, label, required = false, helpText, error, className = '' } = props;
+  const debouncedErrorForAnnouncement = useDebounceValue(error, 350);
 
   const helpTextId = `${id}-help`;
   const errorId = `${id}-error`;
   
   const describedByParts: string[] = [];
   if (helpText) describedByParts.push(helpTextId);
-  if (error) describedByParts.push(errorId);
+  if (debouncedErrorForAnnouncement) describedByParts.push(errorId);
   const describedBy = describedByParts.length > 0 ? describedByParts.join(' ') : '';
 
   const sharedInputProps = {
@@ -108,9 +124,16 @@ export function FormField(props: FormFieldProps) {
       )}
 
       {error && (
-        <div id={errorId} className="form-field__error" role="alert" aria-live="polite">
+        <div id={errorId} className="form-field__error">
           <AlertCircle className="form-field__error-icon" aria-hidden="true" />
-          <span>{error}</span>
+          {error === debouncedErrorForAnnouncement ? (
+            <span aria-live="polite">{error}</span>
+          ) : (
+            <>
+              <span aria-hidden="true">{error}</span>
+              <span className="sr-only" role="status" aria-live="polite">{debouncedErrorForAnnouncement}</span>
+            </>
+          )}
         </div>
       )}
     </div>

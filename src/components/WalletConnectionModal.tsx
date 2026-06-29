@@ -15,7 +15,8 @@
  *              4.1.2 (Name, Role, Value), 1.4.1 (Use of Color)
  */
 
-import React, { useRef, useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useInertBackdrop } from '@/hooks/useInertBackdrop';
@@ -71,7 +72,7 @@ interface WalletConnectionModalProps {
   /** Callback when a wallet is selected */
   onConnect: (provider: WalletProvider) => void;
   /** Ref to the trigger button that opened the modal (for return focus) */
-  triggerRef?: React.RefObject<<HTMLElement | null>;
+  triggerRef?: React.RefObject<HTMLElement | null>;
   /** Currently detected/available wallets */
   detectedWallets?: WalletProvider[];
 }
@@ -82,14 +83,14 @@ interface WalletConnectionModalProps {
  * Primary entry point for wallet selection. Implemented as a fully accessible
  * dialog with focus trapping, inert backdrop, and mobile-safe bottom sheet layout.
  */
-export const WalletConnectionModal: React.FC<<WalletConnectionModalProps> = ({
+export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
   isOpen,
   onClose,
   onConnect,
   triggerRef,
   detectedWallets = [],
 }) => {
-  const [connectingId, setConnectingId] = useState<<WalletProvider | null>(null);
+  const [connectingId, setConnectingId] = useState<WalletProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const modalId = 'wallet-connection-modal';
 
@@ -208,12 +209,13 @@ export const WalletConnectionModal: React.FC<<WalletConnectionModalProps> = ({
           {WALLET_OPTIONS.map((wallet) => {
             const isDetected = detectedWallets.includes(wallet.id);
             const isConnecting = connectingId === wallet.id;
-            const isDisabled = connectingId !== null && !isConnecting;
+            const isDisabled = connectingId !== null;
 
             return (
               <li key={wallet.id} role="none">
                 <button
                   className={`wallet-option ${isDetected ? 'wallet-option--detected' : 'wallet-option--undetected'}`}
+                  style={{ minHeight: '44px', minWidth: '44px' }}
                   onClick={() =>
                     isDetected ? handleWalletSelect(wallet.id) : handleInstall(wallet)
                   }
@@ -280,15 +282,10 @@ export const WalletConnectionModal: React.FC<<WalletConnectionModalProps> = ({
         {/* Footer note */}
         <div className="wallet-modal-footer">
           <p className="wallet-modal-note">
-            New to Stellar?{' '}
-            <a
-              href="https://stellar.org/wallets"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="wallet-modal-link"
-            >
-              Learn about wallets
-            </a>
+            Need help connecting?{' '}
+            <Link className="wallet-modal-link" to="/help#wallet" onClick={handleClose}>
+              Visit the wallet setup guide
+            </Link>
           </p>
         </div>
       </div>

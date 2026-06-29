@@ -2,10 +2,25 @@ import { Transaction } from "@/types/draw-credit.types";
 import { CheckCircle2, AlertCircle, Clock, RotateCcw } from "lucide-react";
 
 interface TransactionStatusProps {
+  /** The transaction whose status to render (pending / success / error). */
   transaction: Transaction;
+  /** Reset the wizard back to step 1 so the user can start a fresh draw. */
   onNewDraw: () => void;
 }
 
+/**
+ * Terminal screen of the draw-credit wizard.
+ *
+ * Renders one of three states based on `transaction.status`:
+ * - `pending` — neutral spinner and reassurance copy
+ * - `success` — green confirmation with a "new draw" affordance
+ * - `error`   — red failure with a retry affordance and the backend's
+ *               error message verbatim
+ *
+ * The component is fully driven by props; it does not poll for status
+ * updates or contact the network. The parent wizard owns the
+ * transaction lifecycle.
+ */
 export function TransactionStatus({
   transaction,
   onNewDraw,

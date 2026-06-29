@@ -1,5 +1,22 @@
+/**
+ * UI-side amount validation for the draw and repay flows.
+ *
+ * The functions in this module produce *graded* feedback rather than a
+ * binary valid/invalid. Each severity drives a different visual tone
+ * (info / success / warning / danger) so the input feels conversational
+ * during typing rather than hostile.
+ *
+ * These checks are deliberately optimistic guard rails — the Soroban
+ * contract is the source of truth for what will actually be accepted,
+ * and the backend will reject anything that slips through here. See
+ * `docs/UX_RATIONALE.md` "Inline validation, not submit-time validation".
+ */
 export type ValidationSeverity = 'info' | 'success' | 'warning' | 'danger';
 
+/**
+ * Single piece of feedback paired with an `AmountInput` / `RepayModal`
+ * tone band. `title` is the bold leading line; `message` is the body.
+ */
 interface ValidationFeedback {
   severity: ValidationSeverity;
   title: string;
@@ -31,6 +48,29 @@ export interface RepayAmountValidationResult {
 
 const MIN_AMOUNT = 1;
 
+/**
+ * Threshold above which repayments require the user to type the exact amount
+ * in a confirmation field before the "Confirm Repayment" button enables.
+ *
+ * Driven by the VITE_REPAY_CONFIRM_THRESHOLD environment variable (a plain
+ * non-negative number). Falls back to 5 000 when the variable is absent or
+ * cannot be parsed. Set the variable to "0" to disable the guard entirely.
+ */
+export const REPAY_CONFIRM_THRESHOLD = (() => {
+  const raw = import.meta.env.VITE_REPAY_CONFIRM_THRESHOLD;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 5000;
+})();
+
+/**
+ * Returns `true` when `amount` meets or exceeds `REPAY_CONFIRM_THRESHOLD`,
+ * indicating the confirm-by-typing guard should be shown in the review step.
+ * When the threshold is `0` or negative, this always returns `false`,
+ * effectively disabling the guard.
+ */
+export const requiresRepayConfirmation = (amount: number): boolean =>
+  REPAY_CONFIRM_THRESHOLD > 0 && amount >= REPAY_CONFIRM_THRESHOLD;
+
 export const formatMoney = (amount: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -44,6 +84,14 @@ export const getCreditReserveFloor = (limit: number, available: number) =>
 export const getWalletReserveFloor = (walletBalance: number) =>
   Math.min(walletBalance, Math.max(100, Math.round(walletBalance * 0.1)));
 
+/**
+ * Validate a user-entered draw amount against a credit line and produce
+ * UX-friendly feedback (success, info, warning, danger).
+ *
+ * The validation is purely UI-side and intentionally tolerant of partial
+ * input: empty strings produce an informational message rather than an
+ * error so the form does not feel hostile while the user is still typing.
+ */
 export function getDrawAmountValidation(
   amountInput: string,
   creditLine: { limit: number; available: number },
@@ -103,6 +151,13 @@ export function getDrawAmountValidation(
   };
 }
 
+/**
+ * Validate a user-entered repayment amount against both the outstanding
+ * debt and the connected wallet's available balance.
+ *
+ * Returns a structured result containing the parsed amount, derived
+ * post-payment state, and UX-friendly feedback severity/title/message.
+ */
 export function getRepayAmountValidation(
   amountInput: string,
   totalDue: number,

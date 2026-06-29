@@ -9,6 +9,8 @@ describe("AmountInput", () => {
     limit: 50000,
     available: 35000,
     utilization: 30,
+    riskBand: "Standard" as const,
+    termMonths: 24,
   };
 
   it("connects inline validation messaging to the input with aria-describedby including helper text", () => {
@@ -21,7 +23,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    const input = screen.getByLabelText(/amount to draw/i);
+    const input = screen.getByLabelText(/draw amount/i);
     const describedBy = input.getAttribute("aria-describedby");
     expect(describedBy).toContain("draw-amount-helper");
   });
@@ -36,7 +38,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
 
     fireEvent.change(input, {
       target: { value: "36000" },
@@ -61,7 +63,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "36000" },
     });
 
@@ -79,7 +81,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "0.50" },
     });
 
@@ -119,7 +121,7 @@ describe("AmountInput", () => {
     });
     fireEvent.click(maxButton);
 
-    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
     expect(input.value).toBe(creditLine.available.toString());
   });
 
@@ -133,7 +135,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "10000" },
     });
 
@@ -156,7 +158,7 @@ describe("AmountInput", () => {
     const continueButton = screen.getByRole("button", { name: /continue/i });
     expect(continueButton).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/amount to draw/i), {
+    fireEvent.change(screen.getByLabelText(/draw amount/i), {
       target: { value: "15000" },
     });
 
@@ -173,9 +175,204 @@ describe("AmountInput", () => {
       />,
     );
 
-    const helpText = screen.getByText(/available limit/i);
-    expect(helpText).toBeInTheDocument();
-    expect(helpText.closest("p")).toHaveTextContent("$35,000");
+    const helperPara = document.getElementById("draw-amount-helper");
+    expect(helperPara).toBeInTheDocument();
+    expect(helperPara).toHaveTextContent(/available credit/i);
+    expect(helperPara).toHaveTextContent("$35,000");
+  });
+
+  it("renders decrease stepper button with accessible label", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const decButton = screen.getByRole("button", {
+      name: /decrease amount/i,
+    });
+    expect(decButton).toBeInTheDocument();
+    expect(decButton).toBeDisabled(); // initially 0, can't go below 0
+  });
+
+  it("renders increase stepper button with accessible label", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const incButton = screen.getByRole("button", {
+      name: /increase amount/i,
+    });
+    expect(incButton).toBeInTheDocument();
+    expect(incButton).not.toBeDisabled();
+  });
+
+  it("increments amount by step when increase button is clicked", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const incButton = screen.getByRole("button", {
+      name: /increase amount/i,
+    });
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+
+    fireEvent.click(incButton);
+    expect(input.value).toBe("100");
+  });
+
+  it("decrements amount by step when decrease button is clicked", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "500" } });
+
+    const decButton = screen.getByRole("button", {
+      name: /decrease amount/i,
+    });
+    fireEvent.click(decButton);
+    expect(input.value).toBe("400");
+  });
+
+  it("disables decrease button when amount is 0", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const decButton = screen.getByRole("button", {
+      name: /decrease amount/i,
+    });
+    expect(decButton).toBeDisabled();
+  });
+
+  it("disables increase button when amount equals available credit", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: creditLine.available.toString() } });
+
+    const incButton = screen.getByRole("button", {
+      name: /increase amount/i,
+    });
+    expect(incButton).toBeDisabled();
+  });
+
+  it("does not increment amount beyond available credit", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "34900" } });
+
+    const incButton = screen.getByRole("button", {
+      name: /increase amount/i,
+    });
+    fireEvent.click(incButton);
+    expect(input.value).toBe(creditLine.available.toString());
+  });
+
+  it("does not decrement amount below 0", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    // A small amount less than STEP_AMOUNT should floor to 0
+    fireEvent.change(input, { target: { value: "50" } });
+    const decButton = screen.getByRole("button", {
+      name: /decrease amount/i,
+    });
+    fireEvent.click(decButton);
+    expect(input.value).toBe("0");
+  });
+
+  it("responds to ArrowUp key to increment amount", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "500" } });
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    expect(input.value).toBe("600");
+  });
+
+  it("responds to ArrowDown key to decrement amount", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "500" } });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(input.value).toBe("400");
+  });
+
+  it("sets input step attribute", () => {
+    render(
+      <AmountInput
+        creditLine={creditLine}
+        onAmountChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    expect(input).toHaveAttribute("step", "100");
   });
 
   it("sets input to invalid state with proper styling when error occurs", () => {
@@ -188,7 +385,7 @@ describe("AmountInput", () => {
       />,
     );
 
-    const input = screen.getByLabelText(/amount to draw/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/draw amount/i) as HTMLInputElement;
 
     fireEvent.change(input, {
       target: { value: "50000" },

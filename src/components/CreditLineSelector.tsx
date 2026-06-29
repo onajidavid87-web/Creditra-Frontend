@@ -3,10 +3,34 @@ import { AlertCircle, ChevronRight } from "lucide-react";
 import { formatMoney } from "@/utils/amountValidation";
 
 interface CreditLineSelectorProps {
+  /** Credit lines the user is eligible to draw from. */
   creditLines: CreditLine[];
+  /**
+   * Invoked when the user picks a line. The wizard advances to the
+   * amount step on the next render — there is no internal selection
+   * state in this component.
+   */
   onSelect: (creditLine: CreditLine) => void;
 }
 
+/**
+ * Step 1 of the draw-credit wizard.
+ *
+ * Renders the user's credit lines as a list of large click targets. Each
+ * row shows the line name, available balance, current utilization, and a
+ * "select" affordance. Picking a row calls `onSelect(creditLine)` so the
+ * parent wizard can transition to the amount step.
+ *
+ * Side effects: none. This is a controlled, presentational component —
+ * selection state lives in the parent (`DrawCreditPage`).
+ *
+ * Accessibility:
+ * - Rows are real `<button>` elements with a descriptive `aria-label`
+ *   (`Select <name> credit line, available balance <fmt>`).
+ * - The step heading is exposed via `id="select-credit-line-heading"`
+ *   so the parent can wire it as the labelling element for the wizard
+ *   container.
+ */
 export function CreditLineSelector({
   creditLines,
   onSelect,

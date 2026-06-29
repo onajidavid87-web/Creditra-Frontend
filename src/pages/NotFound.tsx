@@ -1,6 +1,20 @@
 import { Link } from "react-router-dom";
 import "./ErrorPage.css";
 
+/**
+ * Route-fallback 404 page.
+ *
+ * Wired up as the wildcard route in `src/App.tsx`. Renders the same
+ * `ErrorPage.css` look as the `ErrorBoundary`'s render-error fallback,
+ * so a "page not found" and a "page crashed" share visual treatment and
+ * the user learns one recovery pattern.
+ *
+ * Surfaces two affordances:
+ * - "Go back" — calls `window.history.back()`
+ * - "Go to dashboard" — `Link` to `/`
+ *
+ * Both keep keyboard semantics native (button + link).
+ */
 export function NotFound() {
   const handleGoBack = () => {
     window.history.back();

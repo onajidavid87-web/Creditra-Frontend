@@ -4,6 +4,7 @@ import ActivityFeed from "../components/ActivityFeed";
 import { CopyToClipboard } from "../components/CopyToClipboard";
 import { StatusBadge } from "../components/StatusBadge";
 import { useWallet } from "../context/WalletContext";
+import { Sparkline } from "../components/Sparkline";
 import { RiskBandsPanel } from "../components/RiskBandsPanel";
 import { WhatsChangedPanel } from "../components/WhatsChangedPanel";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
@@ -65,10 +66,12 @@ function RiskGauge({
   score,
   trend,
   lastUpdated,
+  history,
 }: {
   score: number;
   trend: "improving" | "declining" | "stable";
   lastUpdated: string;
+  history?: number[];
 }) {
   const radius = 55;
   const cx = 80;
@@ -113,8 +116,11 @@ function RiskGauge({
       <div className="risk-meta">
         <div className="risk-meta-item">
           <span className="rm-label">Trend</span>
-          <span className="rm-value" style={{ color: trendColor }}>
-            {trendArrow} {trend.charAt(0).toUpperCase() + trend.slice(1)}
+          <span className="rm-value" style={{ color: trendColor, display: "flex", alignItems: "center", gap: "8px" }}>
+            <span>{trendArrow} {trend.charAt(0).toUpperCase() + trend.slice(1)}</span>
+            {history && history.length > 0 && (
+              <Sparkline data={history} width={60} height={24} color={trendColor} />
+            )}
           </span>
         </div>
         <div className="risk-meta-item">

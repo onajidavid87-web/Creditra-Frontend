@@ -1,7 +1,8 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { Dashboard } from './Dashboard';
+import { Dashboard, RiskGauge } from './Dashboard';
+import { ReducedMotionProvider } from '../context/ReducedMotionContext';
 
 // Mock modules before imports
 vi.mock('../context/WalletContext', () => ({
@@ -34,6 +35,26 @@ vi.mock('../utils/storage', () => ({
 }));
 
 const WALLET_KEY = 'risk-explainer-dismissed-0x1234567890abcdef1234567890abcdef12345678';
+
+function stubMatchMedia(matches: boolean) {
+  const original = window.matchMedia;
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)' ? matches : false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+  return () => {
+    Object.defineProperty(window, 'matchMedia', { writable: true, value: original });
+  };
+}
 
 describe('Dashboard component skeletons', () => {
   beforeEach(() => {
@@ -169,6 +190,107 @@ describe('RiskExplainer', () => {
     const explainer = container.querySelector('.risk-explainer');
     expect(explainer).toBeInTheDocument();
     expect(explainer?.getAttribute('role')).toBe('status');
+    vi.useRealTimers();
+  });
+});
+
+describe('RiskGauge inline component from Dashboard', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('matches snapshot at score 580', () => {
+    const { container } = render(
+      <ReducedMotionProvider>
+        <RiskGauge score={580} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('matches snapshot at score 660', () => {
+    const { container } = render(
+      <ReducedMotionProvider>
+        <RiskGauge score={660} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('matches snapshot at score 740', () => {
+    const { container } = render(
+      <ReducedMotionProvider>
+        <RiskGauge score={740} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it('tweens score value when normal-motion is active', () => {
+    vi.useFakeTimers();
+    const restore = stubMatchMedia(false);
+
+    const { rerender } = render(
+      <ReducedMotionProvider>
+        <RiskGauge score={580} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+
+    // Initial render shows 580
+    expect(screen.getByText('580')).toBeInTheDocument();
+
+    // Rerender with new score 740
+    rerender(
+      <ReducedMotionProvider>
+        <RiskGauge score={740} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+
+    // Score does not snap immediately to 740 because it's tweening
+    expect(screen.queryByText('740')).not.toBeInTheDocument();
+
+    // Advance halfway (140ms)
+    act(() => {
+      vi.advanceTimersByTime(140);
+    });
+    // Check that it's tweening (not 580 and not 740)
+    const scoreText = document.querySelector('.risk-gauge-score');
+    const midVal = parseInt(scoreText?.textContent || '0', 10);
+    expect(midVal).toBeGreaterThan(580);
+    expect(midVal).toBeLessThan(740);
+
+    // Advance to completion (another 140ms)
+    act(() => {
+      vi.advanceTimersByTime(140);
+    });
+    expect(screen.getByText('740')).toBeInTheDocument();
+
+    restore();
+    vi.useRealTimers();
+  });
+
+  it('updates score instantly without tweening when reduced-motion is active', () => {
+    vi.useFakeTimers();
+    const restore = stubMatchMedia(true);
+
+    const { rerender } = render(
+      <ReducedMotionProvider>
+        <RiskGauge score={580} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+
+    expect(screen.getByText('580')).toBeInTheDocument();
+
+    rerender(
+      <ReducedMotionProvider>
+        <RiskGauge score={740} trend="stable" lastUpdated="2025-01-01T00:00:00Z" />
+      </ReducedMotionProvider>
+    );
+
+    // Snaps instantly to 740
+    expect(screen.getByText('740')).toBeInTheDocument();
+
+    restore();
     vi.useRealTimers();
   });
 });

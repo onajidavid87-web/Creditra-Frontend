@@ -175,6 +175,7 @@ Every component below lives in `src/components/`.
 | --- | --- |
 | `CreditLineSelector` | First step of the draw wizard |
 | `CreditLineSummaryBlock` | Card summarising a single credit line |
+| `CreditLineDetailDrawer` | Slide-out sheet summarizing credit line details, trend, and transactions |
 | `PreviewSection` | Pre-confirmation preview of a draw |
 | `ConfirmationStep` | Final confirm step with APR + total cost |
 

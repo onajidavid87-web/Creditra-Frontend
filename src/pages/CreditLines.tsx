@@ -10,23 +10,11 @@ import type {
 } from "../types/creditLine";
 import type { CollateralAsset } from "../types/collateral";
 import {
-  COLOR,
-  UTIL_COLOR,
-  fmt,
-  fmtDate,
-  fmtDateTime,
-  relativeTime,
-  getUtilizationLevel,
-  utilizationPct,
-} from "../utils/tokens";
-import "./CreditLines.css";
-import { AccessibleTooltip } from "../components/AccessibleTooltip";
-import { useFocusTrap } from "../hooks/useFocusTrap";
-import { useInertBackdrop } from "../hooks/useInertBackdrop";
-import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
-import CompareLinesPanel from "../components/CompareLinesPanel";
-import { CollateralSubstitutionModal } from "../components/CollateralSubstitutionModal";
-import { NoLines } from "../components/illustrations";
+  COLOR, UTIL_COLOR,
+  fmt, fmtDate, getUtilizationLevel, utilizationPct,
+} from '../utils/tokens';
+import { formatCountdown, getCountdownAriaLabel } from '../utils/dates';
+import './CreditLines.css';
 
 // ─── Credit Line Card ────────────────────────────────────────────────────────
 
@@ -142,16 +130,11 @@ function CreditLineCard({
           </div>
         </div>
 
-        <div className="cl-last-activity">
-          <span className="cl-last-activity__label">Last Activity</span>
-          <span className="cl-last-activity__time">
-            <AccessibleTooltip
-              label={`Last updated: ${fmtDateTime(line.updatedAt)}`}
-            >
-              {relativeTime(line.updatedAt)}
-            </AccessibleTooltip>
-          </span>
-        </div>
+        {line.nextInterestAccrualDate && (
+          <div className="cl-accrual">
+            <NextAccrualChip target={line.nextInterestAccrualDate} />
+          </div>
+        )}
       </div>
 
        <div className="cl-card-footer">

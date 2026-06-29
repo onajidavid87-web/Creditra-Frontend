@@ -56,41 +56,69 @@ export function isSameDay(iso: string | Date, reference: Date = new Date()): boo
   );
 }
 
-export function startOfDay(reference: Date = new Date()): Date {
-  const date = new Date(reference);
-  date.setHours(0, 0, 0, 0);
-  return date;
+// ─── Countdown helpers ────────────────────────────────────────────────────────
+
+/**
+ * Format a future ISO timestamp as a compact countdown string for inline
+ * chips (e.g. "2h 14m", "3d", "45m"). Omits zero-valued units so the
+ * label stays short. Falls back to "now" when the target is in the past.
+ */
+export function formatCountdown(
+  targetIso: string | Date,
+  now: Date = new Date(),
+): string {
+  const target = targetIso instanceof Date ? targetIso : new Date(targetIso);
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) return 'now';
+
+  const totalSeconds = Math.ceil(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+
+  return parts.join(' ');
 }
 
-export function endOfDay(reference: Date = new Date()): Date {
-  const date = new Date(reference);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
+/**
+ * Return a full-sentence accessible label for screen readers describing
+ * when the next interest accrual will occur, e.g.
+ * "Next interest in 2 hours 14 minutes". Falls back to
+ * "Interest is accruing now" for past dates.
+ */
+export function getCountdownAriaLabel(
+  targetIso: string | Date,
+  now: Date = new Date(),
+  locale: string = DEFAULT_LOCALE,
+): string {
+  const target = targetIso instanceof Date ? targetIso : new Date(targetIso);
+  const diffMs = target.getTime() - now.getTime();
 
-export function startOfWeek(reference: Date = new Date()): Date {
-  const date = startOfDay(reference);
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  return date;
-}
+  if (diffMs <= 0) {
+    return 'Interest is accruing now';
+  }
 
-export function endOfWeek(reference: Date = new Date()): Date {
-  const date = startOfWeek(reference);
-  date.setDate(date.getDate() + 6);
-  return endOfDay(date);
-}
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
-export function startOfMonth(reference: Date = new Date()): Date {
-  const date = startOfDay(reference);
-  date.setDate(1);
-  return date;
-}
+  const totalSeconds = Math.ceil(diffMs / 1000);
+  const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+  ];
 
-export function endOfMonth(reference: Date = new Date()): Date {
-  const date = startOfMonth(reference);
-  date.setMonth(date.getMonth() + 1);
-  date.setDate(0);
-  return endOfDay(date);
+  for (const [unit, secondsPerUnit] of units) {
+    const value = Math.floor(totalSeconds / secondsPerUnit);
+    if (value > 0 || unit === 'minute') {
+      const formatted = rtf.format(value, unit);
+      const cleaned = formatted.replace(/^in\s+/, '');
+      return `Next interest in ${cleaned}`;
+    }
+  }
+
+  return `Next interest in ${rtf.format(0, 'second')}`;
 }

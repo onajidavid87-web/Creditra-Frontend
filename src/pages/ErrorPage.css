@@ -106,3 +106,33 @@
     flex: 0 0 auto;
   }
 }
+
+/* Illustration */
+
+.error-illustration {
+  width: 160px;
+  height: auto;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .notfound-stars {
+    animation: notfound-twinkle 3s ease-in-out infinite alternate;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notfound-stars {
+    animation: none;
+  }
+
+  .error-btn-primary:active {
+    transform: none;
+  }
+}
+
+@keyframes notfound-twinkle {
+  from { opacity: 0.15; }
+  to   { opacity: 0.5; }
+}

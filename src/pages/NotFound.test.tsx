@@ -1,49 +1,89 @@
 /// <reference types="vitest" />
-import { render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import "@testing-library/jest-dom";
 import { NotFound } from "./NotFound";
 
-describe("NotFound", () => {
-  it("renders the 404 page with correct content", () => {
-    render(
-      <BrowserRouter>
-        <NotFound />
-      </BrowserRouter>,
-    );
+function renderNotFound() {
+  return render(
+    <MemoryRouter>
+      <NotFound />
+    </MemoryRouter>
+  );
+}
 
-    expect(screen.getByText("Page not found")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "The page you're looking for doesn't exist or has been moved.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /go back/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /dashboard/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /contact support/i }),
-    ).toBeInTheDocument();
+function setHistoryLength(n: number) {
+  Object.defineProperty(window.history, "length", { configurable: true, value: n });
+}
+
+describe("NotFound", () => {
+  let originalLength: number;
+  let originalGo: typeof window.history.go;
+
+  beforeEach(() => {
+    originalLength = window.history.length;
+    originalGo = window.history.go.bind(window.history);
   });
 
-  it("has accessible elements", () => {
-    render(
-      <BrowserRouter>
-        <NotFound />
-      </BrowserRouter>,
-    );
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setHistoryLength(originalLength);
+    window.history.go = originalGo;
+  });
 
-    expect(
-      screen.getByRole("heading", { name: "Page not found" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Go back to previous page"),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Return to dashboard")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Contact support via email"),
-    ).toBeInTheDocument();
+  it("renders a <main> landmark labelled by the h1", () => {
+    renderNotFound();
+    const main = screen.getByRole("main");
+    const id = main.getAttribute("aria-labelledby");
+    expect(document.getElementById(id!)).toHaveTextContent(/page not found/i);
+  });
+
+  it("renders heading and body copy", () => {
+    renderNotFound();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/page not found/i);
+    expect(screen.getByText(/doesn't exist or has been moved/i)).toBeInTheDocument();
+  });
+
+  it('shows "Go back" button when history is available', () => {
+    setHistoryLength(3);
+    renderNotFound();
+    expect(screen.getByRole("button", { name: /go back/i })).toBeInTheDocument();
+  });
+
+  it('shows "Go to Dashboard" link when there is no history', () => {
+    setHistoryLength(1);
+    renderNotFound();
+    expect(screen.getByRole("link", { name: /go to dashboard/i })).toBeInTheDocument();
+  });
+
+  it("calls history.go(-1) on Go back click", () => {
+    setHistoryLength(3);
+    const goSpy = vi.fn();
+    window.history.go = goSpy;
+    renderNotFound();
+    fireEvent.click(screen.getByRole("button", { name: /go back/i }));
+    expect(goSpy).toHaveBeenCalledWith(-1);
+  });
+
+  it("Go to Dashboard link points to /", () => {
+    setHistoryLength(1);
+    renderNotFound();
+    expect(screen.getByRole("link", { name: /go to dashboard/i })).toHaveAttribute("href", "/");
+  });
+
+  it("SVG illustration is aria-hidden", () => {
+    renderNotFound();
+    expect(document.querySelector("svg.error-illustration")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("matches snapshot with history", () => {
+    setHistoryLength(3);
+    expect(renderNotFound().asFragment()).toMatchSnapshot();
+  });
+
+  it("matches snapshot without history", () => {
+    setHistoryLength(1);
+    expect(renderNotFound().asFragment()).toMatchSnapshot();
   });
 });

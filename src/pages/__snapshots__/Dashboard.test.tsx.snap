@@ -1,0 +1,220 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RiskGauge inline component from Dashboard > matches snapshot at score 580 1`] = `
+<div
+  class="risk-gauge-container"
+>
+  <svg
+    class="risk-gauge-svg"
+    viewBox="0 0 160 100"
+  >
+    <path
+      class="risk-gauge-bg"
+      d="M 25 75 A 55 55 0 0 1 135 75"
+    />
+    <path
+      class="risk-gauge-fill"
+      d="M 25 75 A 55 55 0 0 1 135 75"
+      stroke="#f85149"
+      stroke-dasharray="172.78759594743863"
+      stroke-dashoffset="54.88547165389227"
+    />
+    <text
+      class="risk-gauge-score"
+      x="80"
+      y="63"
+    >
+      580
+    </text>
+    <text
+      class="risk-gauge-label"
+      x="80"
+      y="37"
+    >
+      Risk Score
+    </text>
+  </svg>
+  <div
+    class="risk-meta"
+  >
+    <div
+      class="risk-meta-item"
+    >
+      <span
+        class="rm-label"
+      >
+        Trend
+      </span>
+      <span
+        class="rm-value"
+        style="color: rgb(139, 148, 158);"
+      >
+        ─
+         
+        Stable
+      </span>
+    </div>
+    <div
+      class="risk-meta-item"
+    >
+      <span
+        class="rm-label"
+      >
+        Last Updated
+      </span>
+      <span
+        class="rm-value"
+        style="color: rgb(139, 148, 158);"
+      >
+        Jan 1, 2025
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`RiskGauge inline component from Dashboard > matches snapshot at score 660 1`] = `
+<div
+  class="risk-gauge-container"
+>
+  <svg
+    class="risk-gauge-svg"
+    viewBox="0 0 160 100"
+  >
+    <path
+      class="risk-gauge-bg"
+      d="M 25 75 A 55 55 0 0 1 135 75"
+    />
+    <path
+      class="risk-gauge-fill"
+      d="M 25 75 A 55 55 0 0 1 135 75"
+      stroke="#d29922"
+      stroke-dasharray="172.78759594743863"
+      stroke-dashoffset="38.623109682368636"
+    />
+    <text
+      class="risk-gauge-score"
+      x="80"
+      y="63"
+    >
+      660
+    </text>
+    <text
+      class="risk-gauge-label"
+      x="80"
+      y="37"
+    >
+      Risk Score
+    </text>
+  </svg>
+  <div
+    class="risk-meta"
+  >
+    <div
+      class="risk-meta-item"
+    >
+      <span
+        class="rm-label"
+      >
+        Trend
+      </span>
+      <span
+        class="rm-value"
+        style="color: rgb(139, 148, 158);"
+      >
+        ─
+         
+        Stable
+      </span>
+    </div>
+    <div
+      class="risk-meta-item"
+    >
+      <span
+        class="rm-label"
+      >
+        Last Updated
+      </span>
+      <span
+        class="rm-value"
+        style="color: rgb(139, 148, 158);"
+      >
+        Jan 1, 2025
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`RiskGauge inline component from Dashboard > matches snapshot at score 740 1`] = `
+<div
+  class="risk-gauge-container"
+>
+  <svg
+    class="risk-gauge-svg"
+    viewBox="0 0 160 100"
+  >
+    <path
+      class="risk-gauge-bg"
+      d="M 25 75 A 55 55 0 0 1 135 75"
+    />
+    <path
+      class="risk-gauge-fill"
+      d="M 25 75 A 55 55 0 0 1 135 75"
+      stroke="#3fb950"
+      stroke-dasharray="172.78759594743863"
+      stroke-dashoffset="22.360747710845004"
+    />
+    <text
+      class="risk-gauge-score"
+      x="80"
+      y="63"
+    >
+      740
+    </text>
+    <text
+      class="risk-gauge-label"
+      x="80"
+      y="37"
+    >
+      Risk Score
+    </text>
+  </svg>
+  <div
+    class="risk-meta"
+  >
+    <div
+      class="risk-meta-item"
+    >
+      <span
+        class="rm-label"
+      >
+        Trend
+      </span>
+      <span
+        class="rm-value"
+        style="color: rgb(139, 148, 158);"
+      >
+        ─
+         
+        Stable
+      </span>
+    </div>
+    <div
+      class="risk-meta-item"
+    >
+      <span
+        class="rm-label"
+      >
+        Last Updated
+      </span>
+      <span
+        class="rm-value"
+        style="color: rgb(139, 148, 158);"
+      >
+        Jan 1, 2025
+      </span>
+    </div>
+  </div>
+</div>
+`;

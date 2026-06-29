@@ -123,7 +123,7 @@ public `LandingPage` exist as components, ready to be wired into the route tree.
 ### Reusable components ([`src/components/`](src/components/))
 
 - **Inputs / forms:** `FormField`, `FormMessage`, `AmountInput`, `PendingButton`
-- **Status & feedback:** `StatusBadge`, `Skeleton`, `SuccessState`, `TransactionStatus`,
+- **Status & feedback:** `StatusBadge`, `NetworkStatus`, `Skeleton`, `SuccessState`, `TransactionStatus`,
   `ErrorBoundary`
 - **Overlay:** `WalletConnectionModal`, `RepayModal`, `OnboardingFlow`
 - **Wallet:** `WalletButton`

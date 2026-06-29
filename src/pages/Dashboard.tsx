@@ -17,9 +17,10 @@ import {
 } from "../utils/tokens";
 import { readJson, writeJson } from "../utils/storage";
 import "./Dashboard.css";
-import {T Skeleton} from "../components/Skeleton";
+import { Skeleton } from "../components/Skeleton";
 import { NoDataGraph } from "../components/illustrations";
 import CompareLinesPanel from "../components/CompareLinesPanel";
+import { WhatsChangedPanel } from "../components/WhatsChangedPanel";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useInertBackdrop } from "../hooks/useInertBackdrop";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";

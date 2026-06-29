@@ -86,6 +86,15 @@ describe("App Navigation Header", () => {
     expect(header).toBeInTheDocument();
   });
 
+  it("renders network status indicator in the header", () => {
+    render(<App />);
+
+    const header = screen.getByRole("banner");
+    expect(
+      within(header).getByLabelText(/network status:/i),
+    ).toBeInTheDocument();
+  });
+
   it("renders the Settings shortcut help trigger", () => {
     render(<App />);
 

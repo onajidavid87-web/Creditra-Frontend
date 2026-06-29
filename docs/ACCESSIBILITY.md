@@ -96,6 +96,7 @@ heading.
 | Form field errors | `role="alert"` (assertive, debounced 300 ms) | `FormMessage` |
 | Copy-to-clipboard success | `aria-live="polite"` | `CopyToClipboard` |
 | Route changes | `role="status" aria-live="polite"` | `RouteAnnouncer` |
+| Browser connectivity (header) | Assertive on offline; polite on restore | `NetworkStatus` |
 | Post-action confirmation | `role="status" aria-live="polite"` | `SuccessState` |
 | Toast notifications | Polite `ToastContainer` live region for confirmations; individual error toasts escalate to `role="alert"` | `ToastContainer` |
 

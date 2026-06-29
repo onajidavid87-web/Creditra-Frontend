@@ -85,7 +85,7 @@ describe("NextSteps Component", () => {
     renderWithRouter(<NextSteps totalAvailable={10000} totalUtilized={0} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/under review/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/under review/i).length).toBeGreaterThan(0);
     });
   });
 

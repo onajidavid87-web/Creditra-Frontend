@@ -45,6 +45,23 @@ Every term that appears in the UI should be used consistently. When a term needs
 | Default | Default | Failure to repay a debt including interest or principal on a loan or security. | "Default" | |
 | Dutch Auction| Dutch Auction | A public offering auction structure in which the price of the offering is set after taking in all bids to determine the highest price at which the total offering can be sold. | "Dutch Auction" | |
 
+## Landing Page Hero CTA Variants
+
+The landing hero copy is managed in `src/copy/landing.ts` with deterministic A/B variant selection per session (seeded by date).
+
+| Variant | Title | Subtitle | Primary CTA | Secondary CTA | Intent |
+|---------|-------|----------|-------------|---------------|--------|
+| `control` | Adaptive Credit Without Overcollateralization | Credit limits that evolve with your on-chain behavior. No locked capital. No static risk models. Just programmable credit. | Connect Wallet | Learn More | Current baseline — emphasizes absence of collateral requirement |
+| `variant_a` | Credit That Grows With You — No Collateral Needed | Your on-chain history powers a living credit limit. No lockup, no static model — just capital that adapts to how you build. | Get Started | See How It Works | Growth-focused — positions credit as an evolving resource |
+| `variant_b` | Unlock On-Chain Credit Without Locking Assets | Behavior-based lending powered by Stellar smart contracts. Your activity defines your limit — not your collateral. | Claim Your Credit | Explore the Protocol | Action-oriented — frames credit as an unlockable asset |
+
+Selection is deterministic: `getVariant()` hashes the current date (YYYY-MM-DD) and selects a variant via modulo. The same user on the same day always sees the same variant.
+
+To add a new variant:
+1. Add the id to `VariantId` type in `src/copy/landing.ts`
+2. Add the copy to `HERO_VARIANTS` record
+3. Document the variant in this table
+
 ## Label conventions
 
 | Label | Canonical phrasing | Context |

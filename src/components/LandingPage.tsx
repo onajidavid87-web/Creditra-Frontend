@@ -20,49 +20,12 @@ export default function LandingPage() {
     const [openFAQ, setOpenFAQ] = useState<number | null>(null);
     const reduceMotion = usePrefersReducedMotion();
 
-    const faqs = [
-        {
-            q: "What determines my credit limit?",
-            a: "Your limit is calculated from on-chain behavioral signals including transaction history, repayment patterns, liquidity activity, and protocol interactions.",
-        },
-        {
-            q: "Is collateral required?",
-            a: "No. Creditra uses adaptive behavioral analysis instead of fixed overcollateralization.",
-        },
-        {
-            q: "How is risk priced?",
-            a: "Risk is algorithmically evaluated and dynamically priced based on evolving behavioral signals.",
-        },
-        {
-            q: "What happens if I default?",
-            a: "Default events affect your evolving credit score and reduce future credit access.",
-        },
-        {
-            q: "Is Creditra custodial?",
-            a: "No. Creditra operates using smart contracts and remains non-custodial.",
-        },
-    ];
+    const variant = getVariant();
+    const hero = getHeroCopy(variant);
 
-    const features = [
-        { title: "Dynamic Credit Limits", icon: TrendingUp },
-        { title: "No Overcollateralization", icon: ShieldCheck },
-        { title: "Algorithmic Risk Pricing", icon: Cpu },
-        { title: "Continuous Credit Evolution", icon: RefreshCcw },
-    ];
-
-    const steps = [
-        { label: "Connect Wallet", icon: Wallet },
-        { label: "Behavior Analysis", icon: BarChart3 },
-        { label: "Risk Engine", icon: Cpu },
-        { label: "Credit Line Issued", icon: CreditCard },
-        { label: "Score Evolves", icon: LineChart },
-    ];
-
-    const useCases = [
-        { label: "SaaS Founders", icon: Building2 },
-        { label: "API Providers", icon: Code2 },
-        { label: "DAO Contributors", icon: Users },
-    ];
+    const featureIcons = [TrendingUp, ShieldCheck, Cpu, RefreshCcw];
+    const stepIcons = [Wallet, BarChart3, Cpu, CreditCard, LineChart];
+    const useCaseIcons = [Building2, Code2, Users];
 
     return (
         <div className="bg-[#0d1117] text-[#f0f6fc] min-h-screen font-sans">
@@ -70,26 +33,15 @@ export default function LandingPage() {
             <header className="border-b border-[#21262d]">
                 <div className="max-w-300 mx-auto flex items-center justify-between h-18 px-6">
                     <div className="text-xl font-semibold tracking-tight">
-                        Creditra
+                        {HEADER.brand}
                     </div>
-
                     <nav className="hidden md:flex gap-8 text-[#8b949e]">
-                        <a href="#how" className="hover:text-white transition">
-                            How It Works
-                        </a>
-                        <a
-                            href="#usecases"
-                            className="hover:text-white transition"
-                        >
-                            Use Cases
-                        </a>
-                        <a href="#faq" className="hover:text-white transition">
-                            FAQ
-                        </a>
+                        <a href="#how" className="hover:text-white transition">{HEADER.nav[0]}</a>
+                        <a href="#usecases" className="hover:text-white transition">{HEADER.nav[1]}</a>
+                        <a href="#faq" className="hover:text-white transition">{HEADER.nav[2]}</a>
                     </nav>
-
                     <button className="bg-[#58a6ff] hover:bg-[#79c0ff] px-5 py-2 rounded-lg transition text-black font-medium">
-                        Connect Wallet
+                        {HEADER.cta}
                     </button>
                 </div>
             </header>
@@ -99,27 +51,17 @@ export default function LandingPage() {
                 <div className="max-w-300 mx-auto grid md:grid-cols-2 gap-16 items-center">
                     <div className="space-y-6">
                         <h1 className="landing-hero__title">
-                            Adaptive Credit Without Overcollateralization
+                            {hero.title}
                         </h1>
-
                         <p className="landing-hero__copy">
-                            Credit limits that evolve with your on-chain behavior.
-                            No locked capital. No static risk models. Just programmable credit.
+                            {hero.subtitle}
                         </p>
-
                         <div className="landing-hero__actions">
-                            <button
-                                type="button"
-                                className="landing-button landing-button--primary"
-                            >
-                                Connect Wallet
+                            <button type="button" className="landing-button landing-button--primary">
+                                {hero.primaryCta}
                             </button>
-
-                            <a
-                                href="#how"
-                                className="landing-button landing-button--secondary"
-                            >
-                                Learn More
+                            <a href="#how" className="landing-button landing-button--secondary">
+                                {hero.secondaryCta}
                             </a>
                         </div>
                     </div>
@@ -132,7 +74,6 @@ export default function LandingPage() {
                         className="landing-hero-card"
                     >
                         <p className="text-[#8b949e] mb-4">Dynamic Credit Limit</p>
-
                         <div
                             className="w-full h-4 bg-[#21262d] rounded"
                             role="progressbar"
@@ -148,7 +89,6 @@ export default function LandingPage() {
                                 className="h-4 bg-[#58a6ff] rounded"
                             />
                         </div>
-
                         <p className="mt-6 text-3xl font-semibold">$48,750</p>
                     </motion.div>
                 </div>
@@ -157,24 +97,20 @@ export default function LandingPage() {
             {/* FEATURES */}
             <section className="landing-section">
                 <div className="max-w-300 mx-auto px-6">
-                    <h2 className="landing-section-title text-center">
-                        Credit That Adapts to You
-                    </h2>
-
+                    <h2 className="landing-section-title text-center">{FEATURES.title}</h2>
                     <div className="landing-feature-grid">
-                        {features.map(({ title, icon: Icon }, i) => (
-                            <div key={i} className="landing-card">
-                                <div className="w-10 h-10 mb-6 flex items-center justify-center rounded-lg bg-[#58a6ff]/10">
-                                    <Icon className="text-[#58a6ff]" size={20} />
+                        {FEATURES.items.map(({ title, description }, i) => {
+                            const Icon = featureIcons[i];
+                            return (
+                                <div key={i} className="landing-card">
+                                    <div className="w-10 h-10 mb-6 flex items-center justify-center rounded-lg bg-[#58a6ff]/10">
+                                        <Icon className="text-[#58a6ff]" size={20} />
+                                    </div>
+                                    <h3 className="landing-card-title">{title}</h3>
+                                    <p className="landing-card-copy">{description}</p>
                                 </div>
-
-                                <h3 className="landing-card-title">{title}</h3>
-                                <p className="landing-card-copy">
-                                    Powered by real-time on-chain behavioral
-                                    analysis and adaptive models.
-                                </p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </section>
@@ -182,27 +118,22 @@ export default function LandingPage() {
             {/* HOW IT WORKS */}
             <section id="how" className="landing-section bg-[#0b0f14]">
                 <div className="max-w-300 mx-auto px-6">
-                    <h2 className="landing-section-title text-center">
-                        How Adaptive Credit Works
-                    </h2>
-
+                    <h2 className="landing-section-title text-center">{HOW_IT_WORKS.title}</h2>
                     <div className="landing-steps-grid text-center">
-                        {steps.map(({ label, icon: Icon }, i) => (
-                            <div key={i} className="relative">
-                                <div className="landing-card rounded-lg p-6 flex flex-col items-center gap-4">
-                                    <Icon
-                                        className="text-[#58a6ff]"
-                                        size={22}
-                                        aria-hidden="true"
-                                    />
-                                    <span>{label}</span>
+                        {HOW_IT_WORKS.steps.map((label, i) => {
+                            const Icon = stepIcons[i];
+                            return (
+                                <div key={i} className="relative">
+                                    <div className="landing-card rounded-lg p-6 flex flex-col items-center gap-4">
+                                        <Icon className="text-[#58a6ff]" size={22} aria-hidden="true" />
+                                        <span>{label}</span>
+                                    </div>
+                                    {i < 4 && (
+                                        <div className="hidden md:block absolute top-1/2 -right-4.5 w-4 h-0.5 bg-[#58a6ff]" />
+                                    )}
                                 </div>
-
-                                {i < 4 && (
-                                    <div className="hidden md:block absolute top-1/2 -right-4.5 w-4 h-0.5 bg-[#58a6ff]" />
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </section>
@@ -210,24 +141,20 @@ export default function LandingPage() {
             {/* USE CASES */}
             <section id="usecases" className="landing-section">
                 <div className="max-w-300 mx-auto px-6">
-                    <h2 className="landing-section-title text-center">
-                        Built for Real Builders
-                    </h2>
-
+                    <h2 className="landing-section-title text-center">{USE_CASES.title}</h2>
                     <div className="landing-usecases-grid">
-                        {useCases.map(({ label, icon: Icon }, i) => (
-                            <div key={i} className="landing-card">
-                                <div className="w-10 h-10 mb-6 flex items-center justify-center rounded-lg bg-[#58a6ff]/10">
-                                    <Icon className="text-[#58a6ff]" size={20} />
+                        {USE_CASES.items.map(({ title, description }, i) => {
+                            const Icon = useCaseIcons[i];
+                            return (
+                                <div key={i} className="landing-card">
+                                    <div className="w-10 h-10 mb-6 flex items-center justify-center rounded-lg bg-[#58a6ff]/10">
+                                        <Icon className="text-[#58a6ff]" size={20} />
+                                    </div>
+                                    <h3 className="landing-card-title">{title}</h3>
+                                    <p className="landing-card-copy">{description}</p>
                                 </div>
-
-                                <h3 className="landing-card-title">{label}</h3>
-                                <p className="landing-card-copy">
-                                    Access adaptive capital aligned with your
-                                    on-chain activity.
-                                </p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </section>
@@ -235,27 +162,18 @@ export default function LandingPage() {
             {/* FAQ */}
             <section id="faq" className="landing-section bg-[#0b0f14]">
                 <div className="max-w-200 mx-auto px-6">
-                    <h2 className="text-3xl font-semibold mb-12 text-center">
-                        Frequently Asked Questions
-                    </h2>
-
-                    {faqs.map((item, index) => (
-                        <div
-                            key={index}
-                            className="border border-[#21262d] rounded-lg mb-4"
-                        >
+                    <h2 className="text-3xl font-semibold mb-12 text-center">{FAQ.title}</h2>
+                    {FAQ.items.map((item, index) => (
+                        <div key={index} className="border border-[#21262d] rounded-lg mb-4">
                             <button
                                 className="w-full text-left p-5 flex justify-between items-center"
-                                onClick={() =>
-                                    setOpenFAQ(openFAQ === index ? null : index)
-                                }
+                                onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
                                 aria-expanded={openFAQ === index}
                                 aria-controls={`faq-answer-${index}`}
                             >
                                 {item.q}
-                                <span aria-hidden="true">{openFAQ === index ? "−" : "+"}</span>
+                                <span aria-hidden="true">{openFAQ === index ? "\u2212" : "+"}</span>
                             </button>
-
                             {openFAQ === index && (
                                 <div id={`faq-answer-${index}`} className="px-5 pb-5 text-[#8b949e]" role="region">
                                     {item.a}
@@ -269,15 +187,9 @@ export default function LandingPage() {
             {/* FINAL CTA */}
             <section className="landing-section text-center">
                 <div className="max-w-200 mx-auto px-6">
-                    <h2 className="landing-section-title mb-8">
-                        Capital Should Work as Hard as You Do
-                    </h2>
-
-                    <button
-                        type="button"
-                        className="landing-button landing-button--primary"
-                    >
-                        Connect Wallet
+                    <h2 className="landing-section-title mb-8">{FINAL_CTA.title}</h2>
+                    <button type="button" className="landing-button landing-button--primary">
+                        {FINAL_CTA.button}
                     </button>
                 </div>
             </section>
@@ -285,24 +197,14 @@ export default function LandingPage() {
             {/* FOOTER */}
             <footer className="border-t border-[#21262d] py-12 text-[#8b949e]">
                 <div className="max-w-300 mx-auto px-6 grid md:grid-cols-3 gap-8">
-                    <div>
-                        <h4 className="text-white mb-4 font-medium">Product</h4>
-                        <p>How It Works</p>
-                        <p>Dashboard</p>
-                        <p>Docs</p>
-                    </div>
-
-                    <div>
-                        <h4 className="text-white mb-4 font-medium">Legal</h4>
-                        <p>Terms</p>
-                        <p>Privacy Policy</p>
-                    </div>
-
-                    <div>
-                        <h4 className="text-white mb-4 font-medium">Network</h4>
-                        <p>Built on Stellar</p>
-                        <p>Smart Contract Secured</p>
-                    </div>
+                    {FOOTER.columns.map(({ heading, links }) => (
+                        <div key={heading}>
+                            <h4 className="text-white mb-4 font-medium">{heading}</h4>
+                            {links.map((link) => (
+                                <p key={link}>{link}</p>
+                            ))}
+                        </div>
+                    ))}
                 </div>
             </footer>
         </div>

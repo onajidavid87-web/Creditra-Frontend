@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '../context/ReducedMotionContext';
 import './OnboardingFlow.css';
 
 interface Props {
@@ -41,32 +42,66 @@ const steps = [
 
 export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
+  const { isReducedMotionActive } = useReducedMotion();
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(0);
+      setDirection('forward');
+    }
+  }, [isOpen]);
 
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
   const step = steps[currentStep];
 
-  const handleNext = () => {
-    if (isLastStep) {
-      localStorage.setItem('onboarding_completed', 'true');
-      onComplete();
-    } else {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+  const handleNext = useCallback(() => {
+    setDirection('forward');
+    setCurrentStep((current) => {
+      if (current === steps.length - 1) {
+        localStorage.setItem('onboarding_completed', 'true');
+        onComplete();
+        return current;
+      }
 
-  const handleBack = () => {
-    if (!isFirstStep) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+      return current + 1;
+    });
+  }, [onComplete]);
 
-  const handleSkip = () => {
+  const handleBack = useCallback(() => {
+    setDirection('backward');
+    setCurrentStep((current) => Math.max(0, current - 1));
+  }, []);
+
+  const handleSkip = useCallback(() => {
     localStorage.setItem('onboarding_completed', 'true');
     onSkip();
-  };
+  }, [onSkip]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleSkip();
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        handleNext();
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        handleBack();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleBack, handleNext, handleSkip, isOpen]);
 
   return (
     <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Onboarding">
@@ -84,10 +119,10 @@ export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
             <motion.div
               key={currentStep}
               className="onboarding-step"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: isReducedMotionActive ? 0 : direction === 'forward' ? 20 : -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, x: isReducedMotionActive ? 0 : direction === 'forward' ? -20 : 20 }}
+              transition={{ duration: isReducedMotionActive ? 0 : 0.3 }}
             >
               <div className="step-icon">{step.icon}</div>
               <h2>{step.title}</h2>

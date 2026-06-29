@@ -21,6 +21,12 @@ export const UTIL_COLOR: Record<UtilizationLevel, string> = {
   high: COLOR.danger,
 };
 
+export const UTIL_PATTERN_DENSITY: Record<UtilizationLevel, number | null> = {
+  low: null,
+  medium: 6,
+  high: 4,
+};
+
 export const STATUS_COLOR: Record<CreditLineStatus, { bg: string; color: string; border: string }> = {
   Active: { bg: 'rgba(63,185,80,0.16)', color: '#8ee99d', border: 'rgba(63,185,80,0.44)' },
   Suspended: { bg: 'rgba(210,153,34,0.16)', color: '#f0c96a', border: 'rgba(210,153,34,0.46)' },

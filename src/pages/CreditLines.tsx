@@ -4,7 +4,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
 import type { CreditLineStatus, SortField, SortDirection } from '../types/creditLine';
 import {
-  COLOR, UTIL_COLOR,
+  COLOR, UTIL_COLOR, UTIL_PATTERN_DENSITY,
   fmt, fmtDate, getUtilizationLevel, utilizationPct,
 } from '../utils/tokens';
 import './CreditLines.css';
@@ -46,9 +46,43 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
             <span>Utilization</span>
             <span style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
           </div>
-          <div className="cl-util-track">
-            <div className="cl-util-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
-          </div>
+        <div className="cl-util-track">
+          <svg width="100%" height="100%" preserveAspectRatio="none" style={{ display: 'block' }}>
+            <defs>
+              <pattern 
+                id={`pattern-medium-${line.id}`} 
+                width={UTIL_PATTERN_DENSITY.medium} 
+                height={UTIL_PATTERN_DENSITY.medium} 
+                patternUnits="userSpaceOnUse" 
+                patternTransform="rotate(45)"
+              >
+                <line 
+                  x1="0" y1="0" x2="0" y2={UTIL_PATTERN_DENSITY.medium} 
+                  stroke="rgba(0,0,0,0.2)" 
+                  strokeWidth="2" 
+                />
+              </pattern>
+              <pattern 
+                id={`pattern-high-${line.id}`} 
+                width={UTIL_PATTERN_DENSITY.high} 
+                height={UTIL_PATTERN_DENSITY.high} 
+                patternUnits="userSpaceOnUse" 
+                patternTransform="rotate(45)"
+              >
+                <line 
+                  x1="0" y1="0" x2="0" y2={UTIL_PATTERN_DENSITY.high} 
+                  stroke="rgba(0,0,0,0.2)" 
+                  strokeWidth="2" 
+                />
+              </pattern>
+            </defs>
+            <rect width={`${pct}%`} height="100%" fill={UTIL_COLOR[level]} />
+            {level !== 'low' && (
+              <rect width={`${pct}%`} height="100%" fill={`url(#pattern-${level}-${line.id})`} />
+            )}
+          </svg>
+        </div>
+
         </div>
 
         <div className="cl-details">

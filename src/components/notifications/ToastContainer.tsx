@@ -11,23 +11,27 @@ function ToastItem({
   toast: Toast;
   onDismiss: (id: string) => void;
 }) {
-  const isAssertive = toast.type === "error" || toast.type === "danger";
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const colors = TYPE_COLOR[toast.type];
 
   useEffect(() => {
-    // Trigger enter animation
+    // Defer one frame so the initial opacity:0 is painted before we
+    // add .toast-enter, giving the CSS transition something to animate.
     const t = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(t);
   }, []);
 
   const handleDismiss = () => {
     setLeaving(true);
+    // Wait for the leave transition (0.3 s) before removing from DOM.
+    // Under prefers-reduced-motion:reduce the CSS sets transition:none,
+    // so the element disappears instantly and the 300 ms delay is merely
+    // cosmetic — acceptably short.
     setTimeout(() => onDismiss(toast.id), 300);
   };
 
-  // Progress bar
+  // ── Progress bar ──────────────────────────────────────────────────────────
   const [progress, setProgress] = useState(100);
   const startRef = useRef(Date.now());
   const duration = toast.duration ?? 5500;
@@ -44,28 +48,44 @@ function ToastItem({
   }, [toast.persistent, duration]);
 
   /*
-   * Role semantics:
-   *   role="alert"  (aria-live="assertive") — interrupts the user immediately;
-   *                 reserved for errors and danger states.
-   *   role="status" (aria-live="polite")    — waits for idle; used for success,
-   *                 info, and warning toasts that do not require urgent attention.
-   * WCAG 4.1.3: Status Messages.
+   * Role / live-region semantics (WCAG 4.1.3 Status Messages):
+   *   role="alert"  aria-live="assertive"  — interrupts AT immediately;
+   *                 reserved for error / danger toasts.
+   *   role="status" aria-live="polite"     — waits for idle; used for
+   *                 success, info, and warning toasts.
+   *
+   * The severity CSS class drives the tinted background. It is applied
+   * alongside the animation state classes so they compose cleanly.
    */
   const isUrgent = toast.type === "error" || toast.type === "danger";
+  const severityClass = `toast-item--${toast.type}`;
 
   return (
     <div
-      className={`toast-item ${visible ? "toast-enter" : ""} ${leaving ? "toast-leave" : ""}`}
+      className={[
+        "toast-item",
+        severityClass,
+        visible ? "toast-enter" : "",
+        leaving ? "toast-leave" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{
         borderColor: colors.border,
-        /* Left accent bar communicates severity via color in addition to the icon. */
+        /* Left accent bar reinforces severity via color in addition to the
+           icon, satisfying WCAG 1.4.1 (Use of Color). */
         borderLeft: `4px solid ${colors.icon}`,
       }}
       role={isUrgent ? "alert" : "status"}
       aria-live={isUrgent ? "assertive" : "polite"}
     >
       <div className="toast-header">
-        {/* Icon is decorative alongside the title; suppress it for AT. */}
+        {/*
+         * The Lucide icon is purely decorative alongside the title text.
+         * The wrapper span carries aria-hidden="true" so AT skips it;
+         * the icon components also set aria-hidden internally (see
+         * notificationIcons.tsx) as a redundant belt-and-suspenders guard.
+         */}
         <span
           className="toast-type-icon"
           style={{ background: colors.bg, color: colors.icon }}
@@ -73,20 +93,26 @@ function ToastItem({
         >
           {TYPE_ICON[toast.type]}
         </span>
+
         <span className="toast-title">{toast.title}</span>
+
         <button
           className="toast-close"
           onClick={handleDismiss}
           aria-label="Dismiss notification"
+          type="button"
         >
           ×
         </button>
       </div>
+
       <p className="toast-message">{toast.message}</p>
+
       {toast.action && (
         <button
           className="toast-action"
           style={{ color: colors.text }}
+          type="button"
           onClick={() => {
             toast.action!.onClick();
             handleDismiss();
@@ -95,6 +121,7 @@ function ToastItem({
           {toast.action.label} →
         </button>
       )}
+
       {!toast.persistent && (
         <div className="toast-progress-track">
           <div
@@ -111,9 +138,17 @@ export function ToastContainer() {
   const { toasts, dismissToast } = useNotifications();
 
   return (
-    /* role="log" marks this region as an ordered sequence of status messages
-       so AT users can revisit the list without losing their reading position. */
-    <div className="toast-container" role="log" aria-label="Notifications" aria-live="polite">
+    /*
+     * role="log" marks this region as an ordered sequence of status
+     * messages so AT users can revisit the list without losing their
+     * reading position (WCAG 4.1.3).
+     */
+    <div
+      className="toast-container"
+      role="log"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
       ))}

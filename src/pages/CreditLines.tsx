@@ -177,6 +177,7 @@ export default function CreditLines() {
   );
 
   const creditLines = MOCK_CREDIT_LINES;
+  const hasCreditLines = creditLines.length > 0;
 
   const [showCompare, setShowCompare] = useState(false);
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
@@ -391,14 +392,39 @@ export default function CreditLines() {
       )}
 
       {filteredAndSorted.length === 0 ? (
-        <div className="cl-empty">
-          <NoLines className="empty-state-illustration--muted" />
-          <h3>No credit lines found</h3>
-          <p>Apply for a credit line to get started</p>
-          <Link to="/open-credit" className="cl-primary-btn">
-            Open Credit Line
-          </Link>
-        </div>
+        !hasCreditLines ? (
+          <div className="cl-empty" role="region" aria-label="No credit lines">
+            <NoLines className="empty-state-illustration--muted" />
+            <h2 className="cl-empty-title">Get started with Credit Lines</h2>
+            <p className="cl-empty-desc">
+              Credit lines give you access to flexible capital when you need it.
+              Open your first line and unlock funding tailored to your business.
+            </p>
+            <ul className="cl-empty-features">
+              <li>Flexible funding up to $500K</li>
+              <li>Competitive rates from 7.5% APR</li>
+              <li>Quick approval with digital collateral</li>
+            </ul>
+            <Link to="/open-credit" className="cl-primary-btn">
+              Open Credit Line
+            </Link>
+          </div>
+        ) : (
+          <div className="cl-empty" role="region" aria-label="No matching credit lines">
+            <NoLines className="empty-state-illustration--muted" />
+            <h2 className="cl-empty-title">No matching credit lines</h2>
+            <p className="cl-empty-desc">
+              No credit lines match your current filter. Try a different status
+              or adjust your sort to see more results.
+            </p>
+            <button
+              className="cl-primary-btn"
+              onClick={() => { setStatusFilter("all"); setSortField("updatedAt"); setSortDir("desc"); }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        )
       ) : (
         <div className="cl-grid">
           {filteredAndSorted.map((line) => (
